@@ -28,6 +28,14 @@ impl MetaData {
     pub fn unique_id(&self) -> Option<u64> {
         self.unique_id.map(|v| v.get())
     }
+    #[inline(always)]
+    pub fn has_timestamp(&self) -> bool {
+        self.timestamp.is_some()
+    }
+    #[inline(always)]
+    pub fn has_unique_id(&self) -> bool {
+        self.unique_id.is_some()
+    }
 }
 
 static GLOBAL_ID: AtomicU64 = AtomicU64::new(1);
