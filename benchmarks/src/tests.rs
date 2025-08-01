@@ -1,4 +1,5 @@
 use flat_message::*;
+use std::fmt::Debug;
 
 macro_rules! check_field_value {
     ($field_name: expr, $type: ty, $value: expr, $flat_message_buffer: expr) => {
@@ -11,6 +12,17 @@ macro_rules! check_field_value_unsafe {
         let val: $type = unsafe { $flat_message_buffer.get_unchecked($field_name).unwrap() };
         assert_eq!(val, $value);
     };
+}
+
+fn validate_correct_serde<T>(obj: T)
+where
+    T: Eq + PartialEq + Debug + for<'a> crate::FlatMessage<'a>,
+{
+    let mut output = Vec::new();
+    obj.serialize_to(&mut output, Config::default()).unwrap();
+    let storage = Storage::from_buffer(&output);
+    let deserialized = T::deserialize_from(&storage).unwrap();
+    assert_eq!(obj, deserialized);
 }
 
 #[test]
@@ -1940,4 +1952,43 @@ fn check_serde_vec_string_and_str_unchecked() {
     assert_eq!(s.value, ds.value);
     assert_eq!(s.v1, ds.v1);
     assert_eq!(s.v2, ds.v2);
+}
+
+#[test]
+fn check_simple_struct() {
+    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, Eq)]
+    struct Point {
+        x: i32,
+        y: i32,
+    }
+    validate_correct_serde(Point { x: 10, y: 20 });
+}
+
+#[test]
+fn check_simple_struct_width_comments() {
+    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, Eq)]
+    struct Point {
+        // x coordinate
+        x: i32,
+        // y coordinate
+        y: i32,
+    }
+    validate_correct_serde(Point { x: 10, y: 20 });
+}
+
+#[test]
+fn check_simple_struct_width_documentation() {
+    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, Eq)]
+    struct Point {
+        /// x coordinate that is used to store the position
+        /// in the 2D space
+        x: i32,
+        /// y coordinate that is used to store the position
+        /// in the 2D space
+        y: i32,
+    }
+    validate_correct_serde(Point { x: 10, y: 20 });
 }

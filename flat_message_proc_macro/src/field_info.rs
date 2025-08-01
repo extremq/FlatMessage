@@ -62,7 +62,11 @@ impl TryFrom<&Field> for FieldInfo {
                 }
                 let attr = attribute_parser::parse(tokens);
                 data_type.update(&attr, name.as_str())?;
-            } else {
+            } else {                
+                if attr.path().is_ident("doc") {
+                    // skip it until I find a better solutiion:)
+                    continue;
+                }
                 return Err(format!(
                     "Attribute '{}' is not supported for field '{}'",
                     attr.to_token_stream(),
