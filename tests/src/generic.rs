@@ -1,5 +1,6 @@
 use flat_message::*;
-use std::{fmt::Debug, net::Ipv4Addr, net::Ipv6Addr};
+use std::fmt::Debug;
+use super::*;
 
 macro_rules! check_field_value {
     ($field_name: expr, $type: ty, $value: expr, $flat_message_buffer: expr) => {

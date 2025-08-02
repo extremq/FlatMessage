@@ -1,7 +1,5 @@
 mod get_size_min;
 mod structures;
-#[cfg(test)]
-mod tests;
 
 use crate::get_size_min::GetSize;
 use ascii_table::{Align, AsciiTable};

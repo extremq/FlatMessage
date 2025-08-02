@@ -1,5 +1,6 @@
 #[cfg(test)] mod enums;
 #[cfg(test)] mod ip;
+#[cfg(test)] mod generic;
 
 
 pub(crate) use std::fmt::Debug;
