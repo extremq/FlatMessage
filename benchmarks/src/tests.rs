@@ -1,5 +1,5 @@
 use flat_message::*;
-use std::fmt::Debug;
+use std::{fmt::Debug, net::Ipv4Addr};
 
 macro_rules! check_field_value {
     ($field_name: expr, $type: ty, $value: expr, $flat_message_buffer: expr) => {
@@ -1836,8 +1836,8 @@ fn check_serde_vec_str() {
             /* Header                      */ 71, 84, 72, 1, 2, 0, 0, 0,
             /* TestStruct: value           */ 64, 226, 1, 0,
             /* v1                          */
-            /* v1 (items count)            */ 4,
-            /* v1.item[0].len              */ 5, /* v1.item[0].data             */ 72,
+            /* v1 (items count)            */
+            4, /* v1.item[0].len              */ 5, /* v1.item[0].data             */ 72,
             101, 108, 108, 111, // Hello
             /* v1.item[1].len              */ 5, /* v1.item[1].data             */ 87,
             111, 114, 108, 100, // World
@@ -1880,8 +1880,8 @@ fn check_serde_vec_string() {
             /* Header                      */ 71, 84, 72, 1, 2, 0, 0, 0,
             /* TestStruct: value           */ 64, 226, 1, 0,
             /* v1                          */
-            /* v1 (items count)            */ 4,
-            /* v1.item[0].len              */ 5, /* v1.item[0].data             */ 72,
+            /* v1 (items count)            */
+            4, /* v1.item[0].len              */ 5, /* v1.item[0].data             */ 72,
             101, 108, 108, 111, // Hello
             /* v1.item[1].len              */ 5, /* v1.item[1].data             */ 87,
             111, 114, 108, 100, // World
@@ -1991,4 +1991,105 @@ fn check_simple_struct_width_documentation() {
         y: i32,
     }
     validate_correct_serde(Point { x: 10, y: 20 });
+}
+
+#[test]
+fn check_inner_struct() {
+    #[derive(Debug, PartialEq, Eq)]
+    struct MyData {
+        z: i32,
+    }
+    unsafe impl<'a> SerDe<'a> for MyData {
+        const DATA_FORMAT: DataFormat = DataFormat::GenericObject;
+
+        unsafe fn from_buffer_unchecked(buf: &'a [u8], pos: usize) -> Self
+        where
+            Self: Sized,
+        {
+            todo!()
+        }
+
+        fn from_buffer(buf: &'a [u8], pos: usize) -> Option<Self>
+        where
+            Self: Sized,
+        {
+            todo!()
+        }
+
+        unsafe fn write(obj: &Self, p: *mut u8, pos: usize) -> usize {
+            todo!()
+        }
+
+        fn size(obj: &Self) -> usize {
+            todo!()
+        }
+    }
+
+    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, Eq)]
+    struct Point {
+        // x coordinate
+        x: i32,
+        // y coordinate
+        y: i32,
+        d: MyData,
+    }
+    validate_correct_serde(Point {
+        x: 10,
+        y: 20,
+        d: MyData { z: 30 },
+    });
+}
+
+#[test]
+fn check_ipv4() {
+    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, Eq)]
+    struct Test {
+        ip1: std::net::Ipv4Addr,
+        ip2: std::net::Ipv4Addr,
+    }
+    validate_correct_serde(Test {
+        ip1: Ipv4Addr::new(192, 168, 1, 0),
+        ip2: Ipv4Addr::new(10, 0, 0, 1),
+    });
+}
+
+#[test]
+fn check_ipv4_repr() {
+    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, Eq)]
+    struct Test {
+        ip1: std::net::Ipv4Addr,
+        ip2: std::net::Ipv4Addr,
+    }
+    let mut v = Storage::default();
+    let s = Test {
+        ip1: Ipv4Addr::new(192, 168, 1, 0),
+        ip2: Ipv4Addr::new(10, 0, 0, 1),
+    };
+    s.serialize_to(&mut v, Config::default()).unwrap();
+    let ds = Test::deserialize_from(&v).unwrap();
+    assert_eq!(s.ip1, ds.ip1);
+    assert_eq!(s.ip2, ds.ip2);
+    //println!("{:?}", v.as_slice());
+    assert_eq!(
+        v.as_slice(),
+        &[
+            // Header
+            71, 84, 72, 1, 2, 0, 0, 0, 
+            // ip1 - 192.168.1.0
+            192, 168, 1, 0, 
+            // ip2 - 10.0.0.1
+            10, 0, 0, 1, 
+            // hash for ip1 (23 = ID for IPv4)
+            23, 233, 1, 215, 
+            // hash for ip2 (23 = ID for IPv4)
+            23, 235, 1, 216,             
+            // offset for ip1 - 8
+            8, 
+            // offset for ip2 - 12
+            12
+        ]
+    );
 }

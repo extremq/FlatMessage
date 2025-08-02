@@ -18,7 +18,7 @@ pub enum DataFormat {
     F64,
     Bool,
     String,
-
+    // enums
     EnumI8,
     EnumI16,
     EnumI32,
@@ -27,6 +27,9 @@ pub enum DataFormat {
     EnumU16,
     EnumU32,
     EnumU64,
+    // IPs
+    IPv4,
+    IPv6,
 }
 impl DataFormat {
     pub fn is_enum(&self) -> bool {
@@ -66,6 +69,8 @@ impl DataFormat {
             DataFormat::EnumU16 => 2,
             DataFormat::EnumU32 => 4,
             DataFormat::EnumU64 => 8,
+            DataFormat::IPv4 => 1,
+            DataFormat::IPv6 => 1,
             DataFormat::GenericObject => 1,
         }
     }
@@ -87,7 +92,6 @@ impl Display for DataFormat {
             DataFormat::F64 => write!(f, "F64"),
             DataFormat::Bool => write!(f, "Bool"),
             DataFormat::String => write!(f, "String"),
-
             DataFormat::EnumI8 => write!(f, "EnumI8"),
             DataFormat::EnumI16 => write!(f, "EnumI16"),
             DataFormat::EnumI32 => write!(f, "EnumI32"),
@@ -96,14 +100,15 @@ impl Display for DataFormat {
             DataFormat::EnumU16 => write!(f, "EnumU16"),
             DataFormat::EnumU32 => write!(f, "EnumU32"),
             DataFormat::EnumU64 => write!(f, "EnumU64"),
-
-            DataFormat::GenericObject => write!(f, "GenericObject"),
-        }
+            DataFormat::IPv4 => write!(f, "IPv4"),
+            DataFormat::IPv6 => write!(f, "IPv6"),
+            DataFormat::GenericObject => write!(f, "GenericObject"),                    }
     }
 }
 
 impl From<&str> for DataFormat {
     fn from(value: &str) -> Self {
+        //let r = 
         match value {
             "u8" => DataFormat::U8,
             "u16" => DataFormat::U16,
@@ -128,7 +133,12 @@ impl From<&str> for DataFormat {
             "enum_u16" => DataFormat::EnumU16,
             "enum_u32" => DataFormat::EnumU32,
             "enum_u64" => DataFormat::EnumU64,
+            "std :: net :: Ipv4Addr" | "net :: Ipv4Addr" | "Ipv4Addr" => DataFormat::IPv4,
+            "std :: net :: Ipv6Addr" | "net :: Ipv6Addr" |"Ipv6Addr" => DataFormat::IPv6,
             _ => DataFormat::GenericObject,
         }
+        // ;
+        // println!("Name: {} -> {}", value, r);
+        // r
     }
 }
