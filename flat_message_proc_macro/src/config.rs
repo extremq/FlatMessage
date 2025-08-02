@@ -18,15 +18,16 @@ pub(crate) struct Config {
 impl Config {
     pub(crate) fn new(args: TokenStream) -> Self {
         let mut store_name = true;
-        let mut add_metadata = true;
+        let mut add_metadata = false;
         let mut add_checksum = false;
         let mut validate_name = false;
         let mut version = 0u8;
         let mut compatible_versions = None;
         let mut validate_checksum = ValidateChecksum::Auto;
-
+        //println!("--Parsing attributes: '{}'", args.to_string());
         let attrs = attribute_parser::parse(args);
         for (attr_name, attr_value) in attrs.iter() {
+            //println!("--Evaluete: '{}' => '{}'",attr_name,attr_value);
             match attr_name.as_str() {
                 "store_name" => store_name = utils::to_bool(&attr_value).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value, attr_name).as_str()),
                 "metadata" => add_metadata = utils::to_bool(&attr_value).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value, attr_name).as_str()),
@@ -58,6 +59,20 @@ impl Config {
             validate_name,
             validate_checksum,
             compatible_versions,
+        }
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            namehash: true,
+            metadata: false,
+            checksum: false,
+            version: 0,
+            validate_name: false,
+            compatible_versions: None,
+            validate_checksum: ValidateChecksum::Auto,
         }
     }
 }

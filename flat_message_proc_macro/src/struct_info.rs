@@ -658,11 +658,11 @@ impl<'a> StructInfo<'a> {
 
         let new_code = quote! {
 
-            #(#derives)*
-            #visibility struct #name #generics {
-                #(#struct_fields)*
-                #metadata_field
-            }
+            // #(#derives)*
+            // #visibility struct #name #generics {
+            //     #(#struct_fields)*
+            //     #metadata_field
+            // }
 
             #(#const_assertion_functions)*
 

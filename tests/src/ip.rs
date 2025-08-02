@@ -4,8 +4,8 @@ use std::net::*;
 
 #[test]
 fn check_ipv4() {
-    #[flat_message(metadata: false, store_name: false)]
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata: false, store_name: false)]
     struct Test {
         ip1: std::net::Ipv4Addr,
         ip2: std::net::Ipv4Addr,
@@ -32,8 +32,8 @@ fn check_ipv4() {
 
 #[test]
 fn check_ipv4_repr() {
-    #[flat_message(metadata: false, store_name: false)]
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata: false, store_name: false)]
     struct Test {
         ip1: std::net::Ipv4Addr,
         ip2: std::net::Ipv4Addr,
@@ -71,8 +71,8 @@ fn check_ipv4_repr() {
 
 #[test]
 fn check_ipv6() {
-    #[flat_message(metadata: false, store_name: false)]
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata: false, store_name: false)]
     struct Test {
         ip1: std::net::Ipv6Addr,
         ip2: std::net::Ipv6Addr,
@@ -85,8 +85,8 @@ fn check_ipv6() {
 
 #[test]
 fn check_ipv6_repr() {
-    #[flat_message(metadata: false, store_name: false)]
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata: false, store_name: false)]
     struct Test {
         ip1: std::net::Ipv6Addr,
         ip2: std::net::Ipv6Addr,

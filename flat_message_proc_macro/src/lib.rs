@@ -10,40 +10,79 @@ mod validate_checksum;
 mod version_validator_parser;
 
 use config::Config;
-use core::panic;
-use proc_macro::*;
+use quote::{quote, ToTokens};
 use std::str::FromStr;
 use struct_info::StructInfo;
 use syn::{parse_macro_input, DeriveInput};
 
 extern crate proc_macro;
 
-#[allow(non_snake_case)]
-#[proc_macro_attribute]
-pub fn FlatMessage(args: TokenStream, input: TokenStream) -> TokenStream {
-    flat_message(args, input)
-}
+// #[allow(non_snake_case)]
+// #[proc_macro_attribute]
+// pub fn FlatMessage(args: TokenStream, input: TokenStream) -> TokenStream {
+//     flat_message(args, input)
+// }
 
-#[proc_macro_attribute]
-pub fn flat_message(args: TokenStream, input: TokenStream) -> TokenStream {
-    let config = Config::new(args);
+use proc_macro::TokenStream;
+
+use syn::Attribute;
+
+#[proc_macro_derive(FlatMessage, attributes(flat_message_options, flat_message_item))]
+pub fn flat_message(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
+    let config_args: Option<TokenStream> = input
+        .attrs
+        .iter()
+        .find(|attr| attr.path().is_ident("flat_message_options"))
+        .and_then(extract_attribute_inner_tokens);
+
+    let config = match config_args {
+        Some(tokens) => Config::new(tokens),
+        None => Config::default(),
+    };
+
     if let syn::Data::Struct(s) = &input.data {
-        let si = match StructInfo::new(&input, s, config) {
-            Ok(si) => si,
-            Err(e) => {
-                return quote::quote! {
-                    compile_error!(#e);
-                }
-                .into();
+        match StructInfo::new(&input, s, config) {
+            Ok(si) => si.generate_code(),
+            Err(e) => quote! {
+                compile_error!(#e);
             }
-        };
-        si.generate_code()
+            .into(),
+        }
     } else {
-        panic!("Only structs are supported !")
+        quote! {
+            compile_error!("Only structs are supported!");
+        }
+        .into()
     }
 }
+
+fn extract_attribute_inner_tokens(attr: &Attribute) -> Option<TokenStream> {
+    let tokens2 = attr.meta.require_list().ok()?.tokens.clone();
+    return Some(tokens2.into());
+}
+
+// #[proc_macro_attribute]
+// pub fn flat_message(args: TokenStream, input: TokenStream) -> TokenStream {
+//     let config = Config::new(args);
+//     let input = parse_macro_input!(input as DeriveInput);
+
+//     if let syn::Data::Struct(s) = &input.data {
+//         let si = match StructInfo::new(&input, s, config) {
+//             Ok(si) => si,
+//             Err(e) => {
+//                 return quote::quote! {
+//                     compile_error!(#e);
+//                 }
+//                 .into();
+//             }
+//         };
+//         si.generate_code()
+//     } else {
+//         panic!("Only structs are supported !")
+//     }
+// }
 
 #[proc_macro_derive(FlatMessageEnum, attributes(sealed))]
 pub fn flat_message_enum(input: TokenStream) -> TokenStream {

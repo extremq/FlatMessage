@@ -12,16 +12,17 @@ enum Color {
     Magenta = 102,
 }
 
-#[flat_message(store_name = false, metadata: false)]
+#[derive(FlatMessage)]
+#[flat_message_options(store_name = false, metadata: false)]
 pub struct MyStruct<'a> {
     //pub a: i32,
     //pub(crate) b: bool,
     //c: String,
     //d: &'a str,
     //e: Vec<u8>,
-    #[flat_message(repr = i8, kind = enum)]
+    #[flat_message_item(repr = i8, kind = enum)]
     cols: &'a [Color],
-    #[flat_message(repr = i8, kind = enum)]
+    #[flat_message_item(repr = i8, kind = enum)]
     col: Color,
     // #[blabla(=1, b=2, c=3)]
     x: u32,

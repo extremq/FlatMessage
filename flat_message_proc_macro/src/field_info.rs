@@ -48,7 +48,7 @@ impl TryFrom<&Field> for FieldInfo {
         let ty = &field.ty;
         let mut data_type = DataType::new(ty.clone(), quote! {#ty}.to_string());
         for attr in field.attrs.iter() {
-            if attr.path().is_ident("flat_message") {
+            if attr.path().is_ident("flat_message_item") {
                 let all_tokens = attr.meta.clone().into_token_stream();
                 let mut tokens = TokenStream::default();
                 let mut iter = all_tokens.into_iter();

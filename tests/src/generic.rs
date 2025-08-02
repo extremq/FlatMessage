@@ -19,13 +19,12 @@ macro_rules! check_field_value_unsafe {
 
 #[test]
 fn check_flat_message_buffer_one_field_i32() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
     struct TestStruct {
         my_field: i32,
     }
     let a = TestStruct {
         my_field: 123456,
-        metadata: MetaData::default(),
     };
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
@@ -35,13 +34,12 @@ fn check_flat_message_buffer_one_field_i32() {
 
 #[test]
 fn check_flat_message_buffer_one_field_str() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
     struct TestStruct {
         my_field: String,
     }
     let a = TestStruct {
         my_field: "Hello, World!".to_string(),
-        metadata: MetaData::default(),
     };
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
@@ -51,7 +49,7 @@ fn check_flat_message_buffer_one_field_str() {
 
 #[test]
 fn check_flat_message_buffer_two_fields_i32_i8() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
     struct TestStruct {
         size: i32,
         dimension: i8,
@@ -59,7 +57,6 @@ fn check_flat_message_buffer_two_fields_i32_i8() {
     let a = TestStruct {
         size: -12345,
         dimension: -100,
-        metadata: MetaData::default(),
     };
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
@@ -70,7 +67,7 @@ fn check_flat_message_buffer_two_fields_i32_i8() {
 
 #[test]
 fn check_flat_message_buffer_two_fields_string_string() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -78,7 +75,6 @@ fn check_flat_message_buffer_two_fields_string_string() {
     let a = TestStruct {
         name: "John".to_string(),
         surname: "Doe",
-        metadata: MetaData::default(),
     };
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
@@ -89,7 +85,7 @@ fn check_flat_message_buffer_two_fields_string_string() {
 
 #[test]
 fn check_flat_message_buffer_safe() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, FlatMessage)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -105,7 +101,6 @@ fn check_flat_message_buffer_safe() {
         engligh: 90,
         passed: true,
         average: 95.0,
-        metadata: MetaData::default(),
     };
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
@@ -120,7 +115,7 @@ fn check_flat_message_buffer_safe() {
 
 #[test]
 fn check_flat_message_buffer_unsafe() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, FlatMessage)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -136,7 +131,6 @@ fn check_flat_message_buffer_unsafe() {
         engligh: 90,
         passed: true,
         average: 95.0,
-        metadata: MetaData::default(),
     };
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
@@ -151,7 +145,8 @@ fn check_flat_message_buffer_unsafe() {
 
 #[test]
 fn check_flat_message_metadata() {
-    #[flat_message(version = 5)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(version = 5)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -160,18 +155,18 @@ fn check_flat_message_metadata() {
         passed: bool,
         average: f64,
     }
-    let a = TestStruct {
+    let mut a = TestStruct {
         name: "John".to_string(),
         surname: "Doe",
         math: 100,
         engligh: 90,
         passed: true,
         average: 95.0,
-        metadata: MetaDataBuilder::new()
-            .timestamp(123456)
-            .unique_id(654321)
-            .build(),
     };
+    a.update_metada(MetaDataBuilder::new()
+        .timestamp(123456)
+        .unique_id(654321)
+        .build());
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
     let buf = FlatMessageBuffer::try_from(&output).unwrap();
@@ -184,7 +179,8 @@ fn check_flat_message_metadata() {
 
 #[test]
 fn check_flat_message_no_metadata() {
-    #[flat_message(metadata: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -213,7 +209,8 @@ fn check_flat_message_no_metadata() {
 
 #[test]
 fn check_flat_message_no_metadata_no_name() {
-    #[flat_message(store_name: false, metadata: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(store_name = false, metadata = false)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -242,7 +239,7 @@ fn check_flat_message_no_metadata_no_name() {
 
 #[test]
 fn check_serde_full() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, FlatMessage)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -251,18 +248,18 @@ fn check_serde_full() {
         passed: bool,
         average: f64,
     }
-    let a = TestStruct {
+    let mut a = TestStruct {
         name: "John".to_string(),
         surname: "Doe",
         math: 100,
         engligh: 90,
         passed: true,
         average: 95.0,
-        metadata: MetaDataBuilder::new()
-            .timestamp(123456)
-            .unique_id(654321)
-            .build(),
     };
+    a.update_metada(MetaDataBuilder::new()
+        .timestamp(123456)
+        .unique_id(654321)
+        .build());
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
     let b = TestStruct::deserialize_from(&output).unwrap();
@@ -272,13 +269,13 @@ fn check_serde_full() {
     assert_eq!(a.engligh, b.engligh);
     assert_eq!(a.passed, b.passed);
     assert_eq!(a.average, b.average);
-    assert_eq!(a.metadata.timestamp(), b.metadata.timestamp());
-    assert_eq!(a.metadata.unique_id(), b.metadata.unique_id());
+    assert_eq!(a.metadata().timestamp(), b.metadata().timestamp());
+    assert_eq!(a.metadata().unique_id(), b.metadata().unique_id());
 }
 
 #[test]
 fn check_serde_into_smaller_struct() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, FlatMessage)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -288,7 +285,8 @@ fn check_serde_into_smaller_struct() {
         average: f64,
     }
 
-    #[flat_message(metadata: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false)]
     struct TestSmallerStruct {
         name: String,
         math: u8,
@@ -296,18 +294,18 @@ fn check_serde_into_smaller_struct() {
         average: f64,
     }
 
-    let a = TestStruct {
+    let mut a = TestStruct {
         name: "John".to_string(),
         surname: "Doe",
         math: 100,
         engligh: 90,
         passed: true,
         average: 95.0,
-        metadata: MetaDataBuilder::new()
-            .timestamp(123456)
-            .unique_id(654321)
-            .build(),
     };
+    a.update_metada(MetaDataBuilder::new()
+        .timestamp(123456)
+        .unique_id(654321)
+        .build());
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
     let b = TestSmallerStruct::deserialize_from(&output).unwrap();
@@ -319,7 +317,7 @@ fn check_serde_into_smaller_struct() {
 
 #[test]
 fn check_serde_into_different_struct() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, FlatMessage)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -329,25 +327,26 @@ fn check_serde_into_different_struct() {
         average: f64,
     }
 
-    #[flat_message(metadata: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false)]
     struct TestSmallerStruct {
         a: u8,
         b: u16,
         math: u16,
     }
 
-    let a = TestStruct {
+    let mut a = TestStruct {
         name: "John".to_string(),
         surname: "Doe",
         math: 100,
         engligh: 90,
         passed: true,
         average: 95.0,
-        metadata: MetaDataBuilder::new()
-            .timestamp(123456)
-            .unique_id(654321)
-            .build(),
     };
+    a.update_metada(MetaDataBuilder::new()
+        .timestamp(123456)
+        .unique_id(654321)
+        .build());
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
     let b = TestSmallerStruct::deserialize_from(&output);
@@ -356,7 +355,7 @@ fn check_serde_into_different_struct() {
 
 #[test]
 fn check_serde_into_different_type() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, FlatMessage)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -366,7 +365,7 @@ fn check_serde_into_different_type() {
         average: f64,
     }
 
-    #[flat_message]
+    #[derive(Debug, PartialEq, FlatMessage)]
     struct TestStruct2<'a> {
         name: String,
         surname: &'a str,
@@ -376,18 +375,18 @@ fn check_serde_into_different_type() {
         average: f64,
     }
 
-    let a = TestStruct {
+    let mut a = TestStruct {
         name: "John".to_string(),
         surname: "Doe",
         math: 100,
         engligh: 90,
         passed: true,
         average: 95.0,
-        metadata: MetaDataBuilder::new()
-            .timestamp(123456)
-            .unique_id(654321)
-            .build(),
     };
+    a.update_metada(MetaDataBuilder::new()
+        .timestamp(123456)
+        .unique_id(654321)
+        .build());
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
     let b = TestStruct2::deserialize_from(&output);
@@ -396,13 +395,15 @@ fn check_serde_into_different_type() {
 
 #[test]
 fn check_serde_string_into_str() {
-    #[flat_message(metadata: false)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false)]
     struct TestStruct {
         name: String,
         surname: String,
     }
 
-    #[flat_message(metadata: false)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false)]
     struct TestStruct2<'a> {
         name: &'a str,
         surname: &'a str,
@@ -424,7 +425,7 @@ fn check_serde_string_into_str() {
 
 #[test]
 fn check_serde_full_unchecked() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, FlatMessage)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -433,18 +434,18 @@ fn check_serde_full_unchecked() {
         passed: bool,
         average: f64,
     }
-    let a = TestStruct {
+    let mut a = TestStruct {
         name: "John".to_string(),
         surname: "Doe",
         math: 100,
         engligh: 90,
         passed: true,
         average: 95.0,
-        metadata: MetaDataBuilder::new()
-            .timestamp(123456)
-            .unique_id(654321)
-            .build(),
     };
+    a.update_metada(MetaDataBuilder::new()
+        .timestamp(123456)
+        .unique_id(654321)
+        .build());
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
     let b = unsafe { TestStruct::deserialize_from_unchecked(&output).unwrap() };
@@ -454,25 +455,26 @@ fn check_serde_full_unchecked() {
     assert_eq!(a.engligh, b.engligh);
     assert_eq!(a.passed, b.passed);
     assert_eq!(a.average, b.average);
-    assert_eq!(a.metadata.timestamp(), b.metadata.timestamp());
-    assert_eq!(a.metadata.unique_id(), b.metadata.unique_id());
+    assert_eq!(a.metadata().timestamp(), b.metadata().timestamp());
+    assert_eq!(a.metadata().unique_id(), b.metadata().unique_id());
 }
 
 #[test]
 fn check_structure_information() {
-    #[flat_message(version: 12)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(version = 12)]
     struct TestStruct {
         a: u64,
         b: u32,
     }
-    let a = TestStruct {
+    let mut a = TestStruct {
         a: 12,
         b: 34,
-        metadata: MetaDataBuilder::new()
-            .timestamp(123456)
-            .unique_id(654321)
-            .build(),
     };
+    a.update_metada(MetaDataBuilder::new()
+        .timestamp(123456)
+        .unique_id(654321)
+        .build());
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
     let si = StructureInformation::try_from(&output).unwrap();
@@ -484,7 +486,8 @@ fn check_structure_information() {
 
 #[test]
 fn check_structure_information_with_match() {
-    #[flat_message(metadata: false)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false)]
     struct TestStruct {
         a: u64,
     }
@@ -507,11 +510,13 @@ fn check_structure_information_with_match() {
 
 #[test]
 fn check_serde_name_validation() {
-    #[flat_message(metadata: false, validate_name: true)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false, validate_name = true)]
     struct TestStruct1 {
         value: u64,
     }
-    #[flat_message(metadata: false)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false)]
     struct TestStruct2 {
         value: u64,
     }
@@ -540,93 +545,27 @@ fn check_serde_name_validation() {
     assert_eq!(a_2.value, b.value);
 }
 
-#[test]
-fn check_serde_version_compatibility_check() {
-    mod v1 {
-        use flat_message::*;
-        #[flat_message(version: 1, compatible_versions: "1")]
-        pub struct TestStruct {
-            pub value: u64,
-        }
-    }
-    mod v2 {
-        use flat_message::*;
-        #[flat_message(version: 2, compatible_versions: "1,2")]
-        pub struct TestStruct {
-            pub value: u64,
-        }
-    }
-    mod v3 {
-        use flat_message::*;
-        #[flat_message(version: 3, compatible_versions: "<3")]
-        pub struct TestStruct {
-            pub value: u64,
-        }
-    }
-    let mut o1 = Storage::default();
-    let mut o2 = Storage::default();
-    let mut o3 = Storage::default();
-    v3::TestStruct {
-        value: 3,
-        metadata: MetaDataBuilder::new().timestamp(333).unique_id(33).build(),
-    }
-    .serialize_to(&mut o3, Config::default())
-    .unwrap();
-    v2::TestStruct {
-        value: 2,
-        metadata: MetaDataBuilder::new().timestamp(222).unique_id(22).build(),
-    }
-    .serialize_to(&mut o2, Config::default())
-    .unwrap();
-    v1::TestStruct {
-        value: 1,
-        metadata: MetaDataBuilder::new().timestamp(111).unique_id(11).build(),
-    }
-    .serialize_to(&mut o1, Config::default())
-    .unwrap();
-    let v1_from_v3 = v1::TestStruct::deserialize_from(&o3);
-    let v1_from_v2 = v1::TestStruct::deserialize_from(&o2);
-    let v2_from_v3 = v2::TestStruct::deserialize_from(&o3);
-    let v3_from_v1 = v3::TestStruct::deserialize_from(&o1);
-    let v3_from_v2 = v3::TestStruct::deserialize_from(&o2);
-    let v2_from_v1 = v2::TestStruct::deserialize_from(&o1);
-    assert_eq!(
-        v1_from_v2.err(),
-        Some(flat_message::Error::IncompatibleVersion(2))
-    );
-    assert_eq!(
-        v1_from_v3.err(),
-        Some(flat_message::Error::IncompatibleVersion(3))
-    );
-    assert_eq!(
-        v2_from_v3.err(),
-        Some(flat_message::Error::IncompatibleVersion(3))
-    );
-    assert_eq!(v3_from_v1.unwrap().value, 1);
-    assert_eq!(v3_from_v2.unwrap().value, 2);
-    assert_eq!(v2_from_v1.unwrap().value, 1);
-}
+
 
 #[test]
 fn check_derive() {
-    #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-    #[flat_message]
+    #[derive(Copy, Clone, PartialEq, Eq, Debug, FlatMessage)]
     struct TestStruct {
         a: i32,
         b: bool,
         c: u16,
     }
-    let v1 = TestStruct {
+    let mut v1 = TestStruct {
         a: 1,
         b: true,
         c: 123,
-        metadata: MetaDataBuilder::new().timestamp(1).unique_id(2).build(),
     };
+    v1.update_metada(MetaDataBuilder::new().timestamp(1).unique_id(2).build());
     let v2 = v1;
     assert_eq!(v1.a, v2.a);
     assert_eq!(v1.b, v2.b);
     assert_eq!(v1.c, v2.c);
-    assert_eq!(v1.metadata, v2.metadata);
+    assert_eq!(v1.metadata(), v2.metadata());
     assert_eq!(v1, v2);
     let mut storage = Storage::default();
     v1.serialize_to(&mut storage, Config::default()).unwrap();
@@ -636,21 +575,20 @@ fn check_derive() {
 
 #[test]
 fn check_clone() {
-    #[flat_message]
-    #[derive(Clone, Debug, Eq, PartialEq)]
+    #[derive(Clone, Debug, Eq, PartialEq, FlatMessage)]
     struct TestStruct {
         a: String,
         b: String,
     }
-    let v1 = TestStruct {
+    let mut v1 = TestStruct {
         a: "Hello".to_string(),
         b: "World".to_string(),
-        metadata: MetaDataBuilder::new().timestamp(1).unique_id(2).build(),
     };
+    v1.update_metada(MetaDataBuilder::new().timestamp(1).unique_id(2).build());
     let v2 = v1.clone();
     assert_eq!(v1.a, v2.a);
     assert_eq!(v1.b, v2.b);
-    assert_eq!(v1.metadata, v2.metadata);
+    assert_eq!(v1.metadata(), v2.metadata());
     assert_eq!(v1, v2);
     let mut storage = Storage::default();
     v1.serialize_to(&mut storage, Config::default()).unwrap();
@@ -660,11 +598,13 @@ fn check_clone() {
 
 #[test]
 fn check_serialization_checksum() {
-    #[flat_message(checksum: true, store_name: false, metadata: false)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(checksum = true, store_name = false, metadata = false)]
     struct TestStruct1 {
         value: u32,
     }
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct2 {
         value: u32,
     }
@@ -687,7 +627,8 @@ fn check_serialization_checksum() {
 
 #[test]
 fn check_serde_with_checksum() {
-    #[flat_message(checksum: true, store_name: false, metadata: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(checksum = true, store_name = false, metadata = false)]
     struct TestStruct<'a> {
         value: u32,
         b: bool,
@@ -714,7 +655,8 @@ fn check_serde_with_checksum() {
 
 #[test]
 fn check_deserialization_checksum_always() {
-    #[flat_message(checksum: true, store_name: false, metadata: false, validate_checksum: always)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(checksum = true, store_name = false, metadata = false, validate_checksum = always)]
     struct TestStruct {
         value: u32,
     }
@@ -735,7 +677,8 @@ fn check_deserialization_checksum_always() {
 
 #[test]
 fn check_deserialization_checksum_auto() {
-    #[flat_message(checksum: true, store_name: false, metadata: false)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(checksum = true, store_name = false, metadata = false)]
     struct TestStruct {
         value: u32,
     }
@@ -763,7 +706,8 @@ fn check_deserialization_checksum_auto() {
 
 #[test]
 fn check_deserialization_checksum_ignore() {
-    #[flat_message(checksum: true, store_name: false, metadata: false, validate_checksum: ignore)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(checksum = true, store_name = false, metadata = false, validate_checksum = ignore)]
     struct TestStruct {
         value: u32,
     }
@@ -788,7 +732,8 @@ fn check_deserialization_checksum_ignore() {
 
 #[test]
 fn check_deserialization_checksum_unchecked_always() {
-    #[flat_message(checksum: true, store_name: false, metadata: false, validate_checksum: always)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(checksum = true, store_name = false, metadata = false, validate_checksum = always)]
     struct TestStruct {
         value: u32,
     }
@@ -813,14 +758,13 @@ fn check_deserialization_checksum_unchecked_always() {
 
 #[test]
 fn check_max_size_for_serialization() {
-    #[flat_message]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
     struct TestStruct {
         value: u32,
     }
     let mut v = Storage::default();
     let s = TestStruct {
         value: 123456,
-        metadata: MetaData::default(),
     };
     let result = s.serialize_to(&mut v, Config::default());
     assert!(result.is_ok());
@@ -834,7 +778,8 @@ fn check_max_size_for_serialization() {
 
 #[test]
 fn check_serde_buffer_i8() {
-    #[flat_message(metadata: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false)]
     struct TestStruct<'a> {
         value: u32,
         b1: &'a [i8],
@@ -855,7 +800,8 @@ fn check_serde_buffer_i8() {
 
 #[test]
 fn check_serde_buffer_u8() {
-    #[flat_message(metadata: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false)]
     struct TestStruct<'a> {
         value: u32,
         b1: &'a [u8],
@@ -876,7 +822,8 @@ fn check_serde_buffer_u8() {
 
 #[test]
 fn check_buffer_format_u16() {
-    #[flat_message(metadata: false,store_name: false)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct {
         b2: Vec<u16>,
     }
@@ -893,7 +840,8 @@ fn check_buffer_format_u16() {
 
 #[test]
 fn check_serde_buffer_u16() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct<'a> {
         value: u32,
         b1: &'a [u16],
@@ -914,7 +862,8 @@ fn check_serde_buffer_u16() {
 
 #[test]
 fn check_serde_buffer_i16() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct<'a> {
         value: u32,
         b1: &'a [i16],
@@ -944,7 +893,8 @@ fn check_serde_buffer_i16() {
 
 #[test]
 fn check_serde_buffer_32bit_integer() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct<'a> {
         value: u32,
         b1: &'a [i32],
@@ -980,7 +930,8 @@ fn check_serde_buffer_32bit_integer() {
 
 #[test]
 fn check_aliganemnt_order_u32_u16_string() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct<'a> {
         buf_u32_aligned: &'a [u32],
         list_u16_aligned: Vec<u16>,
@@ -1004,7 +955,8 @@ fn check_aliganemnt_order_u32_u16_string() {
 
 #[test]
 fn check_serde_buffer_float_32() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct<'a> {
         value: u32,
         b1: &'a [f32],
@@ -1034,7 +986,8 @@ fn check_serde_buffer_float_32() {
 
 #[test]
 fn check_serde_64_bits_buffers() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct<'a> {
         value: u32,
         b1: &'a [f64],
@@ -1076,7 +1029,8 @@ fn check_serde_64_bits_buffers() {
 
 #[test]
 fn check_serde_128_bits_alignament() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct {
         b6: Vec<u128>,
         b4: Vec<u64>,
@@ -1104,7 +1058,8 @@ fn check_serde_128_bits_alignament() {
 
 #[test]
 fn check_serde_128_bits_buffers() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct<'a> {
         value: u32,
         b3: &'a [i128],
@@ -1151,7 +1106,8 @@ fn check_serde_128_bits_buffers() {
 
 #[test]
 fn check_serde_buffer_bool() {
-    #[flat_message(metadata: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false)]
     struct TestStruct<'a> {
         value: u32,
         b1: &'a [bool],
@@ -1172,7 +1128,8 @@ fn check_serde_buffer_bool() {
 
 #[test]
 fn check_serde_vec_str() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct<'a> {
         value: u32,
         v1: Vec<&'a str>,
@@ -1211,7 +1168,8 @@ fn check_serde_vec_str() {
 
 #[test]
 fn check_serde_vec_string() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct {
         value: u32,
         v1: Vec<String>,
@@ -1255,7 +1213,8 @@ fn check_serde_vec_string() {
 
 #[test]
 fn check_serde_vec_string_and_str() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct<'a> {
         value: u32,
         v1: Vec<String>,
@@ -1284,7 +1243,8 @@ fn check_serde_vec_string_and_str() {
 
 #[test]
 fn check_serde_vec_string_and_str_unchecked() {
-    #[flat_message(metadata: false, store_name: false)]
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct TestStruct<'a> {
         value: u32,
         v1: Vec<String>,
@@ -1313,8 +1273,8 @@ fn check_serde_vec_string_and_str_unchecked() {
 
 #[test]
 fn check_simple_struct() {
-    #[flat_message(metadata: false, store_name: false)]
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct Point {
         x: i32,
         y: i32,
@@ -1324,8 +1284,8 @@ fn check_simple_struct() {
 
 #[test]
 fn check_simple_struct_width_comments() {
-    #[flat_message(metadata: false, store_name: false)]
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct Point {
         // x coordinate
         x: i32,
@@ -1337,8 +1297,8 @@ fn check_simple_struct_width_comments() {
 
 #[test]
 fn check_simple_struct_width_documentation() {
-    #[flat_message(metadata: false, store_name: false)]
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(metadata = false, store_name = false)]
     struct Point {
         /// x coordinate that is used to store the position
         /// in the 2D space
@@ -1349,52 +1309,3 @@ fn check_simple_struct_width_documentation() {
     }
     validate_correct_serde(Point { x: 10, y: 20 });
 }
-
-#[test]
-fn check_inner_struct() {
-    #[derive(Debug, PartialEq, Eq)]
-    struct MyData {
-        z: i32,
-    }
-    unsafe impl<'a> SerDe<'a> for MyData {
-        const DATA_FORMAT: DataFormat = DataFormat::GenericObject;
-
-        unsafe fn from_buffer_unchecked(buf: &'a [u8], pos: usize) -> Self
-        where
-            Self: Sized,
-        {
-            todo!()
-        }
-
-        fn from_buffer(buf: &'a [u8], pos: usize) -> Option<Self>
-        where
-            Self: Sized,
-        {
-            todo!()
-        }
-
-        unsafe fn write(obj: &Self, p: *mut u8, pos: usize) -> usize {
-            todo!()
-        }
-
-        fn size(obj: &Self) -> usize {
-            todo!()
-        }
-    }
-
-    #[flat_message(metadata: false, store_name: false)]
-    #[derive(Debug, PartialEq, Eq)]
-    struct Point {
-        // x coordinate
-        x: i32,
-        // y coordinate
-        y: i32,
-        d: MyData,
-    }
-    validate_correct_serde(Point {
-        x: 10,
-        y: 20,
-        d: MyData { z: 30 },
-    });
-}
-

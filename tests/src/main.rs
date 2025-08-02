@@ -1,10 +1,14 @@
-#[cfg(test)] mod enums;
-#[cfg(test)] mod ip;
-#[cfg(test)] mod generic;
+#[cfg(test)]
+mod enums;
+#[cfg(test)]
+mod generic;
+#[cfg(test)]
+mod ip;
+#[cfg(test)]
+mod version;
 
-
+pub(crate) use flat_message::{Config, FlatMessage, Storage};
 pub(crate) use std::fmt::Debug;
-pub(crate) use flat_message::{FlatMessage, Config, Storage};
 
 pub(crate) fn validate_correct_serde<T>(obj: T)
 where
