@@ -7,6 +7,7 @@ members = [
   "flat_message_proc_macro",
   "examples",
   "benchmarks",
+  "tests",
 ]
 
 

@@ -1,0 +1,10 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+flat_message = { path = "../flat_message" }
+
+[lints]
+workspace = true
