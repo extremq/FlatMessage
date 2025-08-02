@@ -7,6 +7,7 @@ pub mod headers;
 mod metadata;
 mod name;
 mod serde;
+mod unique_id;
 /// FlatMessage format
 /// |--------|-------------|------|----------------------------------------------------------|
 /// | Offset | Name        | Type | Observation                                              |
@@ -55,6 +56,7 @@ pub use flat_message_proc_macro::*;
 
 pub use common::data_format::DataFormat;
 pub use common::hashes::crc32;
+pub use unique_id::UniqueID;
 
 pub trait FlatMessageOwned: for<'de> FlatMessage<'de> {}
 impl<T> FlatMessageOwned for T where T: for<'de> FlatMessage<'de> {}

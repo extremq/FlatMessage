@@ -10,7 +10,7 @@ mod validate_checksum;
 mod version_validator_parser;
 
 use config::Config;
-use quote::{quote, ToTokens};
+use quote::quote;
 use std::str::FromStr;
 use struct_info::StructInfo;
 use syn::{parse_macro_input, DeriveInput};
