@@ -29,7 +29,7 @@ fn check_enum() {
     assert_eq!(
         v.as_slice(),
         &[
-            71, 84, 72, 1, 2, 0, 0, 0, 237, 103, 151, 167, 10, 123, 0, 0, 19, 98, 126, 61, 1, 211,
+            70, 76, 77, 1, 2, 0, 0, 0, 237, 103, 151, 167, 10, 123, 0, 0, 19, 98, 126, 61, 1, 211,
             94, 66, 8, 13
         ]
     );
@@ -229,7 +229,7 @@ fn check_enum_slice_u8bits() {
         v.as_slice(),
         &[
             // Header
-            71, 84, 72, 1, 2, 0, 0, 0, // TestStruct::color
+            70, 76, 77, 1, 2, 0, 0, 0, // TestStruct::color
             // Hash for Color
             237, 103, 151, 167, // number of elements in TestStruct::color
             5,   // u8 value for TestStruct::color
@@ -313,7 +313,7 @@ fn check_enum_slice_u16bits() {
         v.as_slice(),
         &[
             // Header
-            71, 84, 72, 1, 2, 0, 0, 0, // Hash for Color
+            70, 76, 77, 1, 2, 0, 0, 0, // Hash for Color
             237, 103, 151, 167, // number of items in TestStruct::color (u16)
             5, 0, // 5 items of TestStruct::color (u16) each
             57, 48, 2, 0, 210, 4, 57, 48, 2, 0,   // TestStruct::value
@@ -533,7 +533,7 @@ fn check_enum_vec_u8bits() {
         v.as_slice(),
         &[
             // Header
-            71, 84, 72, 1, 2, 0, 0, 0, // TestStruct::color
+            70, 76, 77, 1, 2, 0, 0, 0, // TestStruct::color
             // Hash for Color
             237, 103, 151, 167, // number of elements in TestStruct::color
             5,   // u8 value for TestStruct::color
@@ -646,7 +646,7 @@ fn check_enum_vec_and_slice_u32align() {
     assert_eq!(
         v.as_slice(),
         [
-            71, 84, 72, 1, 3, 0, 0, 0, 213, 43, 122, 128, 3, 0, 0, 0, 1, 0, 0, 0, 128, 150, 152, 0,
+            70, 76, 77, 1, 3, 0, 0, 0, 213, 43, 122, 128, 3, 0, 0, 0, 1, 0, 0, 0, 128, 150, 152, 0,
             0, 202, 154, 59, 123, 237, 103, 151, 167, 3, 1, 10, 100, 0, 0, 0, 1, 211, 94, 66, 149,
             67, 175, 201, 147, 206, 4, 209, 28, 8, 29
         ]
