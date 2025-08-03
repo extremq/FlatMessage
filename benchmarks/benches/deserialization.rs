@@ -5,7 +5,8 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use flat_message::{FlatMessage, Storage, VecLike};
 use serde::{Deserialize, Serialize};
 
-#[flat_message::flat_message]
+#[derive(FlatMessage)]
+#[flat_message_options(version: 1)]
 struct ProcessCreated {
     name: String,
     pid: u32,
@@ -13,6 +14,8 @@ struct ProcessCreated {
     parent: String,
     user: String,
     command_line: String,
+    timestamp: flat_message::Timestamp,
+    unique_id: flat_message::UniqueID,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -117,10 +120,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         parent: String::from("C:\\Windows\\System32\\explorer.exe").repeat(repeat),
         user: String::from("Administrator").repeat(repeat),
         command_line: String::from("-help -verbose -debug -output C:\\output.txt").repeat(repeat),
-        metadata: flat_message::MetaDataBuilder::new()
-            .timestamp(0xFEFEFEFE)
-            .unique_id(0xABABABAB)
-            .build(),
+        unique_id: flat_message::UniqueID::with_value(0xABABABAB),
+        timestamp: flat_message::Timestamp::with_value(0xFEFEFEFE),
     };
     let process_s = ProcessCreatedS {
         struct_name: "ProcessCreated".to_string(),
