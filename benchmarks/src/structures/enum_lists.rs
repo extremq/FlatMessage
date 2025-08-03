@@ -39,14 +39,14 @@ crate::t!(Color);
 crate::t!(Math);
 crate::t!(Negative);
 
-#[flat_message(metadata: false, store_name: false)]
-#[derive(Clone, Serialize, Deserialize, get_size_derive::GetSize)]
+#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize)]
+#[flat_message_options(store_name = false)]
 pub struct EnumLists {
-    #[flat_message(repr = u8, kind = enum)]
+    #[flat_message_item(repr = u8, kind = enum)]
     col: Vec<Color>,
-    #[flat_message(repr = u32, kind = enum)]
+    #[flat_message_item(repr = u32, kind = enum)]
     math: Vec<Math>,
-    #[flat_message(repr = i64, kind = enum)]
+    #[flat_message_item(repr = i64, kind = enum)]
     neg: Vec<Negative>,
 }
 

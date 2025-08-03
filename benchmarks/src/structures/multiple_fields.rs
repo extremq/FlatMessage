@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::s;
 
-#[flat_message(metadata: false, store_name: false)]
-#[derive(Clone, Serialize, Deserialize, get_size_derive::GetSize)]
+#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize)]
+#[flat_message_options(store_name = false)]
 pub struct MultipleFields {
     field_of_type_string: String,
     field_of_type_u32: u32,

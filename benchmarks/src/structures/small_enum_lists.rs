@@ -17,18 +17,18 @@ enum Color {
 
 crate::t!(Color);
 
-#[flat_message(metadata: false, store_name: false)]
-#[derive(Clone, Serialize, Deserialize, get_size_derive::GetSize)]
+#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize)]
+#[flat_message_options(store_name = false)]
 pub struct SmallEnumLists {
-    #[flat_message(repr = u8, kind = enum)]
+    #[flat_message_item(repr = u8, kind = enum)]
     col1: Vec<Color>,
-    #[flat_message(repr = u8, kind = enum)]
+    #[flat_message_item(repr = u8, kind = enum)]
     col2: Vec<Color>,
-    #[flat_message(repr = u8, kind = enum)]
+    #[flat_message_item(repr = u8, kind = enum)]
     col3: Vec<Color>,
-    #[flat_message(repr = u8, kind = enum)]
+    #[flat_message_item(repr = u8, kind = enum)]
     col4: Vec<Color>,
-    #[flat_message(repr = u8, kind = enum)]
+    #[flat_message_item(repr = u8, kind = enum)]
     col5: Vec<Color>,
 }
 

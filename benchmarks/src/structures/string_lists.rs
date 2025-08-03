@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::s;
 
-#[flat_message(metadata: false, store_name: false)]
-#[derive(Clone, Serialize, Deserialize, get_size_derive::GetSize)]
+#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize)]
 pub struct StringLists {
     list1: Vec<String>,
     list2: Vec<String>,

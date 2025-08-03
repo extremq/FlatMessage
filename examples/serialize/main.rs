@@ -13,7 +13,7 @@ enum Color {
 }
 
 #[derive(FlatMessage)]
-#[flat_message_options(store_name = false, metadata: false)]
+#[flat_message_options(store_name = false)]
 pub struct MyStruct<'a> {
     //pub a: i32,
     //pub(crate) b: bool,

@@ -1,5 +1,3 @@
-use flat_message::MetaData;
-
 use crate::t;
 
 pub trait GetSize {
@@ -49,4 +47,3 @@ t!(f32);
 t!(f64);
 t!(bool);
 
-t!(MetaData);

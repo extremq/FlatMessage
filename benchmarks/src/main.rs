@@ -224,14 +224,6 @@ fn bench<T: GetSize, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T +
 #[derive(get_size_derive::GetSize)]
 struct Wrapper<T>(T);
 impl<'a, T: FlatMessage<'a>> FlatMessage<'a> for Wrapper<T> {
-    fn metadata(&self) -> &flat_message::MetaData {
-        todo!()
-    }
-
-    fn update_metada(&mut self, _: flat_message::MetaData) {
-        todo!()
-    }
-
     fn serialize_to<V: VecLike>(
         &self,
         output: &mut V,
