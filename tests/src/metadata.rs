@@ -22,12 +22,11 @@ fn check_flat_message_no_metadata() {
     };
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
-    let buf = FlatMessageBuffer::try_from(&output).unwrap();
-    let metadata = buf.metadata();
-    assert_eq!(buf.version(), None);
-    assert_eq!(metadata.timestamp(), None);
-    assert_eq!(metadata.unique_id(), None);
-    assert_eq!(buf.name(), Some(name!("TestStruct")));
+    let si = StructureInformation::try_from(&output).unwrap();
+    assert_eq!(si.version(), None);
+    assert_eq!(si.timestamp(), None);
+    assert_eq!(si.unique_id(), None);
+    assert_eq!(si.name(), Some(name!("TestStruct")));
 }
 
 // #[test]
@@ -88,12 +87,11 @@ fn check_flat_message_no_metadata_no_name() {
     };
     let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
-    let buf = FlatMessageBuffer::try_from(&output).unwrap();
-    let metadata = buf.metadata();
-    assert_eq!(buf.version(), None);
-    assert_eq!(metadata.timestamp(), None);
-    assert_eq!(metadata.unique_id(), None);
-    assert_eq!(buf.name(), None);
+    let si = StructureInformation::try_from(&output).unwrap();
+    assert_eq!(si.version(), None);
+    assert_eq!(si.timestamp(), None);
+    assert_eq!(si.unique_id(), None);
+    assert_eq!(si.name(), None);
 }
 
 #[test]

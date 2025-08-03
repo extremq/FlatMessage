@@ -3,7 +3,7 @@ use super::SerDeSlice;
 use super::SerDeVec;
 use crate::Storage;
 use crate::VecLike;
-use crate::{headers, MetaData};
+use crate::headers;
 use std::num::{NonZeroU32, NonZeroU8};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
