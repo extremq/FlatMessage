@@ -185,3 +185,19 @@ fn check_timestamp_serde() {
         t: Timestamp::with_value(321),
     });
 }
+
+#[test]
+fn check_timestamp_unique_id_serde() {
+    #[derive(FlatMessage, Eq, PartialEq, Debug)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: i32,
+        t: Timestamp,
+        i: UniqueID,
+    }
+    validate_correct_serde(Test {
+        x: 1,
+        t: Timestamp::with_value(321),
+        i: UniqueID::with_value(92),
+    });
+}

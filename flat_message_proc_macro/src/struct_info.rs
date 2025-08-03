@@ -25,6 +25,13 @@ impl<'a> StructInfo<'a> {
 
     fn generate_metadata_serialization_code(&self) -> Vec<proc_macro2::TokenStream> {
         let mut lines = Vec::with_capacity(8);
+        if let Some(timestamp) = &self.timestamp {
+            let var_name = timestamp.name_ident();
+            lines.push(quote! {
+                ptr::write_unaligned(buffer.add(metadata_offset) as *mut u64, self.#var_name.value());
+                metadata_offset += 8;
+            });
+        }           
         if let Some(unique_id) = &self.unique_id {
             let var_name = unique_id.name_ident();
             lines.push(quote! {
@@ -32,13 +39,6 @@ impl<'a> StructInfo<'a> {
                 metadata_offset += 8;
             });
         }
-        if let Some(timestamp) = &self.timestamp {
-            let var_name = timestamp.name_ident();
-            lines.push(quote! {
-                ptr::write_unaligned(buffer.add(metadata_offset) as *mut u64, self.#var_name.value());
-                metadata_offset += 8;
-            });
-        }        
         if self.config.namehash {
             let name_hash = hashes::fnv_32(self.name.to_string().as_str());
             lines.push(quote! {
