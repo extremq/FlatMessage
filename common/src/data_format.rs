@@ -30,6 +30,7 @@ pub enum DataFormat {
     // IPs
     IPv4,
     IPv6,
+    IP,
 }
 impl DataFormat {
     pub fn is_enum(&self) -> bool {
@@ -71,6 +72,7 @@ impl DataFormat {
             DataFormat::EnumU64 => 8,
             DataFormat::IPv4 => 1,
             DataFormat::IPv6 => 1,
+            DataFormat::IP => 1,
             DataFormat::GenericObject => 1,
         }
     }
@@ -102,6 +104,7 @@ impl Display for DataFormat {
             DataFormat::EnumU64 => write!(f, "EnumU64"),
             DataFormat::IPv4 => write!(f, "IPv4"),
             DataFormat::IPv6 => write!(f, "IPv6"),
+            DataFormat::IP => write!(f, "IP"),
             DataFormat::GenericObject => write!(f, "GenericObject"),
         }
     }
@@ -137,6 +140,7 @@ impl From<&str> for DataFormat {
             // ip
             "std :: net :: Ipv4Addr" | "net :: Ipv4Addr" | "Ipv4Addr" => DataFormat::IPv4,
             "std :: net :: Ipv6Addr" | "net :: Ipv6Addr" | "Ipv6Addr" => DataFormat::IPv6,
+            "std :: net :: IpAddr" | "net :: IpAddr" | "IpAddr" => DataFormat::IP,
             // the rest are considered generic objects
             _ => DataFormat::GenericObject,
         }
