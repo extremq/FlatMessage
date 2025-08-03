@@ -1,3 +1,4 @@
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Timestamp {
     value: u64,
 }
@@ -12,9 +13,7 @@ impl Timestamp {
             Ok(d) => Self {
                 value: d.as_millis() as u64,
             },
-            Err(_) => Self {
-                value: 0
-            }
+            Err(_) => Self { value: 0 },
         }
     }
     #[inline(always)]

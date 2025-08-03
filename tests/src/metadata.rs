@@ -1,3 +1,4 @@
+use crate::*;
 use flat_message::*;
 
 #[test]
@@ -97,7 +98,7 @@ fn check_flat_message_no_metadata_no_name() {
 }
 
 #[test]
-fn check_unique_id() {
+fn check_unique_id_buffer() {
     #[derive(FlatMessage)]
     #[flat_message_options(store_name: false)]
     struct Test {
@@ -110,5 +111,77 @@ fn check_unique_id() {
     };
     let mut v = Storage::default();
     t.serialize_to(&mut v, Config::default()).unwrap();
-    println!("{:?}", v.as_slice());
+    //println!("{:?}", v.as_slice());
+    assert_eq!(
+        v.as_slice(),
+        &[
+            // Header
+            70, 76, 77, 1, 1, 0, 0, 32, // x
+            1, 0, 0, 0, // hash for x
+            8, 80, 12, 253, // offset for x
+            8,   // unique_id
+            123, 0, 0, 0, 0, 0, 0, 0
+        ]
+    );
+}
+
+#[test]
+fn check_unique_id_serde() {
+    #[derive(FlatMessage, Eq, PartialEq, Debug)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: i32,
+        id: UniqueID,
+    }
+    validate_correct_serde(Test {
+        x: 1,
+        id: UniqueID::with_value(123),
+    });
+}
+
+
+#[test]
+fn check_timestamp_buffer() {
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: i32,
+        id: Timestamp,
+    }
+    let t = Test {
+        x: 1,
+        id: Timestamp::with_value(123),
+    };
+    let mut v = Storage::default();
+    t.serialize_to(&mut v, Config::default()).unwrap();
+    //println!("{:?}", v.as_slice());
+    assert_eq!(
+        v.as_slice(),
+        &[
+            // Header
+            70, 76, 77, 1, 1, 0, 0, 16, 
+            // x
+            1, 0, 0, 0, 
+            // hash for x
+            8, 80, 12, 253, 
+            // offset for x
+            8,   
+            // timestamp
+            123, 0, 0, 0, 0, 0, 0, 0
+        ]
+    );
+}
+
+#[test]
+fn check_timestamp_serde() {
+    #[derive(FlatMessage, Eq, PartialEq, Debug)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: i32,
+        t: Timestamp,
+    }
+    validate_correct_serde(Test {
+        x: 1,
+        t: Timestamp::with_value(321),
+    });
 }

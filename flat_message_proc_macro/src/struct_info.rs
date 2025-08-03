@@ -35,7 +35,7 @@ impl<'a> StructInfo<'a> {
         if let Some(timestamp) = &self.timestamp {
             let var_name = timestamp.name_ident();
             lines.push(quote! {
-                ptr::write_unaligned(buffer.add(metadata_offset) as *mut u64, #var_name);
+                ptr::write_unaligned(buffer.add(metadata_offset) as *mut u64, self.#var_name.value());
                 metadata_offset += 8;
             });
         }        
@@ -448,10 +448,19 @@ impl<'a> StructInfo<'a> {
         } else {
             quote! {}
         };
+        let timestamp_field = if let Some(timestamp_field) = &self.timestamp {
+            let field_name = timestamp_field.name_ident();
+            quote! {
+                #field_name: flat_message::Timestamp::with_value(timestamp),
+            }
+        } else {
+            quote! {}
+        };        
         quote! {
             return Ok(Self {
                 #(#struct_fields)*
                 #unique_id_field
+                #timestamp_field
             });
         }
     }
