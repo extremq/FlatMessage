@@ -2,7 +2,7 @@
 
 | Offset | Name                | Type                   | Observations                                                                                    |
 | ------ | ------------------- | ---------------------- | ----------------------------------------------------------------------------------------------- |
-| +0     | Magic               | (3 bytes)              | 'xxx' or [0xAA, 0xBB, 0xCC]                                                                     |
+| +0     | Magic               | (3 bytes)              | 'FLM'                                                                                           |
 | +3     | Format version      | u8                     | currently value **1**                                                                           |
 | +4     | Number of fields    | u16                    | Total number of fields (data members) in the structure                                          |
 | +6     | Structure version   | u8                     | For structures that have multiple version, this byte holds the current version of the structure |

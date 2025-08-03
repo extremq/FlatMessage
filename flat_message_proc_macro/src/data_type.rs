@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use super::utils;
 use common::data_format::DataFormat;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum FieldType {
     Object,
     Slice,
@@ -24,6 +25,9 @@ pub(crate) struct DataType {
     pub(crate) data_format: DataFormat,
     pub(crate) name: String,
     pub(crate) ty: syn::Type,
+    pub(crate) unique_id: bool,
+    pub(crate) timestamp: bool,
+    pub(crate) zst: bool,
 }
 
 impl DataType {
@@ -35,29 +39,27 @@ impl DataType {
     }
     pub(crate) fn new(ty: syn::Type, mut def: String) -> Self {
         utils::type_name_formatter(&mut def);
-        if def.starts_with("Vec<") {
+        let field_type = if def.starts_with("Vec<") {
             def = def.replace("Vec<", "").replace(">", "");
-            return DataType {
-                field_type: FieldType::Vector,
-                data_format: DataFormat::from(def.as_str()),
-                name: def,
-                ty,
-            };
-        }
-        if def.starts_with("&[") {
+            FieldType::Vector
+        } else if def.starts_with("&[") {
             def = def.replace("&[", "").replace("]", "");
-            return DataType {
-                field_type: FieldType::Slice,
-                data_format: DataFormat::from(def.as_str()),
-                name: def,
-                ty,
-            };
-        }
+            FieldType::Slice
+        } else {
+            FieldType::Object
+        };
+        let unique_id = matches!(def.as_str(), "UniqueID" | "flat_message :: UniqueID");
+        let timestamp = matches!(def.as_str(), "Timestamp" | "flat_message :: Timestamp");
+        let zst = matches!(def.as_str(), "PhantomData" | "std :: marker :: PhantomData" | "marker :: PhantomData");
+
         DataType {
-            field_type: FieldType::Object,
+            field_type,
             data_format: DataFormat::from(def.as_str()),
             name: def,
             ty,
+            unique_id,
+            timestamp,
+            zst,            
         }
     }
 

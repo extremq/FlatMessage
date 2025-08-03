@@ -4,56 +4,41 @@ use crate::field_info::FieldInfo;
 use common::constants;
 use common::hashes;
 use quote::quote;
-use syn::Attribute;
-use syn::{DataStruct, DeriveInput, FieldsNamed};
+//use syn::Attribute;
+use syn::{DataStruct, DeriveInput};
 
 pub(crate) struct StructInfo<'a> {
-    fields_name: &'a FieldsNamed,
-    visibility: &'a syn::Visibility,
+    //fields_name: &'a FieldsNamed,
+    //visibility: &'a syn::Visibility,
     generics: &'a syn::Generics,
     name: &'a syn::Ident,
     fields: Vec<FieldInfo>,
+    unique_id: Option<FieldInfo>,
+    timestamp: Option<FieldInfo>,
+    ignored_fields: Vec<FieldInfo>,  
     config: Config,
-    derives: Vec<&'a Attribute>,
+    //derives: Vec<&'a Attribute>,
 }
 
 impl<'a> StructInfo<'a> {
-    fn generate_metadata_methods(&self) -> proc_macro2::TokenStream {
-        if self.config.metadata {
-            quote! {
-                fn metadata(&self)-> &flat_message::MetaData {
-                    &self.metadata
-                }
-                fn update_metada(&mut self, new: flat_message::MetaData) {
-                    self.metadata = new;
-                }
-            }
-        } else {
-            quote! {
-                fn metadata(&self)-> &flat_message::MetaData {
-                    &MetaData::NONE
-                }
-                fn update_metada(&mut self, new: flat_message::MetaData) {
-                }
-            }
-        }
-    }
+
 
     fn generate_metadata_serialization_code(&self) -> Vec<proc_macro2::TokenStream> {
         let mut lines = Vec::with_capacity(8);
-        if self.config.metadata {
+        if let Some(unique_id) = &self.unique_id {
+            let var_name = unique_id.name_ident();
             lines.push(quote! {
-                let metadata = self.metadata();
-                if let Some(timestamp) = metadata.timestamp() {
-                    ptr::write_unaligned(buffer.add(metadata_offset) as *mut u64, timestamp);
-                    metadata_offset += 8;
-                }
-                if let Some(unique_id) = metadata.unique_id() {
-                    ptr::write_unaligned(buffer.add(metadata_offset) as *mut u64, unique_id);
-                    metadata_offset += 8;
-                }
+                ptr::write_unaligned(buffer.add(metadata_offset) as *mut u64, self.#var_name.value());
+                metadata_offset += 8;
             });
         }
+        if let Some(timestamp) = &self.timestamp {
+            let var_name = timestamp.name_ident();
+            lines.push(quote! {
+                ptr::write_unaligned(buffer.add(metadata_offset) as *mut u64, #var_name);
+                metadata_offset += 8;
+            });
+        }        
         if self.config.namehash {
             let name_hash = hashes::fnv_32(self.name.to_string().as_str());
             lines.push(quote! {
@@ -66,38 +51,33 @@ impl<'a> StructInfo<'a> {
         });
         lines
     }
-    fn generate_flags_code(&self) -> Vec<proc_macro2::TokenStream> {
-        let mut lines = Vec::with_capacity(8);
-        let timestamp_flag = constants::FLAG_HAS_TIMESTAMP;
-        let unique_id_flag = constants::FLAG_HAS_UNIQUEID;
-        let name_hash_flag = constants::FLAG_HAS_NAME_HASH;
-        let checksum_flag = constants::FLAG_HAS_CHECKSUM;
-        if self.config.metadata {
-            lines.push(quote! {
-                let metadata = self.metadata();
-                if metadata.timestamp().is_some() {
-                    flags |= #timestamp_flag;
-                    metainfo_size += 8;
-                }
-                if metadata.unique_id().is_some() {
-                    flags |= #unique_id_flag;
-                    metainfo_size += 8;
-                }
-            });
+    fn generate_flags_code(&self) -> proc_macro2::TokenStream {
+        // let timestamp_flag = constants::FLAG_HAS_TIMESTAMP;
+        // let unique_id_flag = constants::FLAG_HAS_UNIQUEID;
+        // let name_hash_flag = constants::FLAG_HAS_NAME_HASH;
+        // let checksum_flag = constants::FLAG_HAS_CHECKSUM;
+        let mut extra_size = 0usize;
+        let mut bits = 0;
+        if self.unique_id.is_some() {
+            extra_size += 8;
+            bits |= constants::FLAG_HAS_UNIQUEID;
+        }
+        if self.timestamp.is_some() {
+            extra_size += 8;
+            bits |= constants::FLAG_HAS_TIMESTAMP;
         }
         if self.config.namehash {
-            lines.push(quote! {
-                flags |= #name_hash_flag;
-                metainfo_size += 4;
-            });
+            extra_size += 4;
+            bits |= constants::FLAG_HAS_NAME_HASH;
         }
         if self.config.checksum {
-            lines.push(quote! {
-                flags |= #checksum_flag;
-                metainfo_size += 4;
-            });
+            extra_size += 4;
+            bits |= constants::FLAG_HAS_CHECKSUM;            
         }
-        lines
+        quote! {
+            flags |= #bits;
+            metainfo_size += #extra_size;
+        }
     }
     fn generate_compute_size_code(&self) -> Vec<proc_macro2::TokenStream> {
         let compute_size_code = self.fields.iter().map(|field| {
@@ -206,16 +186,16 @@ impl<'a> StructInfo<'a> {
         v
     }
     fn generate_metadata_deserialization_code(&self) -> proc_macro2::TokenStream {
-        if self.config.metadata {
-            let has_timestamp = constants::FLAG_HAS_TIMESTAMP;
+        let metadata_ptr = if self.unique_id.is_some() || self.timestamp.is_some() {
+            quote! {
+                let mut metadata_ptr = unsafe { buffer.add(len - metadata_size) as *const u64 }
+            }
+        } else {
+            quote! {}
+        };
+        let unique_id_code = if self.unique_id.is_some() {
             let has_unique_id = constants::FLAG_HAS_UNIQUEID;
             quote! {
-                let mut metadata_ptr = unsafe { buffer.add(len - metadata_size) as *const u64 };
-                let timestamp = if header.flags & #has_timestamp != 0 {
-                    let value = unsafe { ptr::read_unaligned(metadata_ptr) };
-                    unsafe { metadata_ptr = metadata_ptr.add(1); }
-                    value
-                } else { 0 };
                 let unique_id = if header.flags & #has_unique_id != 0 {
                     unsafe { ptr::read_unaligned(metadata_ptr) }
                 } else {
@@ -224,6 +204,23 @@ impl<'a> StructInfo<'a> {
             }
         } else {
             quote! {}
+        };
+        let timestamp_code = if self.timestamp.is_some() {
+            let has_timestamp = constants::FLAG_HAS_TIMESTAMP;
+            quote! {
+                let timestamp = if header.flags & #has_timestamp != 0 {
+                    let value = unsafe { ptr::read_unaligned(metadata_ptr) };
+                    unsafe { metadata_ptr = metadata_ptr.add(1); }
+                    value
+                } else { 0 };
+            }
+        } else {
+            quote!{}
+        };
+        quote! {
+            #metadata_ptr
+            #timestamp_code
+            #unique_id_code
         }
     }
     fn generate_name_validation_code(&self) -> proc_macro2::TokenStream {
@@ -443,9 +440,10 @@ impl<'a> StructInfo<'a> {
                 #field_name: #iner_value,
             })
         });
-        let metadata_field = if self.config.metadata {
+        let unique_id_field = if let Some(unique_id_field) = &self.unique_id {
+            let field_name = unique_id_field.name_ident();
             quote! {
-                metadata: flat_message::MetaDataBuilder::new().timestamp(timestamp).unique_id(unique_id).build()
+                #field_name: flat_message::UniqueID::with_value(unique_id),
             }
         } else {
             quote! {}
@@ -453,7 +451,7 @@ impl<'a> StructInfo<'a> {
         quote! {
             return Ok(Self {
                 #(#struct_fields)*
-                #metadata_field
+                #unique_id_field
             });
         }
     }
@@ -523,7 +521,7 @@ impl<'a> StructInfo<'a> {
                 // Step 1: compute size --> all items will startt from offset 8
                 #(#compute_size_code)*
                 // Step 2: compute flags and metadata size
-                #(#flags_code)*
+                #flags_code
                 // Step 3: align size to 4 bytes (for hash table)
                 size = (size + 3) & !3;
                 let hash_table_offset = size;
@@ -630,30 +628,29 @@ impl<'a> StructInfo<'a> {
     }
     pub(crate) fn generate_code(&self) -> proc_macro::TokenStream {
         let name = self.name;
-        let visibility = self.visibility;
+        //let visibility = self.visibility;
         let generics = self.generics;
         let implicit_lifetime = if generics.lifetimes().count() > 0 {
             quote! { #generics }
         } else {
             quote! { <'_>}
         };
-        let struct_fields = self.fields_name.named.iter().map(|field| {
-            let field_name = &field.ident;
-            let field_visibility = &field.vis;
-            let field_ty = &field.ty;
-            Some(quote! {
-                #field_visibility #field_name: #field_ty,
-            })
-        });
-        let metadata_field = if self.config.metadata {
-            quote! {#visibility metadata: flat_message::MetaData}
-        } else {
-            quote! {}
-        };
-        let metadata_methods = self.generate_metadata_methods();
+        // let struct_fields = self.fields_name.named.iter().map(|field| {
+        //     let field_name = &field.ident;
+        //     let field_visibility = &field.vis;
+        //     let field_ty = &field.ty;
+        //     Some(quote! {
+        //         #field_visibility #field_name: #field_ty,
+        //     })
+        // });
+        // let metadata_field = if self.config.metadata {
+        //     quote! {#visibility metadata: flat_message::MetaData}
+        // } else {
+        //     quote! {}
+        // };
         let serialize_to_methods = self.generate_serialize_to_methods();
         let deserialize_from_methods = self.generate_deserialize_from_methods();
-        let derives = &self.derives;
+        //let derives = &self.derives;
         let const_assertion_functions = self.generate_const_assertion_functions();
 
         let new_code = quote! {
@@ -667,7 +664,6 @@ impl<'a> StructInfo<'a> {
             #(#const_assertion_functions)*
 
             impl #generics flat_message::FlatMessage #implicit_lifetime for #name #generics {
-                #metadata_methods
                 #serialize_to_methods
                 #deserialize_from_methods
             }
@@ -682,9 +678,35 @@ impl<'a> StructInfo<'a> {
     ) -> Result<Self, String> {
         if let syn::Fields::Named(fields) = &d.fields {
             let mut data_members: Vec<FieldInfo> = Vec::with_capacity(32);
+            let mut ignored_fields: Vec<FieldInfo> = Vec::new();
+            let mut unique_id = None;
+            let mut timestamp = None;
 
             for field in fields.named.iter() {
-                data_members.push(FieldInfo::try_from(field)?);
+                let field = FieldInfo::try_from(field)?;
+                if field.data_type.unique_id {
+                    if unique_id.is_some() {
+                        return Err(format!("Structure {} has more than one field with UniqueID data format !", input.ident));
+                    }
+                    if field.data_type.field_type != FieldType::Object {
+                        return Err(format!("Unique IDs can only be an object (not a vector or a slice) - for field {} in structure {} !", field.name, input.ident));
+                    }
+                    unique_id = Some(field);
+                } else if field.data_type.timestamp {
+                    if timestamp.is_some() {
+                        return Err(format!("Structure {} has more than one field with Timestamp data format !", input.ident));
+                    }
+                    if field.data_type.field_type != FieldType::Object {
+                        return Err(format!("Timestamp can only be an object (not a vector or a slice) - for field {} in structure {} !", field.name, input.ident));
+                    }
+                    timestamp = Some(field);
+                } else if field.data_type.zst {
+                    ignored_fields.push(field);
+                } else
+                {
+                    data_members.push(field);
+                }
+                
             }
             if data_members.len() > 0xFFFF {
                 return Err(format!("Structs with more than 65535 fields are not supported ! (Current structure has {} fields)", data_members.len()));
@@ -696,26 +718,29 @@ impl<'a> StructInfo<'a> {
                 dm.hash_table_order = idx as u32;
             }
 
-            // generate a list of derives
-            let mut derives = Vec::new();
-            for attr in input.attrs.iter() {
-                if attr.path().is_ident("derive") {
-                    derives.push(attr);
-                }
-            }
+            // // generate a list of derives
+            // let mut derives = Vec::new();
+            // for attr in input.attrs.iter() {
+            //     if attr.path().is_ident("derive") {
+            //         derives.push(attr);
+            //     }
+            // }
 
             // now sort the key backwards based on their serialization alignment
             data_members.sort_unstable_by_key(|field_info| {
                 usize::MAX - field_info.data_type.serialization_alignment()
             });
             Ok(StructInfo {
-                fields_name: fields,
+                //fields_name: fields,
                 fields: data_members,
                 config,
-                visibility: &input.vis,
+                //visibility: &input.vis,
                 generics: &input.generics,
                 name: &input.ident,
-                derives,
+                unique_id,
+                timestamp,
+                ignored_fields,
+                //derives,
             })
         } else {
             Err("Can not read fields from the structure !".to_string())

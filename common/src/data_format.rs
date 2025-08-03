@@ -45,7 +45,7 @@ impl DataFormat {
             _ => false,
         }
     }
-    pub const fn alignament(&self)->u8 {
+    pub const fn alignament(&self) -> u8 {
         match self {
             DataFormat::U8 => 1,
             DataFormat::U16 => 2,
@@ -102,13 +102,14 @@ impl Display for DataFormat {
             DataFormat::EnumU64 => write!(f, "EnumU64"),
             DataFormat::IPv4 => write!(f, "IPv4"),
             DataFormat::IPv6 => write!(f, "IPv6"),
-            DataFormat::GenericObject => write!(f, "GenericObject"),                    }
+            DataFormat::GenericObject => write!(f, "GenericObject"),
+        }
     }
 }
 
 impl From<&str> for DataFormat {
     fn from(value: &str) -> Self {
-        //let r = 
+        //let r =
         match value {
             "u8" => DataFormat::U8,
             "u16" => DataFormat::U16,
@@ -133,8 +134,10 @@ impl From<&str> for DataFormat {
             "enum_u16" => DataFormat::EnumU16,
             "enum_u32" => DataFormat::EnumU32,
             "enum_u64" => DataFormat::EnumU64,
+            // ip
             "std :: net :: Ipv4Addr" | "net :: Ipv4Addr" | "Ipv4Addr" => DataFormat::IPv4,
-            "std :: net :: Ipv6Addr" | "net :: Ipv6Addr" |"Ipv6Addr" => DataFormat::IPv6,
+            "std :: net :: Ipv6Addr" | "net :: Ipv6Addr" | "Ipv6Addr" => DataFormat::IPv6,
+            // the rest are considered generic objects
             _ => DataFormat::GenericObject,
         }
         // ;

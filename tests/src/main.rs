@@ -6,6 +6,8 @@ mod generic;
 mod ip;
 #[cfg(test)]
 mod version;
+#[cfg(test)]
+mod metadata;
 
 pub(crate) use flat_message::{Config, FlatMessage, Storage};
 pub(crate) use std::fmt::Debug;
