@@ -30,15 +30,15 @@ fn check_serde_version_compatibility_check() {
     let mut o2 = Storage::default();
     let mut o3 = Storage::default();
     {
-        let mut v3_struct = v3::TestStruct { value: 3 };
+        let v3_struct = v3::TestStruct { value: 3 };
         v3_struct.serialize_to(&mut o3, Config::default()).unwrap();
     }
     {
-        let mut v2_struct = v2::TestStruct { value: 2 };
+        let v2_struct = v2::TestStruct { value: 2 };
         v2_struct.serialize_to(&mut o2, Config::default()).unwrap();
     }
     {
-        let mut v1_struct = v1::TestStruct { value: 1 };
+        let v1_struct = v1::TestStruct { value: 1 };
         v1_struct.serialize_to(&mut o1, Config::default()).unwrap();
     }
     let v1_from_v3 = v1::TestStruct::deserialize_from(&o3);
