@@ -188,7 +188,7 @@ impl<'a> StructInfo<'a> {
     fn generate_metadata_deserialization_code(&self) -> proc_macro2::TokenStream {
         let metadata_ptr = if self.unique_id.is_some() || self.timestamp.is_some() {
             quote! {
-                let mut metadata_ptr = unsafe { buffer.add(len - metadata_size) as *const u64 }
+                let mut metadata_ptr = unsafe { buffer.add(len - metadata_size) as *const u64 };
             }
         } else {
             quote! {}
