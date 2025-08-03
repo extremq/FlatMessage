@@ -1,3 +1,5 @@
+use flat_message::{Timestamp, UniqueID};
+
 use crate::t;
 
 pub trait GetSize {
@@ -30,6 +32,17 @@ impl<T: GetSize> GetSize for Vec<T> {
 impl GetSize for String {
     fn get_heap_size(&self) -> usize {
         list_size(self.len()) + self.len()
+    }
+}
+
+impl GetSize for Timestamp {
+    fn get_heap_size(&self) -> usize {
+        size_of_val(self)
+    }
+}
+impl GetSize for UniqueID {
+    fn get_heap_size(&self) -> usize {
+        size_of_val(self)
     }
 }
 
