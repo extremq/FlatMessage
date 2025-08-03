@@ -2,7 +2,7 @@ use crate::*;
 use flat_message::*;
 
 #[test]
-fn check_flat_message_no_metadata() {
+fn check_no_metadata() {
     #[derive(Debug, PartialEq, FlatMessage)]
     struct TestStruct<'a> {
         name: String,
@@ -29,44 +29,41 @@ fn check_flat_message_no_metadata() {
     assert_eq!(si.name(), Some(name!("TestStruct")));
 }
 
-// #[test]
-// fn check_flat_message_metadata() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(version = 5)]
-//     struct TestStruct<'a> {
-//         name: String,
-//         surname: &'a str,
-//         math: u8,
-//         engligh: u8,
-//         passed: bool,
-//         average: f64,
-//     }
-//     let mut a = TestStruct {
-//         name: "John".to_string(),
-//         surname: "Doe",
-//         math: 100,
-//         engligh: 90,
-//         passed: true,
-//         average: 95.0,
-//     };
-//     a.update_metada(
-//         MetaDataBuilder::new()
-//             .timestamp(123456)
-//             .unique_id(654321)
-//             .build(),
-//     );
-//     let mut output = Storage::default();
-//     a.serialize_to(&mut output, Config::default()).unwrap();
-//     let buf = FlatMessageBuffer::try_from(&output).unwrap();
-//     let metadata = buf.metadata();
-//     assert_eq!(buf.version(), Some(5));
-//     assert_eq!(metadata.timestamp(), Some(123456));
-//     assert_eq!(metadata.unique_id(), Some(654321));
-//     assert_eq!(buf.name(), Some(name!("TestStruct")));
-// }
+#[test]
+fn check_all_metadata() {
+    #[derive(Debug, PartialEq, FlatMessage)]
+    #[flat_message_options(version = 5, store_name = true)]
+    struct TestStruct<'a> {
+        name: String,
+        surname: &'a str,
+        math: u8,
+        engligh: u8,
+        passed: bool,
+        average: f64,
+        id: UniqueID,
+        timestamp: Timestamp,
+    }
+    let a = TestStruct {
+        name: "John".to_string(),
+        surname: "Doe",
+        math: 100,
+        engligh: 90,
+        passed: true,
+        average: 95.0,
+        id: UniqueID::with_value(123456),
+        timestamp: Timestamp::with_value(654321),
+    };
+    let mut output = Storage::default();
+    a.serialize_to(&mut output, Config::default()).unwrap();
+    let si = StructureInformation::try_from(&output).unwrap();
+    assert_eq!(si.version(), Some(5));
+    assert_eq!(si.timestamp(), Some(654321));
+    assert_eq!(si.unique_id(), Some(123456));
+    assert_eq!(si.name(), Some(name!("TestStruct")));
+}
 
 #[test]
-fn check_flat_message_no_metadata_no_name() {
+fn check_no_metadata_no_name() {
     #[derive(Debug, PartialEq, FlatMessage)]
     #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
