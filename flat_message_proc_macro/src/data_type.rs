@@ -48,10 +48,12 @@ impl DataType {
         } else {
             FieldType::Object
         };
+        //println!(" -------- DataType: {def}");
         let unique_id = matches!(def.as_str(), "UniqueID" | "flat_message :: UniqueID");
         let timestamp = matches!(def.as_str(), "Timestamp" | "flat_message :: Timestamp");
-        let zst = matches!(def.as_str(), "PhantomData" | "std :: marker :: PhantomData" | "marker :: PhantomData");
-
+        let zst = def.starts_with("PhantomData")
+            || def.starts_with("std :: marker :: PhantomData")
+            || def.starts_with("marker :: PhantomData");
         DataType {
             field_type,
             data_format: DataFormat::from(def.as_str()),
@@ -59,7 +61,7 @@ impl DataType {
             ty,
             unique_id,
             timestamp,
-            zst,            
+            zst,
         }
     }
 

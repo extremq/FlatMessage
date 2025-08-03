@@ -432,6 +432,14 @@ impl<'a> StructInfo<'a> {
         }
         v
     }
+    fn generate_default_code_for_ignored_fields(&self) -> Vec<proc_macro2::TokenStream> {
+        self.ignored_fields.iter().map(|field| {
+            let field_name = field.name_ident();
+            quote! {
+                #field_name: Default::default(),
+            }
+        }).collect()
+    }
     fn generate_struct_construction_code(&self) -> proc_macro2::TokenStream {
         let struct_fields = self.fields.iter().map(|field| {
             let field_name = syn::Ident::new(field.name.as_str(), proc_macro2::Span::call_site());
@@ -455,12 +463,14 @@ impl<'a> StructInfo<'a> {
             }
         } else {
             quote! {}
-        };        
+        };    
+        let ignored_fields = self.generate_default_code_for_ignored_fields();    
         quote! {
             return Ok(Self {
                 #(#struct_fields)*
                 #unique_id_field
                 #timestamp_field
+                #(#ignored_fields)*
             });
         }
     }
@@ -710,6 +720,7 @@ impl<'a> StructInfo<'a> {
                     }
                     timestamp = Some(field);
                 } else if field.data_type.zst {
+                    //println!("Warning: field {} in structure {} is a zero-sized type (ZST) ! It will be ignored !", field.name, input.ident);
                     ignored_fields.push(field);
                 } else
                 {

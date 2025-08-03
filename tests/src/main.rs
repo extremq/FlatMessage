@@ -8,10 +8,13 @@ mod ip;
 mod version;
 #[cfg(test)]
 mod metadata;
+#[cfg(test)]
+mod ignore_fields;
 
 pub(crate) use flat_message::{Config, FlatMessage, Storage};
 pub(crate) use std::fmt::Debug;
 
+#[cfg(test)]
 pub(crate) fn validate_correct_serde<T>(obj: T)
 where
     T: Eq + PartialEq + Debug + for<'a> crate::FlatMessage<'a>,
