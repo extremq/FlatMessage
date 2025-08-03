@@ -4,7 +4,6 @@ use flat_message::*;
 #[test]
 fn check_flat_message_no_metadata() {
     #[derive(Debug, PartialEq, FlatMessage)]
-    #[flat_message_options(metadata = false)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,
@@ -70,7 +69,7 @@ fn check_flat_message_no_metadata() {
 #[test]
 fn check_flat_message_no_metadata_no_name() {
     #[derive(Debug, PartialEq, FlatMessage)]
-    #[flat_message_options(store_name = false, metadata = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
         name: String,
         surname: &'a str,

@@ -11,7 +11,7 @@ fn check_enum() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct {
         value: u8,
         #[flat_message_item(repr = u8, kind = enum)]
@@ -48,7 +48,7 @@ fn check_enum_add_variant() {
         }
 
         #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(metadata = false, store_name = false)]
+        #[flat_message_options(store_name = false)]
         pub struct TestStruct {
             pub value: u8,
             #[flat_message_item(repr = u8, kind = enum)]
@@ -67,7 +67,7 @@ fn check_enum_add_variant() {
         }
 
         #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(metadata = false, store_name = false)]
+        #[flat_message_options(store_name = false)]
         pub struct TestStruct {
             pub value: u8,
             #[flat_message_item(repr = u8, kind = enum)]
@@ -100,7 +100,7 @@ fn check_enum_add_variant_sealed() {
         }
 
         #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(metadata = false, store_name = false)]
+        #[flat_message_options(store_name = false)]
         pub struct TestStruct {
             pub value: u8,
             #[flat_message_item(repr = u8, kind = enum)]
@@ -119,7 +119,7 @@ fn check_enum_add_variant_sealed() {
         }
 
         #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(metadata = false, store_name = false)]
+        #[flat_message_options(store_name = false)]
         pub struct TestStruct {
             pub value: u8,
             #[flat_message_item(repr = u8, kind = enum)]
@@ -154,7 +154,7 @@ fn check_enum_add_variant_sealed_unchecked() {
         }
 
         #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(metadata = false, store_name = false)]
+        #[flat_message_options(store_name = false)]
         pub struct TestStruct {
             pub value: u8,
             #[flat_message_item(repr = u8, kind = enum)]
@@ -173,7 +173,7 @@ fn check_enum_add_variant_sealed_unchecked() {
         }
 
         #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(metadata = false, store_name = false)]
+        #[flat_message_options(store_name = false)]
         pub struct TestStruct {
             pub value: u8,
             #[flat_message_item(repr = u8, kind = enum)]
@@ -204,7 +204,7 @@ fn check_enum_slice_u8bits() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
         value: u8,
         #[flat_message_item(repr = u8, kind = enum)]
@@ -254,7 +254,7 @@ fn check_enum_slice_i8bits() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
         value: u8,
         #[flat_message_item(repr = i8, kind = enum)]
@@ -288,7 +288,7 @@ fn check_enum_slice_u16bits() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
         value: u8,
         #[flat_message_item(repr = u16, kind = enum)]
@@ -337,7 +337,7 @@ fn check_enum_slice_i16bits() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
         value: u8,
         #[flat_message_item(repr = i16, kind = enum)]
@@ -371,7 +371,7 @@ fn check_enum_slice_u32bits() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
         value: u8,
         #[flat_message_item(repr = u32, kind = enum)]
@@ -405,7 +405,7 @@ fn check_enum_slice_i32bits() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
         value: u8,
         #[flat_message_item(repr = i32, kind = enum)]
@@ -439,7 +439,7 @@ fn check_enum_slice_u64bits() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
         value: u8,
         #[flat_message_item(repr = u64, kind = enum)]
@@ -473,7 +473,7 @@ fn check_enum_slice_i64bits() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
         value: u8,
         #[flat_message_item(repr = i64, kind = enum)]
@@ -507,7 +507,7 @@ fn check_enum_vec_u8bits() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct {
         value: u8,
         #[flat_message_item(repr = u8, kind = enum)]
@@ -567,7 +567,7 @@ fn check_enum_vec_and_slice() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
         value: u8,
         #[flat_message_item(repr = u8, kind = enum)]
@@ -624,7 +624,7 @@ fn check_enum_vec_and_slice_u32align() {
     }
 
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(metadata = false, store_name = false)]
+    #[flat_message_options(store_name = false)]
     struct TestStruct<'a> {
         value: u8,
         #[flat_message_item(repr = u8, kind = enum)]

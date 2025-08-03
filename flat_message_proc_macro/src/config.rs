@@ -7,7 +7,6 @@ use proc_macro::*;
 
 pub(crate) struct Config {
     pub(crate) namehash: bool,
-    pub(crate) metadata: bool,
     pub(crate) checksum: bool,
     pub(crate) version: u8,
     pub(crate) validate_name: bool,
@@ -18,7 +17,6 @@ pub(crate) struct Config {
 impl Config {
     pub(crate) fn new(args: TokenStream) -> Self {
         let mut store_name = true;
-        let mut add_metadata = false;
         let mut add_checksum = false;
         let mut validate_name = false;
         let mut version = 0u8;
@@ -30,7 +28,6 @@ impl Config {
             //println!("--Evaluete: '{}' => '{}'",attr_name,attr_value);
             match attr_name.as_str() {
                 "store_name" => store_name = utils::to_bool(&attr_value).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value, attr_name).as_str()),
-                "metadata" => add_metadata = utils::to_bool(&attr_value).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value, attr_name).as_str()),
                 "checksum" => add_checksum = utils::to_bool(&attr_value).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value, attr_name).as_str()),
                 "version" => version = utils::to_version(&attr_value).expect(format!("Invalid version value ('{}') for attribute '{}'. Allowed values are between 1 and 255 !",attr_value, attr_name).as_str()),
                 "validate_name" => validate_name = utils::to_bool(&attr_value).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value, attr_name).as_str()),
@@ -53,7 +50,6 @@ impl Config {
 
         Self {
             namehash: store_name,
-            metadata: add_metadata,
             checksum: add_checksum,
             version,
             validate_name,
@@ -67,7 +63,6 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             namehash: true,
-            metadata: false,
             checksum: false,
             version: 0,
             validate_name: false,
