@@ -7,6 +7,7 @@
     - [Basic Types](chapter-2/supported_data_types/basic_types.md)
     - [Strings](chapter-2/supported_data_types/strings.md)
     - [IP Addresses](chapter-2/supported_data_types/ip.md)
+    - [Unique ID](chapter-2/supported_data_types/unique_id.md)
 - [Benchmarks](chapter-5/benchmarks.md)
 
  
