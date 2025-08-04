@@ -31,6 +31,13 @@ pub enum DataFormat {
     IPv4,
     IPv6,
     IP,
+    // Rezerved
+    // Hash8,
+    // Hash16,
+    // Hash32,
+    // Hash64,
+    // Path,
+    // DateTime -> maybe from chronno
 }
 impl DataFormat {
     pub fn is_enum(&self) -> bool {

@@ -10,8 +10,12 @@ mod version;
 mod metadata;
 #[cfg(test)]
 mod ignore_fields;
+#[cfg(test)]
+mod strings;
 
+#[cfg(test)]
 pub(crate) use flat_message::{Config, FlatMessage, Storage};
+#[cfg(test)]
 pub(crate) use std::fmt::Debug;
 
 #[cfg(test)]
@@ -19,9 +23,8 @@ pub(crate) fn validate_correct_serde<T>(obj: T)
 where
     T: Eq + PartialEq + Debug + for<'a> crate::FlatMessage<'a>,
 {
-    let mut output = Vec::new();
-    obj.serialize_to(&mut output, Config::default()).unwrap();
-    let storage = Storage::from_buffer(&output);
+    let mut storage = Storage::default();
+    obj.serialize_to(&mut storage, Config::default()).unwrap();
     let deserialized = T::deserialize_from(&storage).unwrap();
     assert_eq!(obj, deserialized);
 }
