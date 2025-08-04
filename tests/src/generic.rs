@@ -1,6 +1,6 @@
-// use flat_message::*;
-// use std::fmt::Debug;
-// use super::*;
+use super::*;
+use flat_message::*;
+use std::fmt::Debug;
 
 // macro_rules! check_field_value {
 //     ($field_name: expr, $type: ty, $value: expr, $flat_message_buffer: expr) => {
@@ -14,8 +14,6 @@
 //         assert_eq!(val, $value);
 //     };
 // }
-
-
 
 // #[test]
 // fn check_flat_message_buffer_one_field_i32() {
@@ -300,36 +298,6 @@
 // // }
 
 // #[test]
-// fn check_serde_string_into_str() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false)]
-//     struct TestStruct {
-//         name: String,
-//         surname: String,
-//     }
-
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false)]
-//     struct TestStruct2<'a> {
-//         name: &'a str,
-//         surname: &'a str,
-//     }
-
-//     let a = TestStruct {
-//         name: "John".to_string(),
-//         surname: "Doe".to_string(),
-//     };
-//     let mut output = Storage::default();
-//     a.serialize_to(&mut output, Config::default()).unwrap();
-//     let b = TestStruct2::deserialize_from(&output).unwrap();
-//     // the following lines should not compile
-//     // output.clear();
-//     // output.resize(0xFFFF,b'a');
-//     assert_eq!(b.name, a.name.as_str());
-//     assert_eq!(b.surname, a.surname.as_str());
-// }
-
-// #[test]
 // fn check_serde_full_unchecked() {
 //     #[derive(Debug, PartialEq, FlatMessage)]
 //     struct TestStruct<'a> {
@@ -449,34 +417,6 @@
 //     // from TestStruct2 to TestStruct2
 //     let b = TestStruct2::deserialize_from(&output_2).unwrap();
 //     assert_eq!(a_2.value, b.value);
-// }
-
-
-
-// #[test]
-// fn check_derive() {
-//     #[derive(Copy, Clone, PartialEq, Eq, Debug, FlatMessage)]
-//     struct TestStruct {
-//         a: i32,
-//         b: bool,
-//         c: u16,
-//     }
-//     let mut v1 = TestStruct {
-//         a: 1,
-//         b: true,
-//         c: 123,
-//     };
-//     v1.update_metada(MetaDataBuilder::new().timestamp(1).unique_id(2).build());
-//     let v2 = v1;
-//     assert_eq!(v1.a, v2.a);
-//     assert_eq!(v1.b, v2.b);
-//     assert_eq!(v1.c, v2.c);
-//     assert_eq!(v1.metadata(), v2.metadata());
-//     assert_eq!(v1, v2);
-//     let mut storage = Storage::default();
-//     v1.serialize_to(&mut storage, Config::default()).unwrap();
-//     let v3 = TestStruct::deserialize_from(&storage).unwrap();
-//     assert_eq!(v1, v3);
 // }
 
 // #[test]
@@ -663,277 +603,6 @@
 // }
 
 // #[test]
-// fn check_max_size_for_serialization() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     struct TestStruct {
-//         value: u32,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//     };
-//     let result = s.serialize_to(&mut v, Config::default());
-//     assert!(result.is_ok());
-//     let result = s.serialize_to(&mut v, ConfigBuilder::new().max_size(4).build());
-//     assert!(result.is_err());
-//     match result.err() {
-//         Some(flat_message::Error::ExceedMaxSize(_)) => {}
-//         _ => panic!("Invalid error - expected MaxSizeExceeded"),
-//     }
-// }
-
-// #[test]
-// fn check_serde_buffer_i8() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         b1: &'a [i8],
-//         b2: Vec<i8>,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         b1: &[-10i8, -20, -30],
-//         b2: [1, 2, 3, 4].to_vec(),
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.b1, ds.b1);
-//     assert_eq!(s.b2, ds.b2);
-// }
-
-// #[test]
-// fn check_serde_buffer_u8() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         b1: &'a [u8],
-//         b2: Vec<u8>,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         b1: &[200, 201, 202, 203, 255, 255, 255],
-//         b2: [1, 2, 3, 4, 6, 7, 8, 9, 10].to_vec(),
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.b1, ds.b1);
-//     assert_eq!(s.b2, ds.b2);
-// }
-
-// #[test]
-// fn check_buffer_format_u16() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct {
-//         b2: Vec<u16>,
-//     }
-//     let mut v = Vec::new();
-//     let s = TestStruct {
-//         b2: [1, 2, 3].to_vec(),
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     assert_eq!(
-//         v,
-//         vec![71, 84, 72, 1, 1, 0, 0, 0, 3, 0, 1, 0, 2, 0, 3, 0, 130, 41, 44, 143, 8]
-//     );
-// }
-
-// #[test]
-// fn check_serde_buffer_u16() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         b1: &'a [u16],
-//         b2: Vec<u16>,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         b1: &[200, 201, 202, 203, 255, 255, 255],
-//         b2: [1, 2, 3, 4, 6, 7, 8, 9, 10].to_vec(),
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.b1, ds.b1);
-//     assert_eq!(s.b2, ds.b2);
-// }
-
-// #[test]
-// fn check_serde_buffer_i16() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         b1: &'a [i16],
-//         b2: Vec<i16>,
-//         name: String,
-//         surname: &'a str,
-//         checked: bool,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         b1: &[200, 201, 202, 203, 255, 255, 255],
-//         b2: [1, 2, 3, 4, 6, 7, 8, 9, 10].to_vec(),
-//         name: "John".to_string(),
-//         surname: "Doe",
-//         checked: true,
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.b1, ds.b1);
-//     assert_eq!(s.b2, ds.b2);
-//     assert_eq!(s.name, ds.name);
-//     assert_eq!(s.surname, ds.surname);
-//     assert_eq!(s.checked, ds.checked);
-// }
-
-// #[test]
-// fn check_serde_buffer_32bit_integer() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         b1: &'a [i32],
-//         b2: Vec<i32>,
-//         b3: &'a [u32],
-//         b4: Vec<u32>,
-//         name: String,
-//         surname: &'a str,
-//         checked: bool,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         b1: &[200, 201, 202, 203, 255, 255, 255],
-//         b2: [-1, 2, -3, 4, -6, 7, -8, 9, -10].to_vec(),
-//         b3: &[10, 20, 30, 40],
-//         b4: [1, 2, 3, 4, 6, 7, 8, 9, 10].to_vec(),
-//         name: "John".to_string(),
-//         surname: "Doe",
-//         checked: true,
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.b1, ds.b1);
-//     assert_eq!(s.b2, ds.b2);
-//     assert_eq!(s.b3, ds.b3);
-//     assert_eq!(s.b4, ds.b4);
-//     assert_eq!(s.name, ds.name);
-//     assert_eq!(s.surname, ds.surname);
-//     assert_eq!(s.checked, ds.checked);
-// }
-
-// #[test]
-// fn check_aliganemnt_order_u32_u16_string() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct<'a> {
-//         buf_u32_aligned: &'a [u32],
-//         list_u16_aligned: Vec<u16>,
-//         string_u8_aligned: String,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         buf_u32_aligned: &[1, 2, 3, 4],
-//         list_u16_aligned: [1, 2, 3].to_vec(),
-//         string_u8_aligned: "Hello".to_string(),
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     // order in the buffer should be: buf_u32_aligned, list_u16_aligned, string_u8_aligned
-//     let expected = vec![
-//         71u8, 84, 72, 1, 3, 0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 3,
-//         0, 1, 0, 2, 0, 3, 0, 5, 72, 101, 108, 108, 111, 0, 0, 14, 159, 54, 27, 131, 216, 51, 208,
-//         130, 226, 119, 250, 36, 8, 28,
-//     ];
-//     assert_eq!(v.as_slice(), expected.as_slice());
-// }
-
-// #[test]
-// fn check_serde_buffer_float_32() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         b1: &'a [f32],
-//         b2: Vec<f32>,
-//         name: String,
-//         surname: &'a str,
-//         checked: bool,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         b1: &[1.2f32, 2.3, 3.4, 4.5, 6.7, 7.8, 8.9],
-//         b2: [-12345.1234f32, 123.123, 1000.0, 0.0].to_vec(),
-//         name: "John".to_string(),
-//         surname: "Doe",
-//         checked: true,
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.b1, ds.b1);
-//     assert_eq!(s.b2, ds.b2);
-//     assert_eq!(s.name, ds.name);
-//     assert_eq!(s.surname, ds.surname);
-//     assert_eq!(s.checked, ds.checked);
-// }
-
-// #[test]
-// fn check_serde_64_bits_buffers() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         b1: &'a [f64],
-//         b2: Vec<f64>,
-//         b3: &'a [i64],
-//         b4: Vec<i64>,
-//         b5: &'a [u64],
-//         b6: Vec<u64>,
-//         name: String,
-//         surname: &'a str,
-//         checked: bool,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         b1: &[1.2f64, 2.3, 3.4, 4.5, 6.7, 7.8, 8.9],
-//         b2: [-12345.1234f64, 123.123, 1000.0, 0.0].to_vec(),
-//         b3: &[-1, 2, -3, 0x123456_7890, -6, 7, -8, i64::MIN, -10, i64::MAX],
-//         b4: [1, -2, 300, 0x123456_7890, -678910876, i64::MIN, i64::MAX].to_vec(),
-//         b5: &[0, 100, 100_000, 100_000_000, 100_000_000_000, u64::MAX],
-//         b6: [u64::MAX, 0, 0xFFFF_FFFF_FFFF, 0xEEEE_EEEE_EEEE_EEEE].to_vec(),
-//         name: "John".to_string(),
-//         surname: "Doe",
-//         checked: true,
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.b1, ds.b1);
-//     assert_eq!(s.b2, ds.b2);
-//     assert_eq!(s.b3, ds.b3);
-//     assert_eq!(s.b4, ds.b4);
-//     assert_eq!(s.b5, ds.b5);
-//     assert_eq!(s.b6, ds.b6);
-//     assert_eq!(s.name, ds.name);
-//     assert_eq!(s.surname, ds.surname);
-//     assert_eq!(s.checked, ds.checked);
-// }
-
-// #[test]
 // fn check_serde_128_bits_alignament() {
 //     #[derive(Debug, PartialEq, Eq, FlatMessage)]
 //     #[flat_message_options(metadata = false, store_name = false)]
@@ -962,256 +631,48 @@
 //     assert_eq!(v.as_slice(), expected);
 // }
 
-// #[test]
-// fn check_serde_128_bits_buffers() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         b3: &'a [i128],
-//         b4: Vec<i128>,
-//         b5: &'a [u128],
-//         b6: Vec<u128>,
-//         name: String,
-//         surname: &'a str,
-//         checked: bool,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         b3: &[
-//             -1,
-//             2,
-//             -3,
-//             0x123456_7890,
-//             -6,
-//             7,
-//             -8,
-//             i128::MIN,
-//             -10,
-//             i128::MAX,
-//         ],
-//         b4: [1, -2, 300, 0x123456_7890, -678910876, i128::MIN, i128::MAX].to_vec(),
-//         b5: &[0, 100, 100_000, 100_000_000, 100_000_000_000, u128::MAX],
-//         b6: [u128::MAX, 0, 0xFFFF_FFFF_FFFF, 0xEEEE_EEEE_EEEE_EEEE].to_vec(),
-//         name: "John".to_string(),
-//         surname: "Doe",
-//         checked: true,
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.b3, ds.b3);
-//     assert_eq!(s.b4, ds.b4);
-//     assert_eq!(s.b5, ds.b5);
-//     assert_eq!(s.b6, ds.b6);
-//     assert_eq!(s.name, ds.name);
-//     assert_eq!(s.surname, ds.surname);
-//     assert_eq!(s.checked, ds.checked);
-// }
+#[test]
+fn check_max_size_for_serialization() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    struct TestStruct {
+        value: u32,
+    }
+    let mut v = Storage::default();
+    let s = TestStruct { value: 123456 };
+    let result = s.serialize_to(&mut v, Config::default());
+    assert!(result.is_ok());
+    let result = s.serialize_to(&mut v, ConfigBuilder::new().max_size(4).build());
+    assert!(result.is_err());
+    match result.err() {
+        Some(flat_message::Error::ExceedMaxSize(_)) => {}
+        _ => panic!("Invalid error - expected MaxSizeExceeded"),
+    }
+}
 
-// #[test]
-// fn check_serde_buffer_bool() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         b1: &'a [bool],
-//         b2: Vec<bool>,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         b1: &[true, false, true, true, false, false, true],
-//         b2: [true, false, false, true, false, true, true, true, false].to_vec(),
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.b1, ds.b1);
-//     assert_eq!(s.b2, ds.b2);
-// }
+#[test]
+fn check_simple_struct_width_comments() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct Point {
+        // x coordinate
+        x: i32,
+        // y coordinate
+        y: i32,
+    }
+    validate_correct_serde(Point { x: 10, y: 20 });
+}
 
-// #[test]
-// fn check_serde_vec_str() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         v1: Vec<&'a str>,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         v1: vec!["Hello", "World", "John", "Doe"],
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.v1, ds.v1);
-
-//     assert_eq!(
-//         v.as_slice(),
-//         &[
-//             /* Header                      */ 71, 84, 72, 1, 2, 0, 0, 0,
-//             /* TestStruct: value           */ 64, 226, 1, 0,
-//             /* v1                          */
-//             /* v1 (items count)            */
-//             4, /* v1.item[0].len              */ 5, /* v1.item[0].data             */ 72,
-//             101, 108, 108, 111, // Hello
-//             /* v1.item[1].len              */ 5, /* v1.item[1].data             */ 87,
-//             111, 114, 108, 100, // World
-//             /* v1.item[2].len              */ 4, /* v1.item[2].data             */ 74,
-//             111, 104, 110, // John
-//             /* v1.item[3].len              */ 3, /* v1.item[3].data             */ 68,
-//             111, 101, // Doe
-//             /* alignamnt                   */ 0, 0, /* Hash for TestStruct::value  */ 3,
-//             211, 94, 66, /* Hash for TestStruct::v1     */ 142, 70, 74, 148,
-//             /* Offset of TestStruct::value */ 8, /* Offset of TestStruct::v1    */ 12
-//         ]
-//     );
-// }
-
-// #[test]
-// fn check_serde_vec_string() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct {
-//         value: u32,
-//         v1: Vec<String>,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         v1: vec![
-//             "Hello".to_string(),
-//             "World".to_string(),
-//             "John".to_string(),
-//             "Doe".to_string(),
-//         ],
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.v1, ds.v1);
-
-//     assert_eq!(
-//         v.as_slice(),
-//         &[
-//             /* Header                      */ 71, 84, 72, 1, 2, 0, 0, 0,
-//             /* TestStruct: value           */ 64, 226, 1, 0,
-//             /* v1                          */
-//             /* v1 (items count)            */
-//             4, /* v1.item[0].len              */ 5, /* v1.item[0].data             */ 72,
-//             101, 108, 108, 111, // Hello
-//             /* v1.item[1].len              */ 5, /* v1.item[1].data             */ 87,
-//             111, 114, 108, 100, // World
-//             /* v1.item[2].len              */ 4, /* v1.item[2].data             */ 74,
-//             111, 104, 110, // John
-//             /* v1.item[3].len              */ 3, /* v1.item[3].data             */ 68,
-//             111, 101, // Doe
-//             /* alignamnt                   */ 0, 0, /* Hash for TestStruct::value  */ 3,
-//             211, 94, 66, /* Hash for TestStruct::v1     */ 142, 70, 74, 148,
-//             /* Offset of TestStruct::value */ 8, /* Offset of TestStruct::v1    */ 12
-//         ]
-//     );
-// }
-
-// #[test]
-// fn check_serde_vec_string_and_str() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         v1: Vec<String>,
-//         v2: Vec<&'a str>,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         v1: vec![
-//             "Hello".to_string(),
-//             "World".to_string(),
-//             "John".to_string(),
-//             "Doe".to_string(),
-//         ],
-//         v2: vec![
-//             "Hello", "World", "John", "Doe", "this", "is", "a", "test", "of", "strings", "and",
-//             "more",
-//         ],
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&v).unwrap();
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.v1, ds.v1);
-//     assert_eq!(s.v2, ds.v2);
-// }
-
-// #[test]
-// fn check_serde_vec_string_and_str_unchecked() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         v1: Vec<String>,
-//         v2: Vec<&'a str>,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         value: 123456,
-//         v1: vec![
-//             "Hello".to_string(),
-//             "World".to_string(),
-//             "John".to_string(),
-//             "Doe".to_string(),
-//         ],
-//         v2: vec![
-//             "Hello", "World", "John", "Doe", "this", "is", "a", "test", "of", "strings", "and",
-//             "more",
-//         ],
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let ds = unsafe { TestStruct::deserialize_from_unchecked(&v).unwrap() };
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.v1, ds.v1);
-//     assert_eq!(s.v2, ds.v2);
-// }
-
-// #[test]
-// fn check_simple_struct() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct Point {
-//         x: i32,
-//         y: i32,
-//     }
-//     validate_correct_serde(Point { x: 10, y: 20 });
-// }
-
-// #[test]
-// fn check_simple_struct_width_comments() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct Point {
-//         // x coordinate
-//         x: i32,
-//         // y coordinate
-//         y: i32,
-//     }
-//     validate_correct_serde(Point { x: 10, y: 20 });
-// }
-
-// #[test]
-// fn check_simple_struct_width_documentation() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct Point {
-//         /// x coordinate that is used to store the position
-//         /// in the 2D space
-//         x: i32,
-//         /// y coordinate that is used to store the position
-//         /// in the 2D space
-//         y: i32,
-//     }
-//     validate_correct_serde(Point { x: 10, y: 20 });
-// }
+#[test]
+fn check_simple_struct_width_documentation() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct Point {
+        /// x coordinate that is used to store the position
+        /// in the 2D space
+        x: i32,
+        /// y coordinate that is used to store the position
+        /// in the 2D space
+        y: i32,
+    }
+    validate_correct_serde(Point { x: 10, y: 20 });
+}
