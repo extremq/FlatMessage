@@ -776,10 +776,13 @@ impl<'a> StructInfo<'a> {
                 let field = FieldInfo::try_from(field)?;
                 if field.data_type.unique_id {
                     if unique_id.is_some() {
-                        return Err(format!("Structure {} has more than one field with UniqueID data format !", input.ident));
+                        return Err(format!("Structure {} has more than one field with UniqueID data format (for field {}) !", input.ident, field.name));
                     }
                     if field.data_type.field_type != FieldType::Object {
                         return Err(format!("Unique IDs can only be an object (not a vector or a slice) - for field {} in structure {} !", field.name, input.ident));
+                    }
+                    if field.data_type.option {
+                        return Err(format!("Unique IDs can not be an Option - you either have them or you don't - for field {} in structure {} !", field.name, input.ident));
                     }
                     unique_id = Some(field);
                 } else if field.data_type.timestamp {
