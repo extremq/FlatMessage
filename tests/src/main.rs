@@ -14,6 +14,8 @@ mod ignore_fields;
 mod strings;
 #[cfg(test)]
 mod basic_types;
+#[cfg(test)]
+mod option;
 
 #[cfg(test)]
 pub(crate) use flat_message::{Config, FlatMessage, Storage};

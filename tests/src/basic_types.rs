@@ -639,17 +639,3 @@ fn check_serde_128_bits_buffers() {
 }
 
 
-#[test]
-fn check_option() {
-    #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    #[flat_message_options(store_name: false)]
-    struct Test {
-        v1: Option<i32>,
-        v2: Option<u32>,
-    }
-    let mut v = Storage::default();
-    let t1 = Test { v1: None, v2: None };
-    t1.serialize_to(&mut v, Config::default()).unwrap();
-    let t2 = Test::deserialize_from(&v).unwrap();
-    assert_eq!(t1,t2);
-}
