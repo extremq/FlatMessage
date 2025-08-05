@@ -9,6 +9,7 @@
     - [Strings](chapter-2/supported_data_types/strings.md)
     - [IP Addresses](chapter-2/supported_data_types/ip.md)
     - [Unique ID](chapter-2/supported_data_types/unique_id.md)
+    - [Timestamp](chapter-2/supported_data_types/timestamp.md)
     - [Enums](chapter-2/supported_data_types/enums.md)
 - [Benchmarks](chapter-5/benchmarks.md)
 

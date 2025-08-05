@@ -792,6 +792,9 @@ impl<'a> StructInfo<'a> {
                     if field.data_type.field_type != FieldType::Object {
                         return Err(format!("Timestamp can only be an object (not a vector or a slice) - for field {} in structure {} !", field.name, input.ident));
                     }
+                    if field.data_type.option {
+                        return Err(format!("Timestamp can not be an Option - you either have them or you don't - for field {} in structure {} !", field.name, input.ident));
+                    }
                     timestamp = Some(field);
                 } else if field.data_type.zst {
                     //println!("Warning: field {} in structure {} is a zero-sized type (ZST) ! It will be ignored !", field.name, input.ident);
