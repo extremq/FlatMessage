@@ -13,8 +13,8 @@ Enums with explicitly defined backing types are supported for serialization and 
 - Enums must derive `FlatMessageEnum` and have an explicit `#[repr(...)]` attribute specifying the underlying primitive type.
 - Enum variants can have explicit values assigned, or they will use the default incrementing values starting from 0.
 - When using enums in structs, you must specify both the representation and kind in the field attribute: `#[flat_message_item(repr = u8, kind = enum)]`.
-- Enums can be marked as `#[sealed]` for stricter validation during deserialization. Sealed enums will fail to deserialize if they encounter unknown variant values, while non-sealed enums will allow unknown variants.
-- For version compatibility, you can add new variants to non-sealed enums in newer versions without breaking deserialization of older data.
+- Enums can be marked as `#[sealed]` for stricter version compatibility. Sealed enums include all variant names and values in their hash, making them incompatible with any version that adds, removes, or modifies variants. Non-sealed enums only include the enum name in their hash, allowing forward compatibility when adding new variants.
+- Both sealed and non-sealed enums validate that deserialized values match known variants in the current enum definition. The difference is in version compatibility: non-sealed enums allow adding variants without breaking hash compatibility, while sealed enums will fail to deserialize if the enum definition has changed in any way.
 - Deserialization using `deserialize_from` validates enum variant values. If you are certain the data is valid, you can use `deserialize_from_unchecked` to skip validation and improve performance.
 
 ## Example
@@ -141,4 +141,4 @@ enum Color {
 }
 ```
 
-Data serialized with version 1 can be successfully deserialized with version 2, as long as the enum is not marked as `#[sealed]`.
+Data serialized with version 1 can be successfully deserialized with version 2 for non-sealed enums, as long as the specific variant values used in the serialized data exist in both versions. Sealed enums will fail to deserialize if any variants have been added, removed, or modified between versions.
