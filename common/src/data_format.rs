@@ -31,6 +31,7 @@ pub enum DataFormat {
     IPv4,
     IPv6,
     IP,
+    FixArray,
     // Rezerved
     // Hash8,
     // Hash16,
@@ -80,6 +81,7 @@ impl DataFormat {
             DataFormat::IPv4 => 1,
             DataFormat::IPv6 => 1,
             DataFormat::IP => 1,
+            DataFormat::FixArray => 1,
             DataFormat::GenericObject => 1,
         }
     }
@@ -112,6 +114,7 @@ impl Display for DataFormat {
             DataFormat::IPv4 => write!(f, "IPv4"),
             DataFormat::IPv6 => write!(f, "IPv6"),
             DataFormat::IP => write!(f, "IP"),
+            DataFormat::FixArray => write!(f, "FixArray"),
             DataFormat::GenericObject => write!(f, "GenericObject"),
         }
     }
@@ -119,7 +122,15 @@ impl Display for DataFormat {
 
 impl From<&str> for DataFormat {
     fn from(value: &str) -> Self {
-        //let r =
+        //println!("Value: {}", value);
+        // check to see if value is in th form of [u8;<number>]
+        if let Some(buf) = value.strip_prefix("[u8;") {
+            if let Some(value) = buf.strip_suffix("]") {
+                if let Ok(_) = value.trim().parse::<usize>() {
+                    return DataFormat::FixArray;
+                }
+            }
+        };
         match value {
             "u8" => DataFormat::U8,
             "u16" => DataFormat::U16,

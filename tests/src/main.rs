@@ -16,6 +16,9 @@ mod strings;
 mod basic_types;
 #[cfg(test)]
 mod option;
+#[cfg(test)]
+mod fix_arrays;
+
 
 #[cfg(test)]
 pub(crate) use flat_message::{Config, FlatMessage, Storage};
