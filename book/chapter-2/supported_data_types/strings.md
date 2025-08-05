@@ -1,9 +1,11 @@
 # Strings
 
-| Data Type                | Object | Slice | Vector |
-| ------------------------ | ------ | ----- | ------ |
-| String referemce: `&str` | Yes    | -     | Yes    |
-| String object: `String`  | Yes    | -     | Yes    |
+Strings types are represented as UTF-8 encoded bytes.
+
+| Data Type                | Object | Slice | Vector | Option |
+| ------------------------ | ------ | ----- | ------ | ------ |
+| String referemce: `&str` | Yes    | -     | Yes    | Yes    |
+| String object: `String`  | Yes    | -     | Yes    | Yes    |
 
 
 **Remarks:**
@@ -31,5 +33,16 @@
     struct Example<'a> {
         string_values: Vec<String>,
         str_values: Vec<&'a str>,
+    }
+    ```
+
+3. Using `Option` values:
+    ```rust
+    use flat_message::*;
+
+    #[derive(FlatMessage)]
+    struct Example<'a> {
+        string_value: Option<String>,
+        str_value: Option<&'a str>,
     }
     ```

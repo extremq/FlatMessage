@@ -1,8 +1,8 @@
 # Unique ID
 
-| Data Type                                                 | Object | Slice | Vector |
-| --------------------------------------------------------- | ------ | ----- | ------ |
-| Unique identfier (`UniqueID` or `flat_message::UniqueID`) | Yes    | -     | -      |
+| Data Type                                                 | Object | Slice | Vector | Option |
+| --------------------------------------------------------- | ------ | ----- | ------ | ------ |
+| Unique identfier (`UniqueID` or `flat_message::UniqueID`) | Yes    | -     | -      | -      |
 
 
 **Remarks:**
