@@ -92,3 +92,153 @@ fn check_simple_array_muliple_items_repr() {
         27, // offset of v4
     ]);
 }
+
+#[test]
+fn check_simple_slice() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name: false)]
+    struct Test<'a> {
+        v1: &'a [ [u8; 3] ],
+    }
+    let t = Test {
+        v1: &[ [1, 2, 3], [10,20,30] ],
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    let d = Test::deserialize_from(&s).unwrap();
+    assert_eq!(d, t);
+}
+
+#[test]
+fn check_simple_slice_unchecked() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name: false)]
+    struct Test<'a> {
+        v1: &'a [ [u8; 3] ],
+    }
+    let t = Test {
+        v1: &[ [1, 2, 3], [10,20,30] ],
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    let d = unsafe { Test::deserialize_from_unchecked(&s).unwrap() };
+    assert_eq!(d, t);
+}
+
+#[test]
+fn check_simple_slice_repr() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name: false)]
+    struct Test<'a> {
+        v1: &'a [ [u8; 3] ],
+    }
+    let t = Test {
+        v1: &[ [1, 2, 3], [10,20,30] ],
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(s.as_slice(), &[
+        70, 76, 77, 1, 1, 0, 0, 0, // header
+        3, // v1 - number of fix elements in the array - 3
+        2, // v1 - size of the array - 2
+        1, 2, 3, // v1[0] - values
+        10, 20, 30, // v1[1] - values
+        154, 70, 74, 148, // hash for v1 (154 = type for FixArray + slice bit) 
+        8 // offset of v1 - 8 
+    ]);
+}
+
+#[test]
+fn check_simple_vec() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        v1: Vec<[u8; 3]>,
+    }
+    let t = Test {
+        v1: vec![ [1, 2, 3], [10,20,30] ],
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    let d = Test::deserialize_from(&s).unwrap();
+    assert_eq!(d, t);
+}
+
+#[test]
+fn check_simple_vec_unchecked() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        v1: Vec<[u8; 3]>,
+    }
+    let t = Test {
+        v1: vec![ [1, 2, 3], [10,20,30] ],
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    let d = unsafe { Test::deserialize_from_unchecked(&s).unwrap() };
+    assert_eq!(d, t);
+}
+
+#[test]
+fn check_simple_vec_repr() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        v1: Vec<[u8; 3]>,
+    }
+    let t = Test {
+        v1: vec![ [1, 2, 3], [10,20,30] ],
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(s.as_slice(), &[
+        70, 76, 77, 1, 1, 0, 0, 0, // header
+        3, // v1 - number of fix elements in the array - 3
+        2, // v1 - size of the array - 2
+        1, 2, 3, // v1[0] - values
+        10, 20, 30, // v1[1] - values
+        154, 70, 74, 148, // hash for v1 (154 = type for FixArray + slice bit) 
+        8 // offset of v1 - 8 
+    ]);
+}
+
+#[test]
+fn check_simple_array_ref() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name: false)]
+    struct Test<'a> {
+        v1: &'a [u8; 10],
+    }
+    let t = Test {
+        v1: &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    let d = Test::deserialize_from(&s).unwrap();
+    assert_eq!(d, t);
+}
+
+
+
+#[test]
+fn check_simple_array_ref_repr() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name: false)]
+    struct Test<'a> {
+        v1: &'a [u8; 10],
+    }
+    let t = Test {
+        v1: &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(s.as_slice(), &[
+        70, 76, 77, 1, 1, 0, 0, 0, // header
+        10, // v1 - size of the array
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, // v1 - values   
+        0, // padding
+        26, 70, 74, 148, // hash for v1 (26 = type for FixArray)
+        8 // offset of v1
+    ]);
+}

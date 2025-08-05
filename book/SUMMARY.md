@@ -11,6 +11,7 @@
     - [Unique ID](chapter-2/supported_data_types/unique_id.md)
     - [Timestamp](chapter-2/supported_data_types/timestamp.md)
     - [Enums](chapter-2/supported_data_types/enums.md)
+    - [Fixed Size Buffer](chapter-2/supported_data_types/fixed_size_buffer.md)
 - [Benchmarks](chapter-5/benchmarks.md)
 
  

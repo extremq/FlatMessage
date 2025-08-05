@@ -49,8 +49,14 @@ impl DataType {
             def = def["Vec<".len()..def.len() - 1].to_string();
             FieldType::Vector
         } else if def.starts_with("&[") && def.ends_with("]") {
-            def = def[2..def.len() - 1].to_string();
-            FieldType::Slice
+            if DataFormat::from(&def[1..def.len()]) == DataFormat::FixArray { 
+                // this wil be treated as an object (&[u8; N])
+                def = def[1..def.len()].to_string();
+                FieldType::Object
+            } else {
+                def = def[2..def.len() - 1].to_string();
+                FieldType::Slice
+            }
         } else {
             FieldType::Object
         };
