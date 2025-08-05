@@ -28,6 +28,7 @@ pub(crate) struct DataType {
     pub(crate) unique_id: bool,
     pub(crate) timestamp: bool,
     pub(crate) zst: bool,
+    pub(crate) option: bool
 }
 
 impl DataType {
@@ -39,11 +40,16 @@ impl DataType {
     }
     pub(crate) fn new(ty: syn::Type, mut def: String) -> Self {
         utils::type_name_formatter(&mut def);
-        let field_type = if def.starts_with("Vec<") {
-            def = def.replace("Vec<", "").replace(">", "");
+        let mut option = false;
+        if def.starts_with("Option<") && def.ends_with(">") {
+            def = def["Option<".len()..def.len() - 1].to_string();
+            option = true;
+        }
+        let field_type = if def.starts_with("Vec<") && def.ends_with(">") {
+            def = def["Vec<".len()..def.len() - 1].to_string();
             FieldType::Vector
-        } else if def.starts_with("&[") {
-            def = def.replace("&[", "").replace("]", "");
+        } else if def.starts_with("&[") && def.ends_with("]") {
+            def = def[2..def.len() - 1].to_string();
             FieldType::Slice
         } else {
             FieldType::Object
@@ -62,6 +68,7 @@ impl DataType {
             unique_id,
             timestamp,
             zst,
+            option
         }
     }
 

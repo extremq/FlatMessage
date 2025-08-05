@@ -84,7 +84,7 @@ impl<'a> StructInfo<'a> {
             let field_name = field.name_ident();
             let serialization_trait = field.serialization_trait();
             let serialization_alignment = field.serialization_alignment();
-            if serialization_alignment>1 {
+            let size_increase = if serialization_alignment>1 {
                 quote! {
                     size = (size + #serialization_alignment - 1) & !(#serialization_alignment - 1);
                     size += ::flat_message::#serialization_trait::size(&self.#field_name);
@@ -93,6 +93,25 @@ impl<'a> StructInfo<'a> {
                 quote! {
                     size += ::flat_message::#serialization_trait::size(&self.#field_name);
                 }
+            };
+            let size_increase_option = if serialization_alignment>1 {
+                quote! {
+                    size = (size + #serialization_alignment - 1) & !(#serialization_alignment - 1);
+                    size += ::flat_message::#serialization_trait::size(obj);
+                }
+            } else {
+                quote! {
+                    size += ::flat_message::#serialization_trait::size(obj);
+                }
+            };
+            if field.data_type.option {
+                quote! {
+                    if let Some(obj) = &self.#field_name {
+                        #size_increase_option
+                    }
+                }
+            } else {
+                quote! { #size_increase }
             }
         });
         let mut v: Vec<_> = compute_size_code.collect();
@@ -155,8 +174,7 @@ impl<'a> StructInfo<'a> {
                     quote! {}
                 }
             };
-            let refcode = 
-            match ref_size {
+            let refcode = match ref_size {
                 1 => {
                     quote! {
                         let offset = buf_pos as u8;
@@ -177,10 +195,31 @@ impl<'a> StructInfo<'a> {
                 }
                 _ => quote! {}
             };
+            let none_refcode = match ref_size {
+                1 => quote! { ptr::write_unaligned(buffer.add(ref_offset + #hash_table_order) as *mut u8, 0u8); },
+                2 => quote! { ptr::write_unaligned(buffer.add(ref_offset + #hash_table_order*2) as *mut u16, 0u16); },                
+                4 => quote! { ptr::write_unaligned(buffer.add(ref_offset + #hash_table_order*4) as *mut u32, 032); },
+                _ => quote! {}
+            };
+                
+            let serialize_code = if field.data_type.option {
+                quote! {
+                    if let Some(obj) = &self.#field_name {
+                        #refcode
+                        buf_pos = ::flat_message::#serde_trait::write(obj, buffer, buf_pos);
+                    } else {
+                        #none_refcode
+                    }
+                }
+            } else {
+                quote! {
+                    #refcode
+                    buf_pos = ::flat_message::#serde_trait::write(&self.#field_name, buffer, buf_pos);
+                }
+            };
             quote! {
                 #alignament_code
-                #refcode
-                buf_pos = ::flat_message::#serde_trait::write(&self.#field_name, buffer, buf_pos);
+                #serialize_code
             }
         }).collect();
         v
@@ -323,7 +362,7 @@ impl<'a> StructInfo<'a> {
                     RefOffsetSize::U32 =>header.fields_count as usize * 4,
                 };
                 let hash_table_size = header.fields_count as usize * 4;
-                let min_size = 8/* header */ + metadata_size + hash_table_size + ref_table_size + header.fields_count as usize /* at least one byte per field */;
+                let min_size = 8/* header */ + metadata_size + hash_table_size + ref_table_size;
                 if min_size > len {
                     return Err(flat_message::Error::InvalidSizeToStoreFieldsTable((len as u32, min_size as u32)));
                 }
@@ -346,28 +385,57 @@ impl<'a> StructInfo<'a> {
         ty: &syn::Type,
         field_name_hash: u32,
         unchecked_code: bool,
+        option: bool,
     ) -> proc_macro2::TokenStream {
-        let boundary_check = quote! {
+        let unsafe_init = quote! {
+            // fallback for cases where we have a serialized option
+            if offset==0 {
+                return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
+            }            
+            let #inner_var: #ty = unsafe { flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset) };
+        };
+        let unsafe_init_option = quote! {
+            let #inner_var = if offset == 0 {
+                None
+            } else {
+                Some (flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset))
+            };
+        };
+        let safe_init = quote! {
             if offset<8 || offset >= hash_table_offset {
                 return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
             }
-        };
-        let unsafe_init = quote! {
-            let #inner_var: #ty = unsafe { flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset) };
-        };
-        let safe_init = quote! {
             let Some(#inner_var): Option<#ty> = flat_message::#serde_trait::from_buffer(data_buffer, offset) else {
                 return Err(flat_message::Error::FailToDeserialize(#field_name_hash));
             };
         };
+        let safe_init_option = quote! {
+            let #inner_var = if offset<8 || offset >= hash_table_offset {
+                if offset == 0 {
+                    None
+                } else {
+                    return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
+                }
+            } else {
+                // the type is alread an Option
+                let tmp: #ty =  flat_message::#serde_trait::from_buffer(data_buffer, offset);
+                if tmp.is_none() {
+                    return Err(flat_message::Error::FailToDeserialize(#field_name_hash));
+                };
+                tmp
+            };
+        };        
         let checks_and_init = if unchecked_code {
-            quote! {
-                #unsafe_init
+            if option {
+                quote! { #unsafe_init_option }
+            } else {
+                quote! { #unsafe_init }
             }
         } else {
-            quote! {
-                #boundary_check
-                #safe_init
+            if option {
+                quote! { #safe_init_option }
+            } else {
+                quote! { #safe_init }
             }
         };
         quote! {
@@ -396,6 +464,7 @@ impl<'a> StructInfo<'a> {
             inner_var: syn::Ident,
             serde_trait: syn::Ident,
             ty: syn::Type,
+            option: bool,
         }
         let mut v = Vec::with_capacity(4);
         let mut hashes: Vec<_> = self
@@ -406,6 +475,7 @@ impl<'a> StructInfo<'a> {
                 inner_var: field.inner_var(),
                 serde_trait: field.serialization_trait(),
                 ty: field.data_type.ty.clone(),
+                option: field.data_type.option,
             })
             .collect();
         hashes.sort_by_key(|hash| hash.hash);
@@ -428,6 +498,7 @@ impl<'a> StructInfo<'a> {
                 &obj.ty,
                 obj.hash,
                 unchecked_code,
+                obj.option
             ));
         }
         v
