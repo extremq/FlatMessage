@@ -4,7 +4,7 @@
   - [Installation](chapter-1/installation.md)
   - [Deriving FlatMessage](chapter-1/deriving_flatmessage.md)
   - [Core Concepts](chapter-1/core_concepts.md)
- <!--   - [Error Handling](chapter-1/error_handling.md) -->
+  - [Error Handling](chapter-1/error_handling.md)
 - [Serialization Model & Format](chapter-2/serialization_model.md)
   - [Binary Format](chapter-2/binary_format.md)
   - [Supported Data Type](chapter-2/supported_data_types.md)

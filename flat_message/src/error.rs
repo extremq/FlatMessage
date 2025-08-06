@@ -28,7 +28,7 @@ impl fmt::Display for Error {
                 "Invalid header length (expected 8 bytes minimum - but found: {})",
                 size
             ),
-            Error::InvalidMagic => write!(f, "Invalid magic number (expected 'KV')"),
+            Error::InvalidMagic => write!(f, "Invalid magic number (expected 'FLM')"),
             Error::InvalidSize((actual, expected)) => write!(
                 f,
                 "Invalid buffer size (expected {} bytes - but found: {})",
