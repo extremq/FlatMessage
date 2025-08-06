@@ -2,6 +2,9 @@
 
 - [Getting started](chapter-1/getting_started.md)   
   - [Installation](chapter-1/installation.md)
+  - [Deriving FlatMessage](chapter-1/deriving_flatmessage.md)
+  <!-- - [Core Concepts](chapter-1/core_concepts.md)
+  - [Error Handling](chapter-1/error_handling.md) -->
 - [Serialization Model & Format](chapter-2/serialization_model.md)
   - [Binary Format](chapter-2/binary_format.md)
   - [Supported Data Type](chapter-2/supported_data_types.md)
@@ -12,6 +15,20 @@
     - [Timestamp](chapter-2/supported_data_types/timestamp.md)
     - [Enums](chapter-2/supported_data_types/enums.md)
     - [Fixed Size Buffer](chapter-2/supported_data_types/fixed_size_buffer.md)
-- [Benchmarks](chapter-5/benchmarks.md)
-
- 
+  <!-- - [Builder API](chapter-2/builder_api.md)
+  - [FlatMessage Buffer](chapter-2/flat_message_buffer.md) -->
+<!-- - [Advanced Features](chapter-3/versioning.md)
+  - [Versioning](chapter-3/versioning.md)
+  - [Type Interchangeability](chapter-3/type_interchangeability.md)
+  - [Metadata and Introspection](chapter-3/metadata_and_introspection.md)
+  - [Sealed vs Non-Sealed Enums](chapter-3/sealed_vs_non_sealed_enums.md)
+  - [Checksums and Validation](chapter-3/checksums_and_validation.md)
+  - [Field Attributes](chapter-3/field_attributes.md)
+- [Practical Usage](chapter-4/performance_optimization.md)
+  - [Performance Optimization](chapter-4/performance_optimization.md)
+  - [Real-World Patterns](chapter-4/real_world_patterns.md)
+  - [Migration Strategies](chapter-4/migration_strategies.md)
+  - [Troubleshooting](chapter-4/troubleshooting.md)
+- [Benchmarks & Performance](chapter-5/benchmarks.md)
+  - [Performance Comparison](chapter-5/performance_comparison.md)
+  - [Memory Usage](chapter-5/memory_usage.md) -->
