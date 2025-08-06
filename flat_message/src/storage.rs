@@ -7,6 +7,26 @@ pub struct Storage {
 }
 
 impl Storage {
+    /// Creates a new `Storage` instance from a byte slice.
+    ///
+    /// This function creates a new `Storage` instance and initializes it with the contents of the input byte slice.
+    /// The `Storage` instance will have a capacity of at least the length of the input slice, and the data will be
+    /// copied into the internal buffer.
+    ///
+    /// # Arguments
+    /// - `input`: A byte slice containing the data to be stored in the `Storage` instance.
+    ///
+    /// # Returns
+    /// A new `Storage` instance containing the data from the input byte slice.
+    ///
+    /// # Example
+    /// ```
+    /// use flat_message::*;
+    ///
+    /// let data = [1, 2, 3, 4, 5];
+    /// let storage = Storage::from_buffer(&data);
+    /// assert_eq!(storage.as_slice(), &data);
+    /// ``` 
     pub fn from_buffer(input: &[u8]) -> Storage {
         let mut r = Storage::default();
         r.resize_zero(input.len());
@@ -14,6 +34,17 @@ impl Storage {
         r
     }
 
+
+    /// Creates a new `Storage` instance with a given capacity filled with zeros.
+    /// Since a Storage object can be reused, this is a good way to create an initial object and then use it to serrialize / deserialize multiple objects.
+    pub fn with_capacity(capacity: usize) -> Storage {
+        let mut r = Storage::default();
+        r.resize_zero(capacity);
+        r
+    }
+
+    /// Returns the length of the data stored in the `Storage` instance.
+    #[inline(always)]
     pub fn len(&self) -> usize {
         self.size
     }
@@ -32,9 +63,13 @@ impl PartialEq<Storage> for Storage {
 }
 
 pub trait VecLike {
+    /// Clears the contents of the buffer.
     fn clear(&mut self);
+    /// Resizes the buffer to the specified length, initializing additional bytes to 0.
     fn resize_zero(&mut self, new_len: usize);
+    /// Returns a slice of the buffer.
     fn as_slice(&self) -> &[u8];
+    /// Returns a mutable slice of the buffer.
     fn as_mut_slice(&mut self) -> &mut [u8];
 }
 

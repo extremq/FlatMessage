@@ -686,19 +686,19 @@ fn check_task_example() {
         Medium = 2,
         High = 3,
     }
-    
+
     #[derive(FlatMessage, Debug, PartialEq)]
     #[flat_message_options(version = 1, store_name = true, checksum = true)]
     struct Task {
         title: String,
         description: Option<String>,
         completed: bool,
-        
+
         #[flat_message_item(repr = u8, kind = enum)]
         priority: Priority,
-        
+
         tags: Vec<String>,
-    }  
+    }
 
     let task = Task {
         title: "Learn FlatMessage".to_string(),
@@ -727,4 +727,20 @@ fn check_task_example() {
             panic!("Error deserializing task: {}", e);
         }
     }
+}
+
+#[test]
+fn check_config_max_size() {
+    #[derive(FlatMessage)]
+    struct Data {
+        content: Vec<u8>,
+    }
+
+    let data = Data {
+        content: vec![1, 2, 3],
+    };
+    let mut storage = Storage::default();
+    let config = ConfigBuilder::new().max_size(10).build();
+    let result = data.serialize_to(&mut storage, config);
+    assert_eq!(result, Err(flat_message::Error::ExceedMaxSize((21, 10))));
 }
