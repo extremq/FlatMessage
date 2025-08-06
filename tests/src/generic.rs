@@ -676,3 +676,55 @@ fn check_simple_struct_width_documentation() {
     }
     validate_correct_serde(Point { x: 10, y: 20 });
 }
+
+#[test]
+fn check_task_example() {
+    #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
+    #[repr(u8)]
+    enum Priority {
+        Low = 1,
+        Medium = 2,
+        High = 3,
+    }
+    
+    #[derive(FlatMessage, Debug, PartialEq)]
+    #[flat_message_options(version = 1, store_name = true, checksum = true)]
+    struct Task {
+        title: String,
+        description: Option<String>,
+        completed: bool,
+        
+        #[flat_message_item(repr = u8, kind = enum)]
+        priority: Priority,
+        
+        tags: Vec<String>,
+    }  
+
+    let task = Task {
+        title: "Learn FlatMessage".to_string(),
+        description: Some("Read the documentation".to_string()),
+        completed: false,
+        priority: Priority::High,
+        tags: vec!["learning".to_string(), "rust".to_string()],
+    };
+
+    // Create a serialization storage buffer
+    let mut storage = Storage::default();
+    if let Err(e) = task.serialize_to(&mut storage, Config::default()) {
+        panic!("Error serializing task: {}", e);
+    }
+
+    // print the buffer
+    println!("Buffer: {:?}", storage.as_slice());
+
+    // Deserialize from buffer
+    match Task::deserialize_from(&storage) {
+        Ok(restored_task) => {
+            assert_eq!(task, restored_task);
+            println!("Task serialized and deserialized successfully");
+        }
+        Err(e) => {
+            panic!("Error deserializing task: {}", e);
+        }
+    }
+}
