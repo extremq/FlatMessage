@@ -3,7 +3,7 @@ use std::fmt::Display;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum DataFormat {
-    GenericObject = 0,
+    Unknwon = 0,
     U8 = 1,
     U16,
     U32,
@@ -32,6 +32,11 @@ pub enum DataFormat {
     IPv6,
     IP,
     FixArray,
+    POD8,
+    POD16,
+    POD32,
+    POD64,
+    POD128,
     // Rezerved
     // Hash8,
     // Hash16,
@@ -51,6 +56,16 @@ impl DataFormat {
             | DataFormat::EnumU16
             | DataFormat::EnumU32
             | DataFormat::EnumU64 => true,
+            _ => false,
+        }
+    }
+    pub fn is_pod(&self) -> bool {
+        match self {
+            DataFormat::POD8
+            | DataFormat::POD16
+            | DataFormat::POD32
+            | DataFormat::POD64
+            | DataFormat::POD128 => true,
             _ => false,
         }
     }
@@ -82,7 +97,12 @@ impl DataFormat {
             DataFormat::IPv6 => 1,
             DataFormat::IP => 1,
             DataFormat::FixArray => 1,
-            DataFormat::GenericObject => 1,
+            DataFormat::POD8 => 1,
+            DataFormat::POD16 => 2,
+            DataFormat::POD32 => 4,
+            DataFormat::POD64 => 8,
+            DataFormat::POD128 => 16,
+            DataFormat::Unknwon => 1,
         }
     }
 }
@@ -115,7 +135,12 @@ impl Display for DataFormat {
             DataFormat::IPv6 => write!(f, "IPv6"),
             DataFormat::IP => write!(f, "IP"),
             DataFormat::FixArray => write!(f, "FixArray"),
-            DataFormat::GenericObject => write!(f, "GenericObject"),
+            DataFormat::POD8 => write!(f, "POD8"),
+            DataFormat::POD16 => write!(f, "POD16"),
+            DataFormat::POD32 => write!(f, "POD32"),
+            DataFormat::POD64 => write!(f, "POD64"),
+            DataFormat::POD128 => write!(f, "POD128"),
+            DataFormat::Unknwon => write!(f, "Unknwon"),
         }
     }
 }
@@ -159,8 +184,14 @@ impl From<&str> for DataFormat {
             "std :: net :: Ipv4Addr" | "net :: Ipv4Addr" | "Ipv4Addr" => DataFormat::IPv4,
             "std :: net :: Ipv6Addr" | "net :: Ipv6Addr" | "Ipv6Addr" => DataFormat::IPv6,
             "std :: net :: IpAddr" | "net :: IpAddr" | "IpAddr" => DataFormat::IP,
+            // copy struct
+            "pod_1" => DataFormat::POD8,
+            "pod_2" => DataFormat::POD16,
+            "pod_4" => DataFormat::POD32,
+            "pod_8" => DataFormat::POD64,
+            "pod_16" => DataFormat::POD128,
             // the rest are considered generic objects
-            _ => DataFormat::GenericObject,
+            _ => DataFormat::Unknwon,
         }
         // ;
         // println!("Name: {} -> {}", value, r);

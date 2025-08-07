@@ -2,12 +2,14 @@ mod attribute_parser;
 mod config;
 mod data_type;
 mod enum_info;
+mod pod;
 mod enum_memory_representation;
 mod field_info;
 mod struct_info;
 mod utils;
 mod validate_checksum;
 mod version_validator_parser;
+mod mem_alignament;
 
 use config::Config;
 use quote::quote;
@@ -63,26 +65,20 @@ fn extract_attribute_inner_tokens(attr: &Attribute) -> Option<TokenStream> {
     return Some(tokens2.into());
 }
 
-// #[proc_macro_attribute]
-// pub fn flat_message(args: TokenStream, input: TokenStream) -> TokenStream {
-//     let config = Config::new(args);
-//     let input = parse_macro_input!(input as DeriveInput);
-
-//     if let syn::Data::Struct(s) = &input.data {
-//         let si = match StructInfo::new(&input, s, config) {
-//             Ok(si) => si,
-//             Err(e) => {
-//                 return quote::quote! {
-//                     compile_error!(#e);
-//                 }
-//                 .into();
-//             }
-//         };
-//         si.generate_code()
-//     } else {
-//         panic!("Only structs are supported !")
-//     }
-// }
+#[proc_macro_derive(FlatMessagePOD)]
+pub fn flat_message_pod(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as syn::DeriveInput);
+    let pod = match pod::POD::try_from(input) {
+        Ok(pod) => pod,
+        Err(e) => {
+            return quote::quote! {
+                compile_error!(#e);
+            }
+            .into();
+        }
+    };
+    pod.generate_code().into()
+}
 
 #[proc_macro_derive(FlatMessageEnum, attributes(sealed))]
 pub fn flat_message_enum(input: TokenStream) -> TokenStream {

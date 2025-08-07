@@ -46,7 +46,8 @@ impl TryFrom<&Field> for FieldInfo {
         }
         let name = field.ident.as_ref().unwrap().to_string();
         let ty = &field.ty;
-        let mut data_type = DataType::new(ty.clone(), quote! {#ty}.to_string());
+        let ty_str = quote! {#ty}.to_string();
+        let mut data_type = DataType::new(ty.clone(), ty_str);
         for attr in field.attrs.iter() {
             if attr.path().is_ident("flat_message_item") {
                 let all_tokens = attr.meta.clone().into_token_stream();
@@ -62,7 +63,7 @@ impl TryFrom<&Field> for FieldInfo {
                 }
                 let attr = attribute_parser::parse(tokens);
                 data_type.update(&attr, name.as_str())?;
-            } else {                
+            } else {
                 if attr.path().is_ident("doc") {
                     // skip it until I find a better solutiion:)
                     continue;
@@ -73,6 +74,14 @@ impl TryFrom<&Field> for FieldInfo {
                     name
                 ));
             }
+        }
+        // if the data format is unknown, we need to check if the field is a unique id or a timestamp
+        if data_type.data_format == common::data_format::DataFormat::Unknwon
+            && !data_type.unique_id
+            && !data_type.timestamp
+            && !data_type.zst
+        {
+            return Err(format!("Please provide aditional specifications via #[flat_message_item(...)] for the field '{}' !", name));
         }
         // compute the data format
         let hash = (hashes::fnv_32(&name) & 0xFFFFFF00) | data_type.type_hash();

@@ -35,3 +35,5 @@ pub use timestamp::Timestamp;
 
 pub trait FlatMessageOwned: for<'de> FlatMessage<'de> {}
 impl<T> FlatMessageOwned for T where T: for<'de> FlatMessage<'de> {}
+
+pub trait FlatMessageCopy: Copy + Sized {}

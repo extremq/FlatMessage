@@ -744,3 +744,6 @@ fn check_config_max_size() {
     let result = data.serialize_to(&mut storage, config);
     assert_eq!(result, Err(flat_message::Error::ExceedMaxSize((21, 10))));
 }
+
+
+
