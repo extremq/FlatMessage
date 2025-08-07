@@ -12,6 +12,7 @@ pub(crate) struct Config {
     pub(crate) validate_name: bool,
     pub(crate) compatible_versions: Option<VersionValidatorParser>,
     pub(crate) validate_checksum: ValidateChecksum,
+    pub(crate) optimized_unchecked_code: bool,
 }
 
 impl Config {
@@ -22,6 +23,7 @@ impl Config {
         let mut version = 0u8;
         let mut compatible_versions = None;
         let mut validate_checksum = ValidateChecksum::Auto;
+        let mut optimized_unchecked_code = true;
         //println!("--Parsing attributes: '{}'", args.to_string());
         let attrs = attribute_parser::parse(args);
         for (attr_name, attr_value) in attrs.iter() {
@@ -38,6 +40,7 @@ impl Config {
                         Err(def) => panic!("Fail to parse compatible_versions: {}", def),
                     }
                 }
+                "optimized_unchecked_code" => optimized_unchecked_code = utils::to_bool(&attr_value).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value, attr_name).as_str()),
                 _ => {
                     panic!("Unknown attribute: {}. Supported attributes are: 'store_name', 'metadata', 'checksum', validate_name', 'compatible_versions' and 'version' !", attr_name);
                 }
@@ -55,6 +58,7 @@ impl Config {
             validate_name,
             validate_checksum,
             compatible_versions,
+            optimized_unchecked_code,
         }
     }
 }
@@ -68,6 +72,7 @@ impl Default for Config {
             validate_name: false,
             compatible_versions: None,
             validate_checksum: ValidateChecksum::Auto,
+            optimized_unchecked_code: true,
         }
     }
 }

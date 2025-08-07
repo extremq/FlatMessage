@@ -667,13 +667,39 @@ impl<'a> StructInfo<'a> {
         let deserializaton_code_u8 = self.generate_fields_deserialize_code(1, false);
         let deserializaton_code_u16 = self.generate_fields_deserialize_code(2, false);
         let deserializaton_code_u32 = self.generate_fields_deserialize_code(4, false);
-        let deserializaton_code_u8_unchecked = self.generate_fields_deserialize_code(1, true);
-        let deserializaton_code_u16_unchecked = self.generate_fields_deserialize_code(2, true);
-        let deserializaton_code_u32_unchecked = self.generate_fields_deserialize_code(4, true);
         let checksum_check_code = self.generate_checksum_check_code();
-
         let ctor_code = self.generate_struct_construction_code();
         let lifetimes = &self.generics.params;
+
+        let unchecked_code = if self.config.optimized_unchecked_code {
+            let deserializaton_code_u8_unchecked = self.generate_fields_deserialize_code(1, true);
+            let deserializaton_code_u16_unchecked = self.generate_fields_deserialize_code(2, true);
+            let deserializaton_code_u32_unchecked = self.generate_fields_deserialize_code(4, true);
+            quote! {
+                use ::flat_message::VecLike;
+                #header_deserialization_code
+                match ref_offset_size {
+                    RefOffsetSize::U8 => {
+                        #(#deserializaton_code_u8_unchecked)*
+                        #ctor_code
+                    }
+                    RefOffsetSize::U16 => {
+                        #(#deserializaton_code_u16_unchecked)*
+                        #ctor_code
+                    }
+                    RefOffsetSize::U32 => {
+                        #(#deserializaton_code_u32_unchecked)*
+                        #ctor_code
+                    }
+                }
+            }
+        } else {
+            quote! {
+                Self::deserialize_from(input)
+            }
+        };
+
+
         quote! {
             fn deserialize_from(input: & #lifetimes ::flat_message::Storage) -> core::result::Result<Self,flat_message::Error>
             {
@@ -697,22 +723,7 @@ impl<'a> StructInfo<'a> {
             }
             unsafe fn deserialize_from_unchecked(input: & #lifetimes ::flat_message::Storage) -> core::result::Result<Self,flat_message::Error>
             {
-                use ::flat_message::VecLike;
-                #header_deserialization_code
-                match ref_offset_size {
-                    RefOffsetSize::U8 => {
-                        #(#deserializaton_code_u8_unchecked)*
-                        #ctor_code
-                    }
-                    RefOffsetSize::U16 => {
-                        #(#deserializaton_code_u16_unchecked)*
-                        #ctor_code
-                    }
-                    RefOffsetSize::U32 => {
-                        #(#deserializaton_code_u32_unchecked)*
-                        #ctor_code
-                    }
-                }
+                #unchecked_code
             }
         }
     }
@@ -794,7 +805,7 @@ impl<'a> StructInfo<'a> {
                     }
                     if field.data_type.option {
                         return Err(format!("Timestamp can not be an Option - you either have them or you don't - for field {} in structure {} !", field.name, input.ident));
-                    }
+                    }                        
                     timestamp = Some(field);
                 } else if field.data_type.zst {
                     //println!("Warning: field {} in structure {} is a zero-sized type (ZST) ! It will be ignored !", field.name, input.ident);

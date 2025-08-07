@@ -732,6 +732,7 @@ fn check_task_example() {
 #[test]
 fn check_config_max_size() {
     #[derive(FlatMessage)]
+    #[flat_message_options(optimized_unchecked_code = false)]
     struct Data {
         content: Vec<u8>,
     }
