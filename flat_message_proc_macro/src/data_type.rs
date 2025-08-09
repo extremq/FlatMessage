@@ -107,6 +107,19 @@ impl DataType {
                 self.data_format = new_data_format;
                 return Ok(());
             }
+            if kind == "flags" {
+                if !has_repr {
+                    return Err(format!("If we provided the 'kind' attribute with the value 'flags' you need to also provide the attribute 'repr' (for field: '{}')",field_nane));
+                }                
+                let repr = attr.get("repr").unwrap();
+                let new_name = format!("flags_{}", repr);
+                let new_data_format = DataFormat::from(new_name.as_str());
+                if new_data_format.is_flags() == false {
+                    return Err(format!("Invalid representation for flags: '{}' in field: '{}'. The possible representations for flags are: u8, u16, u32, u64 and u128",repr, field_nane));
+                }
+                self.data_format = new_data_format;
+                return Ok(());
+            }
             if kind == "pod" {
                 if !has_align {
                     return Err(format!("If we provided the 'kind' attribute with the value 'pod' you need to also provide the attribute 'align' (for field: '{}')",field_nane));

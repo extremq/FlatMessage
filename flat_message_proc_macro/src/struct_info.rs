@@ -3,6 +3,7 @@ use crate::data_type::FieldType;
 use crate::field_info::FieldInfo;
 use common::constants;
 use common::hashes;
+use quote::format_ident;
 use quote::quote;
 //use syn::Attribute;
 use syn::{DataStruct, DeriveInput};
@@ -545,33 +546,28 @@ impl<'a> StructInfo<'a> {
             });
         }
     }
+    fn generate_const_type_assertion(&self, field: &FieldInfo, error_msg: &str) -> proc_macro2::TokenStream {
+        let ty = format_ident!("{}",field.data_type.name);
+        let const_assert_name = format_ident!("_CONST_ASSERT_{}_{}",self.name,field.name);        
+        let df = format_ident!("{}",field.data_type.data_format.to_string());
+        let field_name = format!("{}::{}",self.name, field.name);
+        let serde_ty = format_ident!("{}",field.data_type.field_type.serde_trait());
+        quote! {
+            #[allow(non_upper_case_globals)]
+            const #const_assert_name: () = if <#ty as #serde_ty>::DATA_FORMAT as u8 != flat_message::DataFormat::#df as u8 {
+                panic!(concat!("Incorect representation for field '", #field_name, "' in the #[flat_message_item(...)] attribute ! ",#error_msg));
+            };
+        }
+    }
     fn generate_const_assertion_functions(&self) -> Vec<proc_macro2::TokenStream> {
         let mut v = Vec::with_capacity(8);
-        let name = self.name.to_string();
         for field in self.fields.iter() {
-            if !field.data_type.data_format.is_enum() {
-                continue;
+            if field.data_type.data_format.is_enum() {
+                v.push(self.generate_const_type_assertion(field,"Validate that the type describe in the #[repr(...)] attribute of the enum is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
             }
-            let s = format!("const _const_assertion_{}_{}: () = if <{} as {}>::DATA_FORMAT as u8 != flat_message::DataFormat::{} as u8 {{ panic!(\"Incorect representation for field {}::{} in the #[flat_message_item(...)] attribute ! Please check the #[repr(...)] attribute in the definition of enum '{}' and make sure it is the same in the attribute #[flat_message_item(...)] for the field {}::{} !\"); }};", 
-                            name, 
-                            field.name, 
-                            field.data_type.name,
-                            field.data_type.field_type.serde_trait(), 
-                            field.data_type.data_format, 
-                            name,
-                            field.name,
-                            name,
-                            name,
-                            field.name
-                        );
-            let tokens: proc_macro2::TokenStream = s
-                .parse()
-                .expect("Failed to convert string into TokenStream");
-
-            v.push(quote! {
-                #[allow(non_upper_case_globals)]
-                #tokens
-            });
+            if field.data_type.data_format.is_flags() { 
+                v.push(self.generate_const_type_assertion(field,"Validate that the underline type is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
+            }            
         }
         v
     }

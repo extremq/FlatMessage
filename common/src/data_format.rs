@@ -32,6 +32,11 @@ pub enum DataFormat {
     IPv6,
     IP,
     FixArray,
+    Flags8,
+    Flags16,
+    Flags32,
+    Flags64,
+    Flags128,
     POD8,
     POD16,
     POD32,
@@ -69,6 +74,16 @@ impl DataFormat {
             _ => false,
         }
     }
+    pub fn is_flags(&self) -> bool {
+        match self {
+            DataFormat::Flags8
+            | DataFormat::Flags16
+            | DataFormat::Flags32
+            | DataFormat::Flags64
+            | DataFormat::Flags128 => true,
+            _ => false,
+        }
+    }    
     pub const fn alignament(&self) -> u8 {
         match self {
             DataFormat::U8 => 1,
@@ -97,6 +112,11 @@ impl DataFormat {
             DataFormat::IPv6 => 1,
             DataFormat::IP => 1,
             DataFormat::FixArray => 1,
+            DataFormat::Flags8 => 1,
+            DataFormat::Flags16 => 2,
+            DataFormat::Flags32 => 4,
+            DataFormat::Flags64 => 8,
+            DataFormat::Flags128 => 16,
             DataFormat::POD8 => 1,
             DataFormat::POD16 => 2,
             DataFormat::POD32 => 4,
@@ -135,6 +155,11 @@ impl Display for DataFormat {
             DataFormat::IPv6 => write!(f, "IPv6"),
             DataFormat::IP => write!(f, "IP"),
             DataFormat::FixArray => write!(f, "FixArray"),
+            DataFormat::Flags8 => write!(f, "Flags8"),
+            DataFormat::Flags16 => write!(f, "Flags16"),
+            DataFormat::Flags32 => write!(f, "Flags32"),
+            DataFormat::Flags64 => write!(f, "Flags64"),
+            DataFormat::Flags128 => write!(f, "Flags128"),
             DataFormat::POD8 => write!(f, "POD8"),
             DataFormat::POD16 => write!(f, "POD16"),
             DataFormat::POD32 => write!(f, "POD32"),
@@ -184,6 +209,12 @@ impl From<&str> for DataFormat {
             "std :: net :: Ipv4Addr" | "net :: Ipv4Addr" | "Ipv4Addr" => DataFormat::IPv4,
             "std :: net :: Ipv6Addr" | "net :: Ipv6Addr" | "Ipv6Addr" => DataFormat::IPv6,
             "std :: net :: IpAddr" | "net :: IpAddr" | "IpAddr" => DataFormat::IP,
+            // flags
+            "flags_u8" => DataFormat::Flags8,
+            "flags_u16" => DataFormat::Flags16,
+            "flags_u32" => DataFormat::Flags32,
+            "flags_u64" => DataFormat::Flags64,
+            "flags_u128" => DataFormat::Flags128,
             // copy struct
             "pod_1" => DataFormat::POD8,
             "pod_2" => DataFormat::POD16,

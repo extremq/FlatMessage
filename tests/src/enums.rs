@@ -391,7 +391,7 @@ fn check_enum_slice_u32bits() {
     s.serialize_to(&mut v, Config::default()).unwrap();
     let ds = TestStruct::deserialize_from(&v).unwrap();
     assert_eq!(s.value, ds.value);
-    assert_eq!(s.color, ds.color);
+    assert_eq!(s.color, ds.color);    
 }
 
 #[test]

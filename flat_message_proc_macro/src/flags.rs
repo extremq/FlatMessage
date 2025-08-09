@@ -21,15 +21,15 @@ impl Flags {
             common::hashes::crc32(name.as_bytes())
         } else {
             common::hashes::crc32(self.name.to_string().as_bytes())
-        }        
+        }
     }
     fn data_format(&self) -> proc_macro2::TokenStream {
         match self.repr_size {
-            1 => quote! {DataFormat::U8},
-            2 => quote! {DataFormat::U16},
-            4 => quote! {DataFormat::U32},
-            8 => quote! {DataFormat::U64},
-            16 => quote! {DataFormat::U128},
+            1 => quote! {DataFormat::Flags8},
+            2 => quote! {DataFormat::Flags16},
+            4 => quote! {DataFormat::Flags32},
+            8 => quote! {DataFormat::Flags64},
+            16 => quote! {DataFormat::Flags128},
             _ => quote! {},
         }
     }
@@ -61,6 +61,75 @@ impl Flags {
         //     };
         // }
         quote! {}
+    }
+
+    fn generate_flags_support_implementation(&self) -> TokenStream {
+        let name = &self.name;
+        let repr_type = self.repr_type();
+        let flags = self
+            .flags
+            .iter()
+            .map(|f| {
+                let flag = format_ident!("{}", f);
+                quote!(#name::#flag.0)
+            }).collect::<Vec<_>>();
+        let mask = quote! {
+            const MASK: #repr_type = #(#flags |)* 0;
+        };
+        quote! {
+            impl FlagsSupport<#repr_type> for   #name {
+                fn from_value(value: #repr_type) -> Option<Self> {
+                    #mask
+                    if value | MASK == MASK {
+                        Some(Self(value))
+                    } else {
+                        None
+                    }
+                }
+                fn to_value(&self) -> #repr_type {
+                    self.0
+                }
+                fn any_set(&self, flag: Self) -> bool {
+                    self.0 & flag.0 != 0
+                }
+                fn all_set(&self, flag: Self) -> bool {
+                    self.0 & flag.0 == flag.0
+                }
+                fn is_empty(&self) -> bool {
+                    self.0 == 0
+                }
+                fn set(&mut self, flag: Self) {
+                    self.0 |= flag.0;
+                }
+                fn unset(&mut self, flag: Self) {
+                    self.0 &= !flag.0;
+                }
+                fn toggle(&mut self, flag: Self) {
+                    self.0 ^= flag.0;
+                }
+                fn clear(&mut self) {
+                    self.0 = 0;
+                }
+            }
+            impl std::ops::BitOr for #name {
+                type Output = Self;
+                fn bitor(self, rhs: Self) -> Self::Output {
+                    Self(self.0 | rhs.0)
+                }
+            }
+            impl std::ops::BitAnd for #name {
+                type Output = Self;
+                fn bitand(self, rhs: Self) -> Self::Output {
+                    Self(self.0 & rhs.0)
+                }
+            }
+            impl std::ops::BitXor for #name {
+                type Output = Self;
+                fn bitxor(self, rhs: Self) -> Self::Output {
+                    Self(self.0 ^ rhs.0)
+                }
+            }
+        }
     }
 
     fn generate_serde_implementation(&self) -> TokenStream {
@@ -98,7 +167,7 @@ impl Flags {
                 unsafe fn write(obj: &Self, p: *mut u8, pos: usize) -> usize {
                     unsafe {
                         std::ptr::write_unaligned(p.add(pos) as *mut u32, #name_hash);
-                        std::ptr::write_unaligned(p.add(pos+4) as *mut #repr_type, *obj as #repr_type);
+                        std::ptr::write_unaligned(p.add(pos+4) as *mut #repr_type, obj.0);
                         pos + std::mem::size_of::<#repr_type>()+4
                     }
                 }
@@ -112,11 +181,13 @@ impl Flags {
     pub fn generate_code(&self) -> TokenStream {
         let serde_code = self.generate_serde_implementation();
         let const_assertion_code = self.generate_const_assertion_functions();
+        let flags_support_code = self.generate_flags_support_implementation();
         let name = &self.name;
         // let slice_code = self.generate_slice_serde_implementation();
         // let vec_code = self.generate_vector_serde_implementation();
         quote! {
             impl flat_message::FlatMessageCopy for #name {}
+            #flags_support_code
             #const_assertion_code
             #serde_code
             // for slices
@@ -194,7 +265,7 @@ impl TryFrom<syn::DeriveInput> for Flags {
             name: input.ident,
             sealed,
             flags,
-            repr_size
+            repr_size,
         })
     }
 }

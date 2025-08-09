@@ -11,6 +11,7 @@ mod timestamp;
 pub mod size;
 mod storage;
 mod structure_information;
+mod flags_support;
 //mod builder;
 
 pub use self::config::Config;
@@ -32,6 +33,7 @@ pub use common::data_format::DataFormat;
 pub use common::hashes::crc32;
 pub use unique_id::UniqueID;
 pub use timestamp::Timestamp;
+pub use flags_support::FlagsSupport;
 
 pub trait FlatMessageOwned: for<'de> FlatMessage<'de> {}
 impl<T> FlatMessageOwned for T where T: for<'de> FlatMessage<'de> {}
