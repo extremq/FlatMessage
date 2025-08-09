@@ -20,6 +20,8 @@ mod option;
 mod fix_arrays;
 #[cfg(test)]
 mod pod;
+#[cfg(test)]
+mod flags;
 
 #[cfg(test)]
 pub(crate) use flat_message::{Config, FlatMessage, Storage};

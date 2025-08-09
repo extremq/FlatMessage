@@ -10,12 +10,13 @@ mod utils;
 mod validate_checksum;
 mod version_validator_parser;
 mod mem_alignament;
+mod flags;
 
 use config::Config;
-use quote::quote;
+use quote::{quote, ToTokens};
 use std::str::FromStr;
 use struct_info::StructInfo;
-use syn::{parse_macro_input, DeriveInput};
+use syn::{parse_macro_input, DeriveInput, Expr, Ident, Item, ItemImpl, ItemStruct, Type};
 
 extern crate proc_macro;
 
@@ -95,6 +96,22 @@ pub fn flat_message_enum(input: TokenStream) -> TokenStream {
     ei.generate_code().into()
 }
 
+#[proc_macro_derive(FlatMessageFlags, attributes(sealed,flags))]
+pub fn flat_message_flags(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as syn::DeriveInput);
+    let flags = match flags::Flags::try_from(input) {
+        Ok(flags) => flags,
+        Err(e) => {
+            return quote::quote! {
+                compile_error!(#e);
+            }
+            .into();
+        }
+    };
+    flags.generate_code().into()
+}
+
+
 #[proc_macro]
 pub fn name(input: TokenStream) -> TokenStream {
     let value = utils::validate_one_string_parameter(input, "name");
@@ -102,3 +119,4 @@ pub fn name(input: TokenStream) -> TokenStream {
     TokenStream::from_str(format!("Name {{ value: {} }}", hash).as_str())
         .expect("Fail to convert name! to stream")
 }
+
