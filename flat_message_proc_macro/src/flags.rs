@@ -129,6 +129,21 @@ impl Flags {
                     Self(self.0 ^ rhs.0)
                 }
             }
+            impl std::ops::BitAndAssign for #name {
+                fn bitand_assign(&mut self, rhs: Self) {
+                    self.0 &= rhs.0;
+                }
+            }
+            impl std::ops::BitOrAssign for #name {
+                fn bitor_assign(&mut self, rhs: Self) {
+                    self.0 |= rhs.0;
+                }
+            }
+            impl std::ops::BitXorAssign for #name {
+                fn bitxor_assign(&mut self, rhs: Self) {
+                    self.0 ^= rhs.0;
+                }
+            }
         }
     }
 
