@@ -17,6 +17,7 @@ use quote::{quote, ToTokens};
 use std::str::FromStr;
 use struct_info::StructInfo;
 use syn::{parse_macro_input, DeriveInput, Expr, Ident, Item, ItemImpl, ItemStruct, Type};
+use syn::parse::Parser;
 
 extern crate proc_macro;
 
@@ -120,3 +121,23 @@ pub fn name(input: TokenStream) -> TokenStream {
         .expect("Fail to convert name! to stream")
 }
 
+#[proc_macro]
+pub fn add_flag(input: TokenStream) -> TokenStream {
+    let parsed = parse_macro_input!(input as syn::ExprAssign);
+    let name = match &*parsed.left {
+        syn::Expr::Path(path) => path.path.segments.last().unwrap().ident.clone(),
+        _ => panic!("Expected flag name to be an identifier"),
+    };
+
+    let value = match &*parsed.right {
+        syn::Expr::Lit(lit) => match lit.lit {
+            syn::Lit::Int(ref lit_int) => lit_int.clone(),
+            _ => panic!("Expected flag value to be an integer literal"),
+        },
+        _ => panic!("Expected flag value to be an integer literal"),
+    };
+    let const_name = name.clone();
+    quote! {
+        pub const #const_name: Self = Self(#value);
+    }.into()   
+}

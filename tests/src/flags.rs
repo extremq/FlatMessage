@@ -35,7 +35,7 @@ fn check_simple() {
     impl Flags {
         pub const A: Flags = Flags(1);
         pub const B: Flags = Flags(2);
-    };
+    }
 
     #[derive(FlatMessage, Debug, Eq, PartialEq)]
     struct Test {
@@ -44,4 +44,36 @@ fn check_simple() {
     }    
   
     validate_correct_serde(Test { flags: Flags::A });
+}
+
+#[test]
+fn check_simple_repr() {
+    #[derive(Copy, Clone, FlatMessageFlags, Eq, PartialEq, Debug)]
+    #[repr(transparent)]
+    #[flags(A,B)]
+    pub struct Flags(u32);
+
+    impl Flags {
+        add_flag!(A = 1);
+        add_flag!(B = 2);
+        // pub const A: Flags = Flags(1);
+        // pub const B: Flags = Flags(2);
+    }
+
+    #[derive(FlatMessage, Debug, Eq, PartialEq)]
+    #[flat_message_options(store_name = false)]
+    struct Test {
+        #[flat_message_item(kind = flags, repr = u32)]
+        flags: Flags
+    }    
+    let t = Test { flags: Flags::A };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(s.as_slice(), &[
+        70, 76, 77, 1, 1, 0, 0, 0, // Header
+        190, 110, 196, 202, // Hash over Name (Test)
+        1, 0, 0, 0, // value of field flags
+        29, 122, 103, 156, // hash over field flags
+        8 // offset of field flags
+    ]);
 }
