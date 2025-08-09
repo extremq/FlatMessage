@@ -193,22 +193,156 @@ impl Flags {
             }
         }
     }
+
+    fn generate_slice_serde_implementation(&self) -> TokenStream {
+        let name = &self.name;
+        let data_format = self.data_format();
+        let name_hash = self.compute_hash();
+        let repr_type = self.repr_type();
+        let (size_format, multiplier, slice) = match self.repr_size {
+            1 => (
+                quote! { U8withExtension },
+                quote! {},
+                quote! {&buf[pos + size_len..end];},
+            ),
+            2 => (
+                quote! { U16withExtension },
+                quote! { * 2 },
+                quote! { unsafe { std::slice::from_raw_parts(buf.as_ptr().add(pos+size_len) as *const #repr_type, count) }; },
+            ),
+            4 => (
+                quote! { U32 },
+                quote! { *4 },
+                quote! { unsafe { std::slice::from_raw_parts(buf.as_ptr().add(pos+size_len) as *const #repr_type, count) }; },
+            ),
+            8 => {
+                // since we have the hash (4 bytes) we don't need to use U32onu64 as we are already aligned to 8 bytes
+                (
+                    quote! { U32 },
+                    quote! { *8 },
+                    quote! { unsafe { std::slice::from_raw_parts(buf.as_ptr().add(pos+size_len) as *const #repr_type, count) }; },
+                )
+            }
+            _ => panic!("Not defined enum representation type"),
+        };
+
+        quote! {
+            unsafe impl<'a> SerDeSlice<'a> for #name {
+                const DATA_FORMAT: flat_message::DataFormat = #data_format;
+                #[inline(always)]
+                unsafe fn from_buffer_unchecked(buf: &[u8], pos: usize) -> &'a [Self] {
+                    let p = buf.as_ptr();
+                    let pos = pos + 4; // skip the name hash
+                    let (count, size_len) =
+                        flat_message::size::read_unchecked(p, pos, flat_message::size::Format::#size_format);
+                    std::slice::from_raw_parts(p.add(pos + size_len) as *const #name, count)
+                }
+                #[inline(always)]
+                fn from_buffer(buf: &[u8], pos: usize) -> Option<&'a [Self]> {
+                    if pos + 4 > buf.len() {
+                        return None;
+                    }
+                    unsafe {
+                        let hash = (buf.as_ptr().add(pos) as *const u32).read_unaligned();
+                        if hash != #name_hash {
+                            return None;
+                        }
+                    }
+                    let pos = pos + 4;
+                    let (count, size_len) =  flat_message::size::read(
+                        buf.as_ptr(),
+                        pos,
+                        buf.len(),
+                        flat_message::size::Format::#size_format,
+                    )?;
+                    let end = pos + size_len + count #multiplier;
+                    if end > buf.len() {
+                        None
+                    } else {
+                        let slice = #slice
+                        // check each value
+                        for value in slice.iter() {
+                            let _ = #name::from_value(*value as #repr_type)?;
+                        }
+                        Some(unsafe {
+                            std::slice::from_raw_parts(
+                                buf.as_ptr().add(pos + size_len) as *const #name,
+                                count,
+                            )
+                        })
+                    }
+                }
+                #[inline(always)]
+                unsafe fn write(obj: &[Self], p: *mut u8, pos: usize) -> usize {
+                    let len = obj.len() as u32;
+                    unsafe {
+                        std::ptr::write_unaligned(p.add(pos) as *mut u32, #name_hash);
+                        let size_len =
+                        flat_message::size::write(p, pos+4, len, flat_message::size::Format::#size_format);
+                        std::ptr::copy_nonoverlapping(
+                            obj.as_ptr() as *mut u8,
+                            p.add(pos + size_len + 4),
+                            obj.len() #multiplier,
+                        );
+                        pos + size_len + (len as usize) #multiplier  + 4usize
+                    }
+                }
+                #[inline(always)]
+                fn size(obj: &[Self]) -> usize {
+                    flat_message::size::len(obj.len() as u32, flat_message::size::Format::#size_format)
+                    + obj.len() #multiplier + 4usize /* name hash */
+                }
+            }
+        }
+    }
+
+    fn generate_vector_serde_implementation(&self) -> TokenStream {
+        let data_format = self.data_format();
+        let name = &self.name;
+
+        quote! {
+            unsafe impl SerDeVec<'_> for #name {
+                const DATA_FORMAT: flat_message::DataFormat = #data_format;
+
+                #[inline(always)]
+                unsafe fn from_buffer_unchecked(buf: &[u8], pos: usize) -> Vec<Self> {
+                    let res: &[#name] = SerDeSlice::from_buffer_unchecked(buf, pos);
+                    res.to_vec()
+                }
+                #[inline(always)]
+                fn from_buffer(buf: &[u8], pos: usize) -> Option<Vec<Self>> {
+                    let res: &[#name] = SerDeSlice::from_buffer(buf, pos)?;
+                    Some(res.to_vec())
+                }
+                #[inline(always)]
+                unsafe fn write(obj: &Vec<Self>, p: *mut u8, pos: usize) -> usize {
+                    SerDeSlice::write(obj.as_slice(), p, pos)
+                }
+                #[inline(always)]
+                fn size(obj: &Vec<Self>) -> usize {
+                    SerDeSlice::size(obj.as_slice())
+                }
+            }
+        }
+    }    
+
+
     pub fn generate_code(&self) -> TokenStream {
         let serde_code = self.generate_serde_implementation();
         let const_assertion_code = self.generate_const_assertion_functions();
         let flags_support_code = self.generate_flags_support_implementation();
         let name = &self.name;
-        // let slice_code = self.generate_slice_serde_implementation();
-        // let vec_code = self.generate_vector_serde_implementation();
+        let slice_code = self.generate_slice_serde_implementation();
+        let vec_code = self.generate_vector_serde_implementation();
         quote! {
             impl flat_message::FlatMessageCopy for #name {}
             #flags_support_code
             #const_assertion_code
             #serde_code
             // for slices
-            // #slice_code
+            #slice_code
             // for vectors
-            // #vec_code
+            #vec_code
         }
     }
 }
