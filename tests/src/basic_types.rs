@@ -338,14 +338,14 @@ fn check_buffer_u16_repr() {
     struct TestStruct {
         b2: Vec<u16>,
     }
-    let mut v = Vec::new();
+    let mut v = Storage::default();
     let s = TestStruct {
         b2: [1, 2, 3].to_vec(),
     };
     s.serialize_to(&mut v, Config::default()).unwrap();
     assert_eq!(
-        v,
-        vec![
+        v.as_slice(),
+        &[
             70, 76, 77, 1, 1, 0, 0, 0, // Header
             3, // size of b2 (3 elements)
             0, 1, 0, 2, 0, 3, // b2 = [1, 2, 3] (3 elements)
