@@ -4,7 +4,7 @@ mod structures;
 use crate::get_size_min::GetSize;
 use ascii_table::{Align, AsciiTable};
 use clap::Parser;
-use flat_message::{FlatMessage, FlatMessageOwned, Storage, VecLike};
+use flat_message::{FlatMessage, FlatMessageOwned, Storage};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::collections::HashSet;
@@ -224,9 +224,9 @@ fn bench<T: GetSize, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T +
 #[derive(get_size_derive::GetSize)]
 struct Wrapper<T>(T);
 impl<'a, T: FlatMessage<'a>> FlatMessage<'a> for Wrapper<T> {
-    fn serialize_to<V: VecLike>(
+    fn serialize_to(
         &self,
-        output: &mut V,
+        output: &mut Storage,
         config: flat_message::Config,
     ) -> std::result::Result<(), flat_message::Error> {
         self.0.serialize_to(output, config)

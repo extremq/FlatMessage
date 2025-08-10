@@ -1,8 +1,8 @@
 use crate::error::Error;
-use crate::{Config, Storage, VecLike};
+use crate::{Config, Storage};
 
 pub trait FlatMessage<'a> {
-    fn serialize_to<V: VecLike>(&self, output: &mut V, config: Config) -> Result<(), Error>;
+    fn serialize_to(&self, output: &mut Storage, config: Config) -> Result<(), Error>;
     fn deserialize_from(input: &'a Storage) -> Result<Self, Error>
     where
         Self: Sized;

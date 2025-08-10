@@ -2,7 +2,7 @@ use std::num::{NonZeroU64, NonZeroU8};
 
 use criterion::BenchmarkId;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use flat_message::FlatMessage;
+use flat_message::{FlatMessage, Storage};
 use serde::Serialize;
 
 #[derive(FlatMessage)]
@@ -32,7 +32,7 @@ struct ProcessCreatedS {
     version: NonZeroU8,
 }
 
-fn test_flat_message(process: &ProcessCreated, output: &mut Vec<u8>) -> usize {
+fn test_flat_message(process: &ProcessCreated, output: &mut Storage) -> usize {
     output.clear();
     process
         .serialize_to(output, flat_message::Config::default())
@@ -105,12 +105,13 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         version: NonZeroU8::new(1).unwrap(),
     };
     let mut output = Vec::new();
+    let mut storage = Storage::default();   
 
     let mut group = c.benchmark_group("serialization");
 
     if false {
         group.bench_with_input(BenchmarkId::new("flat_message", "_"), &(), |b, _| {
-            b.iter(|| test_flat_message(black_box(&process), black_box(&mut output)))
+            b.iter(|| test_flat_message(black_box(&process), black_box(&mut storage)))
         });
         group.bench_with_input(BenchmarkId::new("cbor", "_"), &(), |b, _| {
             b.iter(|| test_cbor(black_box(&process_s), black_box(&mut output)))

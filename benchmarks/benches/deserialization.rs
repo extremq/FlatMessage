@@ -2,7 +2,7 @@ use std::num::{NonZeroU64, NonZeroU8};
 
 use criterion::BenchmarkId;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use flat_message::{FlatMessage, Storage, VecLike};
+use flat_message::{FlatMessage, Storage};
 use serde::{Deserialize, Serialize};
 
 #[derive(FlatMessage)]

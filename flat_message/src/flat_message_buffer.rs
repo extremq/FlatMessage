@@ -1,7 +1,6 @@
 use crate::buffer;
 use crate::headers::HeaderV1;
 use crate::Storage;
-use crate::VecLike;
 
 use super::Error;
 use super::Name;

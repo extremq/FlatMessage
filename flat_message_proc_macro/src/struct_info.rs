@@ -593,7 +593,7 @@ impl<'a> StructInfo<'a> {
         };
 
         quote! {
-            fn serialize_to<V: ::flat_message::VecLike>(&self,output: &mut V, config: flat_message::Config) -> core::result::Result<(),flat_message::Error> {
+            fn serialize_to(&self,output: &mut ::flat_message::Storage, config: flat_message::Config) -> core::result::Result<(),flat_message::Error> {
                 use ::std::ptr;
                 enum RefOffsetSize {
                     U8,
@@ -672,7 +672,6 @@ impl<'a> StructInfo<'a> {
             let deserializaton_code_u16_unchecked = self.generate_fields_deserialize_code(2, true);
             let deserializaton_code_u32_unchecked = self.generate_fields_deserialize_code(4, true);
             quote! {
-                use ::flat_message::VecLike;
                 #header_deserialization_code
                 match ref_offset_size {
                     RefOffsetSize::U8 => {
@@ -699,7 +698,6 @@ impl<'a> StructInfo<'a> {
         quote! {
             fn deserialize_from(input: & #lifetimes ::flat_message::Storage) -> core::result::Result<Self,flat_message::Error>
             {
-                use ::flat_message::VecLike;
                 #header_deserialization_code
                 #checksum_check_code
                 match ref_offset_size {

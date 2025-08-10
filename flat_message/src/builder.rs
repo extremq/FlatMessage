@@ -2,7 +2,6 @@ use super::SerDe;
 use super::SerDeSlice;
 use super::SerDeVec;
 use crate::Storage;
-use crate::VecLike;
 use crate::headers;
 use std::num::{NonZeroU32, NonZeroU8};
 
