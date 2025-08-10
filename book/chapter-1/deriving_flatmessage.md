@@ -113,7 +113,7 @@ When you derive `FlatMessage`, the following methods are automatically implement
 
 ```rust
 impl<'a> FlatMessage<'a> for YourStruct {
-    fn serialize_to<V: VecLike>(&self, output: &mut V, config: Config) -> Result<(), Error>;
+    fn serialize_to(&self, output: &mut Storage, config: Config) -> Result<(), Error>;
     fn deserialize_from(input: &'a Storage) -> Result<Self, Error>;
     unsafe fn deserialize_from_unchecked(input: &'a Storage) -> Result<Self, Error>;
 }

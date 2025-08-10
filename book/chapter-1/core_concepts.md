@@ -6,25 +6,18 @@ FlatMessage relies on a few core concepts / components that are used to build th
 
 `Storage` is FlatMessage's primary buffer type for holding serialized data. It provides efficient memory management optimized for serialization workloads.
 
-### Storage vs Vec<u8>
-
-While you can use `Vec<u8>` directly, `Storage` offers several advantages:
-
 ```rust
 use flat_message::*;
 
-// Using Storage (recommended)
+// Using Storage for serialization
 let mut storage = Storage::default();
 data.serialize_to(&mut storage, Config::default())?;
-
-// Using Vec<u8> (also works)
-let mut buffer = Vec::new();
-data.serialize_to(&mut buffer, Config::default())?;
 ```
 
 **Storage advantages:**
 - **Memory alignment**: Uses `Vec<u128>` internally for better alignment
 - **Reduced allocations**: More efficient memory growth patterns
+- **Optimized for serialization**: Designed specifically for FlatMessage workloads
 
 
 ### Storage API
@@ -44,24 +37,7 @@ impl Storage {
 
 Storage also implements `Default` trait, which creates an empty storage (with no allocated memory).
 
-### VecLike Trait
 
-Both `Storage` and `Vec<u8>` implement the `VecLike` trait, which defines the interface for serialization targets:
-
-```rust
-pub trait VecLike {
-    // Clears the contents of the buffer.
-    fn clear(&mut self);
-    // Resizes the buffer to the specified length, initializing additional bytes to 0.
-    fn resize_zero(&mut self, new_len: usize);
-    // Returns a slice of the buffer.
-    fn as_slice(&self) -> &[u8];
-    // Returns a mutable slice of the buffer.
-    fn as_mut_slice(&mut self) -> &mut [u8];
-}
-```
-
-You can implement `VecLike` for custom buffer types if needed a better control over the serialization process.
 
 ## Config
 
@@ -118,8 +94,8 @@ The `FlatMessage` trait defines the core serialization interface:
 
 ```rust
 pub trait FlatMessage<'a> {
-    // Serialize data to a buffer
-    fn serialize_to<V: VecLike>(&self, output: &mut V, config: Config) -> Result<(), Error>;
+    // Serialize data to a Storage buffer
+    fn serialize_to(&self, output: &mut Storage, config: Config) -> Result<(), Error>;
     
     // Deserialize data from a buffer (with validation)
     fn deserialize_from(input: &'a Storage) -> Result<Self, Error>
@@ -279,7 +255,7 @@ So a total of `30 bytes` for the serialized size. The size could be **4 bytes sm
 
 ## Best Practices
 
-1. **Use Storage for most cases**: Better performance than Vec<u8>
+1. **Use Storage for serialization**: Storage is the only supported serialization target, optimized for FlatMessage workloads
 2. **Prefer zero-copy types**: Use `&str` over `String`, `&[T]` over `Vec<T>` when possible
 3. **Validate when needed**: Use `deserialize_from()` for untrusted data, `deserialize_from_unchecked()` for performance-critical trusted data
 4. **Set appropriate limits**: Use Config to prevent excessive memory usage

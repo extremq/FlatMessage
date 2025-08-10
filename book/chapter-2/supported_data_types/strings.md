@@ -19,7 +19,7 @@ Strings types are represented as UTF-8 encoded bytes.
     use flat_message::*;
 
     #[derive(FlatMessage)]
-    struct Example;'a> {
+    struct Example<'a> {
         string_value: String,
         str_value: &'a str,
     }
