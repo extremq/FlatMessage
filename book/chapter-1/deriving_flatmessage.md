@@ -39,14 +39,15 @@ struct OptimizedStruct {
 
 ### Available Structure Options (Optional)
 
-| Option                | Type                                | Default  | Description                                                                                                          |
-| --------------------- | ----------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
-| `store_name`          | *bool*                              | *true*   | Whether to store a hash of the structure name in the serialized data                                                 |
-| `version`             | *u8*                                | *0*      | Version number for this structure (1-255). Value `0` means that the structure is not versioned.                      |
-| `checksum`            | *bool*                              | *false*  | Whether to include CRC32 checksum for data integrity                                                                 |
-| `validate_name`       | *bool*                              | *false*  | Whether to validate structure name during deserialization (this implies that the `store_name` is also set to `true`) |
-| `validate_checksum`   | *"auto"* or *"always"* or *"never"* | *"auto"* | When to validate checksums                                                                                           |
-| `compatible_versions` | *string*                            | none     | Version compatibility specification                                                                                  |
+| Option                     | Type                                | Default  | Description                                                                                                                                                                                |
+| -------------------------- | ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `store_name`               | *bool*                              | *true*   | Whether to store a hash of the structure name in the serialized data                                                                                                                       |
+| `version`                  | *u8*                                | *0*      | Version number for this structure (1-255). Value `0` means that the structure is not versioned.                                                                                            |
+| `checksum`                 | *bool*                              | *false*  | Whether to include CRC32 checksum for data integrity                                                                                                                                       |
+| `validate_name`            | *bool*                              | *false*  | Whether to validate structure name during deserialization (this implies that the `store_name` is also set to `true`)                                                                       |
+| `validate_checksum`        | *"auto"* or *"always"* or *"never"* | *"auto"* | When to validate checksums                                                                                                                                                                 |
+| `compatible_versions`      | *string*                            | none     | Version compatibility specification                                                                                                                                                        |
+| `optimized_unchecked_code` | *bool*                              | *true*   | Whether to generate optimized unchecked code for deserialization or not. If not set the code generated for `deserialize_from_unchecked` will be the same as the one for `deserialize_from` |
 
 **Remarks:** 
 - The `store_name` option does not store the actual structure name, but a hash of it. That hash is being used to check if the structure you are deserializing into is the same as the one you serialized. However, this is not always neccesary (especially when talking about versioning and compabibility). If this is not needed, you should set the `store_name` option to `false` to save some space on the serialized buffer.
@@ -85,14 +86,14 @@ enum Status {
 ```
 
 **Remarks:**
-- You can read more on how enums are being serialized in the [Enums](../chapter-2/supported_data_types/enums.md) chapter.
+- You can read more on how enums are being serialized in the [Enums](../chapter-2/supported_data_types/enums.md) chapter or the [Flags](../chapter-2/supported_data_types/flags.md) chapter.
 
 ### Field Options
 
-| Option | Values                                               | Description              |
-| ------ | ---------------------------------------------------- | ------------------------ |
-| `repr` | `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64` | Representation type      |
-| `kind` | `enum`                                               | Marks field as enum type |
+| Option | Values                                               | Description                       |
+| ------ | ---------------------------------------------------- | --------------------------------- |
+| `repr` | `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64` | Representation type               |
+| `kind` | `enum`, `flags`                                      | Marks field as enum or flags type |
 
 **Remarks:**
 - Fields of type `PhantomData<T>` are automatically ignored during serialization:
