@@ -193,7 +193,7 @@ impl Permissions {
 
 // Version 2 - compatible with version 1 data
 #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug)]
-#[repr(u8)]
+#[repr(transparent)]
 #[flags(Read, Write, Execute)]
 struct Permissions(u8);
 
