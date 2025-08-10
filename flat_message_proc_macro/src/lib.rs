@@ -13,11 +13,11 @@ mod mem_alignament;
 mod flags;
 
 use config::Config;
-use quote::{quote, ToTokens};
+use quote::quote;
 use std::str::FromStr;
 use struct_info::StructInfo;
-use syn::{parse_macro_input, DeriveInput, Expr, Ident, Item, ItemImpl, ItemStruct, Type};
-use syn::parse::Parser;
+use syn::{parse_macro_input, DeriveInput};
+
 
 extern crate proc_macro;
 

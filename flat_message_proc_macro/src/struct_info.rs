@@ -604,7 +604,7 @@ impl<'a> StructInfo<'a> {
                 let mut buf_pos = 8usize;
                 let mut size = 8usize;
                 let mut metainfo_size = 0usize;
-                // Step 1: compute size --> all items will startt from offset 8
+                // Step 1: compute size --> all items will start from offset 8
                 #(#compute_size_code)*
                 // Step 2: compute flags and metadata size
                 #flags_code

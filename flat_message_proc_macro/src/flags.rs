@@ -1,5 +1,3 @@
-use super::mem_alignament::MemAlignment;
-use common::data_format::DataFormat;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::DeriveInput;
@@ -220,6 +218,14 @@ impl Flags {
                 (
                     quote! { U32 },
                     quote! { *8 },
+                    quote! { unsafe { std::slice::from_raw_parts(buf.as_ptr().add(pos+size_len) as *const #repr_type, count) }; },
+                )
+            },
+            16 => {
+                // since we have the hash (4 bytes) we need aditional 12 bits
+                (
+                    quote! { U32on96bits },
+                    quote! { *16 },
                     quote! { unsafe { std::slice::from_raw_parts(buf.as_ptr().add(pos+size_len) as *const #repr_type, count) }; },
                 )
             }

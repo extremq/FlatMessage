@@ -4,6 +4,7 @@ pub enum Format {
     U16withExtension,
     U32,
     U32on64bits,
+    U32on96bits,
     U32on128bits,
 }
 
@@ -18,6 +19,10 @@ pub unsafe fn write(p: *mut u8, pos: usize, value: u32, method: Format) -> usize
             (p.add(pos) as *mut u32).write_unaligned(value);
             8
         },
+        Format::U32on96bits => unsafe {
+            (p.add(pos) as *mut u32).write_unaligned(value);
+            12
+        },        
         Format::U32on128bits => unsafe {
             (p.add(pos) as *mut u32).write_unaligned(value);
             16
@@ -57,6 +62,7 @@ pub unsafe fn read_unchecked(p: *const u8, pos: usize, method: Format) -> (usize
     match method {
         Format::U32 => ((p.add(pos) as *mut u32).read_unaligned() as usize, 4),
         Format::U32on64bits => ((p.add(pos) as *mut u32).read_unaligned() as usize, 8),
+        Format::U32on96bits => ((p.add(pos) as *mut u32).read_unaligned() as usize, 12),
         Format::U32on128bits => ((p.add(pos) as *mut u32).read_unaligned() as usize, 16),
         Format::U16withExtension => {
             let p = p.add(pos);
@@ -102,8 +108,18 @@ pub fn read(p: *const u8, pos: usize, len: usize, method: Format) -> Option<(usi
                 ))
             }
         }
+        Format::U32on96bits => {
+            if pos + 12 > len {
+                None
+            } else {
+                Some((
+                    unsafe { (p.add(pos) as *mut u32).read_unaligned() as usize },
+                    12,
+                ))
+            }
+        }        
         Format::U32on128bits => {
-            if pos + 8 > len {
+            if pos + 16 > len {
                 None
             } else {
                 Some((
@@ -159,6 +175,7 @@ pub fn len(value: u32, method: Format) -> usize {
     match method {
         Format::U32 => 4,
         Format::U32on64bits => 8,
+        Format::U32on96bits => 12,
         Format::U32on128bits => 16,
         Format::U8withExtension => {
             if value < 0xFE {
