@@ -518,3 +518,67 @@ fn check_version_conversion_sealed_to_sealed() {
     assert_eq!(obj_v1_sealed.value, ds.value);
     assert_eq!(obj_v1_sealed.f.to_value(), ds.f.to_value());
 }
+
+#[test]
+fn check_option_none() {
+    #[derive(Copy, Clone, FlatMessageFlags, Eq, PartialEq, Debug)]
+    #[repr(transparent)]
+    #[flags(A, B)]
+    pub struct Flags(u32);
+
+    impl Flags {
+        pub const A: Flags = Flags(1);
+        pub const B: Flags = Flags(2);
+    }
+
+    #[derive(FlatMessage, Debug, Eq, PartialEq)]
+    #[flat_message_options(store_name = false)]
+    struct Test {
+        #[flat_message_item(kind = flags, repr = u32)]
+        flags: Option<Flags>,
+    }
+    let t = Test { flags: None };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(
+        s.as_slice(),
+        &[
+            70, 76, 77, 1, 1, 0, 0, 0, // Header
+            29, 122, 103, 156, // hash over field flags
+            0, // pffset of field flags (0 = None)
+        ]
+    );
+}
+
+#[test]
+fn check_option_some() {
+    #[derive(Copy, Clone, FlatMessageFlags, Eq, PartialEq, Debug)]
+    #[repr(transparent)]
+    #[flags(A, B)]
+    pub struct Flags(u32);
+
+    impl Flags {
+        pub const A: Flags = Flags(1);
+        pub const B: Flags = Flags(2);
+    }
+
+    #[derive(FlatMessage, Debug, Eq, PartialEq)]
+    #[flat_message_options(store_name = false)]
+    struct Test {
+        #[flat_message_item(kind = flags, repr = u32)]
+        flags: Option<Flags>,
+    }
+    let t = Test { flags: Some(Flags::A | Flags::B) };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(
+        s.as_slice(),
+        &[
+            70, 76, 77, 1, 1, 0, 0, 0, // Header
+            190, 110, 196, 202, // hash over Flags type
+            3, 0, 0, 0, // value of field flags
+            29, 122, 103, 156, // hash over field flags
+            8, // offset of field flags (8 implies Some()
+        ]
+    );
+}
