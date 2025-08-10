@@ -41,8 +41,8 @@ fn main() {
         col: Color::Red,
         x: 0,
     };
-    let mut output = Vec::new();
+    let mut output = Storage::default();
     a.serialize_to(&mut output, Config::default()).unwrap();
     println!("Size = {}", output.len());
-    println!("{:?}", output);
+    println!("{:?}", output.as_slice());
 }
