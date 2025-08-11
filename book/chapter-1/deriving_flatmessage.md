@@ -123,7 +123,6 @@ enum Status {
         #[flat_message_item(ignore = true)]
         y: MyNonSerializableData,
     }
-    }
     ```
 
 ## Generated Code
