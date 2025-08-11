@@ -375,8 +375,10 @@ impl<'a> StructInfo<'a> {
                 let hash_table_offset = len - ref_table_size - metadata_size - hash_table_size;
                 let ref_table_offset = hash_table_offset + hash_table_size;
                 let data_buffer = &input[..hash_table_offset];
-                let hashes = unsafe { core::slice::from_raw_parts(buffer.add(hash_table_offset) as *const u32, header.fields_count as usize) };
-                let mut it = hashes.iter();
+                // let hashes = unsafe { core::slice::from_raw_parts(buffer.add(hash_table_offset) as *const u32, header.fields_count as usize) };
+                // let mut it = unsafe { core::slice::from_raw_parts(buffer.add(hash_table_offset) as *const u32, header.fields_count as usize).iter() };
+                let mut ptr_it = unsafe { buffer.add(hash_table_offset) as *const u32 };
+                let p_end = unsafe { ptr_it.add(header.fields_count as usize) };
         }
     }
     fn generate_field_deserialize_code_required_field(
@@ -439,17 +441,30 @@ impl<'a> StructInfo<'a> {
                 quote! { #safe_init }
             }
         };
-        quote! {
-            loop {
-                if let Some(value) = it.next() {
-                    if *value == #field_name_hash {
+        quote! { 
+            unsafe { 
+                loop {
+                    if ptr_it == p_end {
+                        return Err(flat_message::Error::UnknownHash(#field_name_hash));
+                    }
+                    if *ptr_it == #field_name_hash {
+                        ptr_it = ptr_it.add(1);  
                         break;
                     }
-                } else {
-                    return Err(flat_message::Error::UnknownHash(#field_name_hash));
-                }
-                unsafe { p_ofs = p_ofs.add(1); }
-            };
+                    p_ofs = p_ofs.add(1); 
+                    ptr_it = ptr_it.add(1);                
+                }           
+            }
+            // loop {
+            //     if let Some(value) = it.next() {
+            //         if *value == #field_name_hash {
+            //             break;
+            //         }
+            //     } else {
+            //         return Err(flat_message::Error::UnknownHash(#field_name_hash));
+            //     }
+            //     unsafe { p_ofs = p_ofs.add(1); }
+            // };
             let offset = unsafe { ptr::read_unaligned(p_ofs) as usize};
             unsafe { p_ofs = p_ofs.add(1); }
             #checks_and_init
@@ -509,24 +524,45 @@ impl<'a> StructInfo<'a> {
             }
         };
         quote! {
-            let #inner_var = loop {
-                let it_clone = it.clone();
-                if let Some(value) = it.next() {
-                    if *value >= #field_name_hash {
-                        if *value == #field_name_hash {
-                            let offset = unsafe { ptr::read_unaligned(p_ofs) as usize};
-                            unsafe { p_ofs = p_ofs.add(1); }
-                            break { #checks_and_init };  
-                        } else {
-                            it = it_clone;
-                            break #ty::default();
-                        }                      
+            let #inner_var = loop { 
+                unsafe {
+                    if ptr_it == p_end {
+                        break #ty::default();
                     }
-                } else {
-                    break #ty::default();
-                }
-                unsafe { p_ofs = p_ofs.add(1); }
-            };            
+                    if *ptr_it >= #field_name_hash {
+                        if *ptr_it == #field_name_hash {
+                            let offset = ptr::read_unaligned(p_ofs) as usize;
+                            // move to next
+                            p_ofs = p_ofs.add(1); 
+                            ptr_it = ptr_it.add(1);  
+                            break { #checks_and_init };                          
+                        } else {
+                            break #ty::default();
+                        }
+                    }
+                    p_ofs = p_ofs.add(1); 
+                    ptr_it = ptr_it.add(1);   
+                } 
+            };
+
+            // let #inner_var = loop {
+            //     let it_clone = it.clone();
+            //     if let Some(value) = it.next() {
+            //         if *value >= #field_name_hash {
+            //             if *value == #field_name_hash {
+            //                 let offset = unsafe { ptr::read_unaligned(p_ofs) as usize};
+            //                 unsafe { p_ofs = p_ofs.add(1); }
+            //                 break { #checks_and_init };  
+            //             } else {
+            //                 it = it_clone;
+            //                 break #ty::default();
+            //             }                      
+            //         }
+            //     } else {
+            //         break #ty::default();
+            //     }
+            //     unsafe { p_ofs = p_ofs.add(1); }
+            // };            
         }
     }
 
