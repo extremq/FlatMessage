@@ -1,5 +1,62 @@
 use flat_message::*;
 
+mod v1 {
+    use flat_message::*;
+    #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
+    #[repr(u8)]
+    pub enum Color {
+        Red = 1,
+        Green = 10,
+        Blue = 100,
+    }
+
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    pub struct TestStruct {
+        pub value: u8,
+        #[flat_message_item(repr = u8, kind = enum)]
+        pub color: Color,
+    }
+}
+mod v2 {
+    use flat_message::*;
+    #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
+    #[repr(u8)]
+    pub enum Color {
+        Red = 1,
+        Green = 10,
+        Blue = 100,
+        Yellor = 200,
+    }
+
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    pub struct TestStruct {
+        pub value: u8,
+        #[flat_message_item(repr = u8, kind = enum)]
+        pub color: Color,
+    }
+}
+mod v3 {
+    use flat_message::*;
+    #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
+    #[repr(u8)]
+    #[sealed]
+    pub enum Color {
+        Red = 1,
+        Green = 10,
+        Blue = 100,
+    }
+
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    pub struct TestStruct {
+        pub value: u8,
+        #[flat_message_item(repr = u8, kind = enum)]
+        pub color: Color,
+    }
+}
+
 #[test]
 fn check_enum() {
     #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
@@ -37,44 +94,6 @@ fn check_enum() {
 
 #[test]
 fn check_enum_add_variant() {
-    mod v1 {
-        use flat_message::*;
-        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
-        #[repr(u8)]
-        pub enum Color {
-            Red = 1,
-            Green = 10,
-            Blue = 100,
-        }
-
-        #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(store_name = false)]
-        pub struct TestStruct {
-            pub value: u8,
-            #[flat_message_item(repr = u8, kind = enum)]
-            pub color: Color,
-        }
-    }
-    mod v2 {
-        use flat_message::*;
-        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
-        #[repr(u8)]
-        pub enum Color {
-            Red = 1,
-            Green = 10,
-            Blue = 100,
-            Yellor = 200,
-        }
-
-        #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(store_name = false)]
-        pub struct TestStruct {
-            pub value: u8,
-            #[flat_message_item(repr = u8, kind = enum)]
-            pub color: Color,
-        }
-    }
-
     let mut v = Storage::default();
     let s = v1::TestStruct {
         value: 123,
@@ -88,49 +107,12 @@ fn check_enum_add_variant() {
 
 #[test]
 fn check_enum_add_variant_sealed() {
-    mod v1 {
-        use flat_message::*;
-        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
-        #[repr(u8)]
-        #[sealed]
-        pub enum Color {
-            Red = 1,
-            Green = 10,
-            Blue = 100,
-        }
 
-        #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(store_name = false)]
-        pub struct TestStruct {
-            pub value: u8,
-            #[flat_message_item(repr = u8, kind = enum)]
-            pub color: Color,
-        }
-    }
-    mod v2 {
-        use flat_message::*;
-        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
-        #[repr(u8)]
-        pub enum Color {
-            Red = 1,
-            Green = 10,
-            Blue = 100,
-            Yellor = 200,
-        }
-
-        #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(store_name = false)]
-        pub struct TestStruct {
-            pub value: u8,
-            #[flat_message_item(repr = u8, kind = enum)]
-            pub color: Color,
-        }
-    }
 
     let mut v = Storage::default();
-    let s = v1::TestStruct {
+    let s = v3::TestStruct {
         value: 123,
-        color: v1::Color::Green,
+        color: v3::Color::Green,
     };
     s.serialize_to(&mut v, Config::default()).unwrap();
     let ds = v2::TestStruct::deserialize_from(&v);
@@ -142,49 +124,10 @@ fn check_enum_add_variant_sealed() {
 
 #[test]
 fn check_enum_add_variant_sealed_unchecked() {
-    mod v1 {
-        use flat_message::*;
-        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
-        #[repr(u8)]
-        #[sealed]
-        pub enum Color {
-            Red = 1,
-            Green = 10,
-            Blue = 100,
-        }
-
-        #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(store_name = false)]
-        pub struct TestStruct {
-            pub value: u8,
-            #[flat_message_item(repr = u8, kind = enum)]
-            pub color: Color,
-        }
-    }
-    mod v2 {
-        use flat_message::*;
-        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
-        #[repr(u8)]
-        pub enum Color {
-            Red = 1,
-            Green = 10,
-            Blue = 100,
-            Yellor = 200,
-        }
-
-        #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(store_name = false)]
-        pub struct TestStruct {
-            pub value: u8,
-            #[flat_message_item(repr = u8, kind = enum)]
-            pub color: Color,
-        }
-    }
-
     let mut v = Storage::default();
-    let s = v1::TestStruct {
+    let s = v3::TestStruct {
         value: 123,
-        color: v1::Color::Green,
+        color: v3::Color::Green,
     };
     s.serialize_to(&mut v, Config::default()).unwrap();
     // seald argument is not checked
