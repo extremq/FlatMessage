@@ -90,11 +90,12 @@ enum Status {
 
 ### Field Options
 
-| Option             | Values                                               | Description                                                |
-| ------------------ | ---------------------------------------------------- | ---------------------------------------------------------- |
-| `repr`             | `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64` | Representation type                                        |
-| `kind`             | `enum`, `flags`                                      | Marks field as enum or flags type                          |
-| `ignore` or `skip` | `true` or `false` (default is **false**)             | Ignores the field during serialization and deserialization |
+| Option             | Values                                               | Description                                                 |
+| ------------------ | ---------------------------------------------------- | ----------------------------------------------------------- |
+| `repr`             | `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64` | Representation type                                         |
+| `kind`             | `enum`, `flags`                                      | Marks field as enum or flags type                           |
+| `ignore` or `skip` | `true` or `false` (default is **false**)             | Ignores the field during serialization and deserialization  |
+| `mandatory`        | `true` or `false` (default is **true**)              | Marks the field as mandatory (required) for deserialization |
 
 **Remarks:**
 - Fields of type `PhantomData<T>` are automatically ignored during serialization:
@@ -124,6 +125,7 @@ enum Status {
         y: MyNonSerializableData,
     }
     ```
+- Mandatory fields are required for deserialization. If a mandatory field is not present in the serialized data, the deserialization will fail. On the other hand, if a field is not mandatory, and it is not found in the serialized data or there are some issues trying to deserialize it, it will be defaulted to the default value of the type. This implies that the trait `Default` is implemented for that type.
 
 ## Generated Code
 
