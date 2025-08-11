@@ -29,6 +29,7 @@ pub(crate) struct DataType {
     pub(crate) timestamp: bool,
     pub(crate) ignore_field: bool,
     pub(crate) option: bool,
+    pub(crate) mandatory: bool,
 }
 
 impl DataType {
@@ -75,6 +76,7 @@ impl DataType {
             timestamp,
             ignore_field: zst,
             option,
+            mandatory: true,
         }
     }
 
@@ -90,6 +92,7 @@ impl DataType {
         let has_repr = attr.contains_key("repr");
         let has_kind = attr.contains_key("kind");
         let has_align = attr.contains_key("align");
+        let has_mandatory = attr.contains_key("mandatory");
         let ignore_field = if attr.contains_key("ignore") {
             utils::to_bool(attr.get("ignore").unwrap()).unwrap_or(false)
         } else if attr.contains_key("skip") {
@@ -97,6 +100,9 @@ impl DataType {
         } else {
             false
         };
+        if has_mandatory {
+            self.mandatory = utils::to_bool(attr.get("mandatory").unwrap()).unwrap_or(true);
+        }
         if ignore_field {
             self.ignore_field = true;
             return Ok(());
@@ -154,8 +160,12 @@ impl DataType {
             if has_align {
                 return Err(format!("If we provided the 'align' attribute you need to also provide the attribute 'kind' (for field: '{}')",field_nane));
             }
+            if has_mandatory {
+                return Ok(());
+            }
+            // check for other errors
             // possible parameters
-            static KEYS: &[&'static str] = &["kind", "repr", "align", "ignore", "skip"];
+            static KEYS: &[&'static str] = &["kind", "repr", "align", "ignore", "skip", "mandatory"];
             for key in KEYS {
                 if attr.contains_key(*key) {
                     continue;

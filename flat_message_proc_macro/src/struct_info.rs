@@ -379,7 +379,7 @@ impl<'a> StructInfo<'a> {
                 let mut it = hashes.iter();
         }
     }
-    fn generate_field_deserialize_code(
+    fn generate_field_deserialize_code_required_field(
         &self,
         serde_trait: &syn::Ident,
         inner_var: &syn::Ident,
@@ -455,6 +455,82 @@ impl<'a> StructInfo<'a> {
             #checks_and_init
         }
     }
+    fn generate_field_deserialize_code_optional_field(
+        &self,
+        serde_trait: &syn::Ident,
+        inner_var: &syn::Ident,
+        ty: &syn::Type,
+        field_name_hash: u32,
+        unchecked_code: bool,
+        option: bool,
+    ) -> proc_macro2::TokenStream {
+        let unsafe_init = quote! {
+            // fallback for cases where we have a serialized option
+            if offset==0 {
+                return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
+            }            
+            unsafe { flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset) }
+        };
+        let unsafe_init_option = quote! {
+            if offset == 0 {
+                None
+            } else {
+                Some (flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset))
+            }
+        };
+        let safe_init = quote! {
+            if offset<8 || offset >= hash_table_offset {
+                return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
+            }
+            flat_message::#serde_trait::from_buffer(data_buffer, offset).unwrap_or_default()
+        };
+        let safe_init_option = quote! {
+            if offset<8 || offset >= hash_table_offset {
+                if offset == 0 {
+                    None
+                } else {
+                    return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
+                }
+            } else {
+                Some(flat_message::#serde_trait::from_buffer(data_buffer, offset).unwrap_or_default())
+            }
+        };        
+        let checks_and_init = if unchecked_code {
+            if option {
+                quote! { #unsafe_init_option }
+            } else {
+                quote! { #unsafe_init }
+            }
+        } else {
+            if option {
+                quote! { #safe_init_option }
+            } else {
+                quote! { #safe_init }
+            }
+        };
+        quote! {
+            let #inner_var = loop {
+                let it_clone = it.clone();
+                if let Some(value) = it.next() {
+                    if *value >= #field_name_hash {
+                        if *value == #field_name_hash {
+                            let offset = unsafe { ptr::read_unaligned(p_ofs) as usize};
+                            unsafe { p_ofs = p_ofs.add(1); }
+                            break { #checks_and_init };  
+                        } else {
+                            it = it_clone;
+                            break #ty::default();
+                        }                      
+                    }
+                } else {
+                    break #ty::default();
+                }
+                unsafe { p_ofs = p_ofs.add(1); }
+            };            
+        }
+    }
+
+
     fn generate_fields_deserialize_code(
         &self,
         ref_size: u8,
@@ -466,6 +542,7 @@ impl<'a> StructInfo<'a> {
             serde_trait: syn::Ident,
             ty: syn::Type,
             option: bool,
+            mandatory: bool,
         }
         let mut v = Vec::with_capacity(4);
         let mut hashes: Vec<_> = self
@@ -477,6 +554,7 @@ impl<'a> StructInfo<'a> {
                 serde_trait: field.serialization_trait(),
                 ty: field.data_type.ty.clone(),
                 option: field.data_type.option,
+                mandatory: field.data_type.mandatory,
             })
             .collect();
         hashes.sort_by_key(|hash| hash.hash);
@@ -493,14 +571,25 @@ impl<'a> StructInfo<'a> {
             _ => quote! {},
         });
         for obj in hashes {
-            v.push(self.generate_field_deserialize_code(
-                &obj.serde_trait,
-                &obj.inner_var,
-                &obj.ty,
-                obj.hash,
-                unchecked_code,
-                obj.option
-            ));
+            if obj.mandatory {
+                v.push(self.generate_field_deserialize_code_required_field(
+                    &obj.serde_trait,
+                    &obj.inner_var,
+                    &obj.ty,
+                    obj.hash,
+                    unchecked_code,
+                    obj.option,
+                ));
+            } else {
+                v.push(self.generate_field_deserialize_code_optional_field(
+                    &obj.serde_trait,
+                    &obj.inner_var,
+                    &obj.ty,
+                    obj.hash,
+                    unchecked_code,
+                    obj.option,
+                ));
+            }
         }
         v
     }

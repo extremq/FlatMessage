@@ -810,3 +810,62 @@ fn check_config_skip_unknown_field() {
         ]
     );
 }
+
+
+#[test]
+fn check_mandatory_field() {
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct MyDataV1 {
+        a: u8,
+        b: u32,
+        #[flat_message_item(mandatory = false)]
+        c: u16,
+        d: String
+    }
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct MyDataV2 {
+        a: u8,
+        b: u32,
+        // c was deleted
+        d: String
+    }
+    let mut storage = Storage::default();
+    let data_v2 = MyDataV2 { a: 1, b: 2, d: "Hello".to_string() };
+    data_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let data_v1 = MyDataV1::deserialize_from(&storage).unwrap();
+    assert_eq!(data_v1.a, 1);
+    assert_eq!(data_v1.b, 2);
+    assert_eq!(data_v1.c, 0); // c is not mandatory, so it is defaulted to 0
+    assert_eq!(data_v1.d, "Hello".to_string());
+}
+
+#[test]
+fn check_without_mandatory_field() {
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct MyDataV1 {
+        a: u8,
+        b: u32,
+        c: u16,
+        d: String
+    }
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct MyDataV2 {
+        a: u8,
+        b: u32,
+        // c was deleted
+        d: String
+    }
+    let mut storage = Storage::default();
+    let data_v2 = MyDataV2 { a: 1, b: 2, d: "Hello".to_string() };
+    data_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = MyDataV1::deserialize_from(&storage);
+    assert!(result.is_err());
+    match result.err() {
+        Some(flat_message::Error::UnknownHash(_)) => {}
+        _ => panic!("Invalid error - expected UnknownHash"),
+    }
+}
