@@ -746,5 +746,67 @@ fn check_config_max_size() {
     assert_eq!(result, Err(flat_message::Error::ExceedMaxSize((21, 10))));
 }
 
+#[test]
+fn check_config_skip_field() {
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct Data {
+        x: u8,
+        #[flat_message_item(ignore = true)]
+        y: u32,
+    }
 
+    let data = Data { x: 1, y: 2 };
+    let mut storage = Storage::default();
+    data.serialize_to(&mut storage, Config::default()).unwrap();
+    let ds = Data::deserialize_from(&storage).unwrap();
+    assert_eq!(ds.x, 1);
+    assert_eq!(ds.y, 0); // not 2 -> 0 is the default for y
+    assert_eq!(
+        storage.as_slice(),
+        &[
+            70, 76, 77, 1, 1, 0, 0, 0, // header - only one variable
+            1, // value of x
+            0, 0, 0, // padding
+            1, 80, 12, 253, // hash for "x"
+            8    // offset for "x"
+        ]
+    );
+}
 
+#[test]
+fn check_config_skip_unknown_field() {
+    #[derive(Default)]
+    struct MyData {
+        a: u8,
+        b: u32,
+    }
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct Data {
+        x: u8,
+        #[flat_message_item(ignore = true)]
+        y: MyData,
+    }
+
+    let data = Data {
+        x: 1,
+        y: MyData { a: 2, b: 3 },
+    };
+    let mut storage = Storage::default();
+    data.serialize_to(&mut storage, Config::default()).unwrap();
+    let ds = Data::deserialize_from(&storage).unwrap();
+    assert_eq!(ds.x, 1);
+    assert_eq!(ds.y.a, 0);
+    assert_eq!(ds.y.b, 0);
+    assert_eq!(
+        storage.as_slice(),
+        &[
+            70, 76, 77, 1, 1, 0, 0, 0, // header - only one variable
+            1, // value of x
+            0, 0, 0, // padding
+            1, 80, 12, 253, // hash for "x"
+            8    // offset for "x"
+        ]
+    );
+}

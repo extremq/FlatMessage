@@ -79,7 +79,7 @@ impl TryFrom<&Field> for FieldInfo {
         if data_type.data_format == common::data_format::DataFormat::Unknwon
             && !data_type.unique_id
             && !data_type.timestamp
-            && !data_type.zst
+            && !data_type.ignore_field
         {
             return Err(format!("Please provide aditional specifications via #[flat_message_item(...)] for the field '{}' !", name));
         }

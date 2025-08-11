@@ -27,7 +27,7 @@ pub(crate) struct DataType {
     pub(crate) ty: syn::Type,
     pub(crate) unique_id: bool,
     pub(crate) timestamp: bool,
-    pub(crate) zst: bool,
+    pub(crate) ignore_field: bool,
     pub(crate) option: bool,
 }
 
@@ -73,7 +73,7 @@ impl DataType {
             ty,
             unique_id,
             timestamp,
-            zst,
+            ignore_field: zst,
             option,
         }
     }
@@ -87,76 +87,89 @@ impl DataType {
             return Err(format!("No attributes provided for field: '{}'. You can only provide one of the following attributes: 'kind', 'repr' or 'align'.",field_nane));
         }
 
-
         let has_repr = attr.contains_key("repr");
         let has_kind = attr.contains_key("kind");
         let has_align = attr.contains_key("align");
-
-        if has_kind {
-            let kind = attr.get("kind").unwrap();
-            if kind == "enum" {
-                if !has_repr {
-                    return Err(format!("If we provided the 'kind' attribute with the value 'enum' you need to also provide the attribute 'repr' (for field: '{}')",field_nane));
-                }                
-                let repr = attr.get("repr").unwrap();
-                let new_name = format!("enum_{}", repr);
-                let new_data_format = DataFormat::from(new_name.as_str());
-                if new_data_format.is_enum() == false {
-                    return Err(format!("Invalid representation for an enum: '{}' in field: '{}'. The possible representations for an enum are: u8, u16, u32, u64, i8, i16, i32 and i64.",repr, field_nane));
+        let ignore_field = if attr.contains_key("ignore") {
+            utils::to_bool(attr.get("ignore").unwrap()).unwrap_or(false)
+        } else if attr.contains_key("skip") {
+            utils::to_bool(attr.get("skip").unwrap()).unwrap_or(false)
+        } else {
+            false
+        };
+        if ignore_field {
+            self.ignore_field = true;
+            return Ok(());
+        } else {
+            if has_kind {
+                let kind = attr.get("kind").unwrap();
+                if kind == "enum" {
+                    if !has_repr {
+                        return Err(format!("If we provided the 'kind' attribute with the value 'enum' you need to also provide the attribute 'repr' (for field: '{}')",field_nane));
+                    }
+                    let repr = attr.get("repr").unwrap();
+                    let new_name = format!("enum_{}", repr);
+                    let new_data_format = DataFormat::from(new_name.as_str());
+                    if new_data_format.is_enum() == false {
+                        return Err(format!("Invalid representation for an enum: '{}' in field: '{}'. The possible representations for an enum are: u8, u16, u32, u64, i8, i16, i32 and i64.",repr, field_nane));
+                    }
+                    self.data_format = new_data_format;
+                    return Ok(());
                 }
-                self.data_format = new_data_format;
-                return Ok(());
+                if kind == "flags" {
+                    if !has_repr {
+                        return Err(format!("If we provided the 'kind' attribute with the value 'flags' you need to also provide the attribute 'repr' (for field: '{}')",field_nane));
+                    }
+                    let repr = attr.get("repr").unwrap();
+                    let new_name = format!("flags_{}", repr);
+                    let new_data_format = DataFormat::from(new_name.as_str());
+                    if new_data_format.is_flags() == false {
+                        return Err(format!("Invalid representation for flags: '{}' in field: '{}'. The possible representations for flags are: u8, u16, u32, u64 and u128",repr, field_nane));
+                    }
+                    self.data_format = new_data_format;
+                    return Ok(());
+                }
+                if kind == "pod" {
+                    if !has_align {
+                        return Err(format!("If we provided the 'kind' attribute with the value 'pod' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
+                    }
+                    let align = attr.get("align").unwrap();
+                    let new_name = format!("pod_{}", align);
+                    let new_data_format = DataFormat::from(new_name.as_str());
+                    if new_data_format.is_pod() == false {
+                        return Err(format!("Invalid alignment for a pod: '{}' in field: '{}'. The possible alignments for a pod are: 1, 2, 4, 8 and 16.",align, field_nane));
+                    }
+                    self.data_format = new_data_format;
+                    return Ok(());
+                }
+                return Err(format!(
+                    "Invalid kind: '{}' in field: '{}'. The possible kinds are: 'enum' or 'pod'.",
+                    kind, field_nane
+                ));
             }
-            if kind == "flags" {
-                if !has_repr {
-                    return Err(format!("If we provided the 'kind' attribute with the value 'flags' you need to also provide the attribute 'repr' (for field: '{}')",field_nane));
-                }                
-                let repr = attr.get("repr").unwrap();
-                let new_name = format!("flags_{}", repr);
-                let new_data_format = DataFormat::from(new_name.as_str());
-                if new_data_format.is_flags() == false {
-                    return Err(format!("Invalid representation for flags: '{}' in field: '{}'. The possible representations for flags are: u8, u16, u32, u64 and u128",repr, field_nane));
-                }
-                self.data_format = new_data_format;
-                return Ok(());
+            // kind not present
+            if has_repr {
+                return Err(format!("If we provided the 'repr' attribute you need to also provide the attribute 'kind' (for field: '{}')",field_nane));
             }
-            if kind == "pod" {
-                if !has_align {
-                    return Err(format!("If we provided the 'kind' attribute with the value 'pod' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
+            if has_align {
+                return Err(format!("If we provided the 'align' attribute you need to also provide the attribute 'kind' (for field: '{}')",field_nane));
+            }
+            // possible parameters
+            static KEYS: &[&'static str] = &["kind", "repr", "align", "ignore", "skip"];
+            for key in KEYS {
+                if attr.contains_key(*key) {
+                    continue;
                 }
-                let align = attr.get("align").unwrap();
-                let new_name = format!("pod_{}", align);
-                let new_data_format = DataFormat::from(new_name.as_str());
-                if new_data_format.is_pod() == false {
-                    return Err(format!("Invalid alignment for a pod: '{}' in field: '{}'. The possible alignments for a pod are: 1, 2, 4, 8 and 16.",align, field_nane));
-                }
-                self.data_format = new_data_format;
-                return Ok(());
+                return Err(format!(
+                    "Unknown attribute '{}' in field: '{}'",
+                    *key, field_nane
+                ));
             }
             return Err(format!(
-                "Invalid kind: '{}' in field: '{}'. The possible kinds are: 'enum' or 'pod'.",
-                kind, field_nane
+                "Invalid combination of attributes in field: '{}'. ",
+                field_nane
             ));
         }
-        // kind not present
-        if has_repr {
-            return Err(format!("If we provided the 'repr' attribute you need to also provide the attribute 'kind' (for field: '{}')",field_nane));
-        }
-        if has_align {
-            return Err(format!("If we provided the 'align' attribute you need to also provide the attribute 'kind' (for field: '{}')",field_nane));
-        }
-        // possible parameters
-        static KEYS: &[&'static str] = &["kind", "repr", "align"];
-        for key in KEYS {
-            if attr.contains_key(*key) {
-                continue;
-            }
-            return Err(format!(
-                "Unknown attribute '{}' in field: '{}'",
-                *key, field_nane
-            ));
-        }
-        return Err(format!("Invalid combination of attributes in field: '{}'. ",field_nane));   
     }
 
     pub(crate) fn serialization_alignment(&self) -> usize {

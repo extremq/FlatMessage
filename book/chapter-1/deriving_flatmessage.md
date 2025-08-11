@@ -90,10 +90,11 @@ enum Status {
 
 ### Field Options
 
-| Option | Values                                               | Description                       |
-| ------ | ---------------------------------------------------- | --------------------------------- |
-| `repr` | `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64` | Representation type               |
-| `kind` | `enum`, `flags`                                      | Marks field as enum or flags type |
+| Option             | Values                                               | Description                                                |
+| ------------------ | ---------------------------------------------------- | ---------------------------------------------------------- |
+| `repr`             | `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64` | Representation type                                        |
+| `kind`             | `enum`, `flags`                                      | Marks field as enum or flags type                          |
+| `ignore` or `skip` | `true` or `false` (default is **false**)             | Ignores the field during serialization and deserialization |
 
 **Remarks:**
 - Fields of type `PhantomData<T>` are automatically ignored during serialization:
@@ -104,6 +105,24 @@ enum Status {
     struct GenericStruct<T> {
         data: u32,
         _phantom: PhantomData<T>,  // This field is ignored
+    }
+    ```
+- You can use the `ignore` or `skip` option to ignore a field during serialization and deserialization. This is useful when you want to skip a field that is not part of the structure you are deserializing into. The fields have to implement the `Default` trait.
+    ```rust
+    use std::marker::PhantomData;
+
+    #[derive(Default)]
+    struct MyNonSerializableData {
+        a: u8,
+        b: u32,
+    }
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct Data {
+        x: u8,
+        #[flat_message_item(ignore = true)]
+        y: MyNonSerializableData,
+    }
     }
     ```
 

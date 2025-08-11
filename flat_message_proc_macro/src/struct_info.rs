@@ -801,7 +801,7 @@ impl<'a> StructInfo<'a> {
                         return Err(format!("Timestamp can not be an Option - you either have them or you don't - for field {} in structure {} !", field.name, input.ident));
                     }                        
                     timestamp = Some(field);
-                } else if field.data_type.zst {
+                } else if field.data_type.ignore_field {
                     //println!("Warning: field {} in structure {} is a zero-sized type (ZST) ! It will be ignored !", field.name, input.ident);
                     ignored_fields.push(field);
                 } else
