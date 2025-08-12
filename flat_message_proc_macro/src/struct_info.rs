@@ -23,7 +23,10 @@ pub(crate) struct StructInfo<'a> {
 
 impl<'a> StructInfo<'a> {
 
-
+    fn self_name(use_self: bool) -> proc_macro2::TokenStream {
+        let res = if use_self { format_ident!("self") } else { format_ident!("object") };
+        quote! { #res }
+    }
     fn generate_metadata_serialization_code(&self) -> Vec<proc_macro2::TokenStream> {
         let mut lines = Vec::with_capacity(8);
         if let Some(timestamp) = &self.timestamp {
@@ -53,10 +56,6 @@ impl<'a> StructInfo<'a> {
         lines
     }
     fn generate_flags_code(&self) -> proc_macro2::TokenStream {
-        // let timestamp_flag = constants::FLAG_HAS_TIMESTAMP;
-        // let unique_id_flag = constants::FLAG_HAS_UNIQUEID;
-        // let name_hash_flag = constants::FLAG_HAS_NAME_HASH;
-        // let checksum_flag = constants::FLAG_HAS_CHECKSUM;
         let mut extra_size = 0usize;
         let mut bits = 0;
         if self.unique_id.is_some() {
@@ -80,7 +79,8 @@ impl<'a> StructInfo<'a> {
             metainfo_size += #extra_size;
         }
     }
-    fn generate_compute_size_code(&self) -> Vec<proc_macro2::TokenStream> {
+    fn generate_compute_size_code(&self, use_self: bool, no_flags: bool) -> Vec<proc_macro2::TokenStream> {
+        let self_name = StructInfo::self_name(use_self);
         let compute_size_code = self.fields.iter().map(|field| {
             let field_name = field.name_ident();
             let serialization_trait = field.serialization_trait();
@@ -88,11 +88,11 @@ impl<'a> StructInfo<'a> {
             let size_increase = if serialization_alignment>1 {
                 quote! {
                     size = (size + #serialization_alignment - 1) & !(#serialization_alignment - 1);
-                    size += ::flat_message::#serialization_trait::size(&self.#field_name);
+                    size += ::flat_message::#serialization_trait::size(&#self_name.#field_name);
                 }
             } else {
                 quote! {
-                    size += ::flat_message::#serialization_trait::size(&self.#field_name);
+                    size += ::flat_message::#serialization_trait::size(&#self_name.#field_name);
                 }
             };
             let size_increase_option = if serialization_alignment>1 {
@@ -107,7 +107,7 @@ impl<'a> StructInfo<'a> {
             };
             if field.data_type.option {
                 quote! {
-                    if let Some(obj) = &self.#field_name {
+                    if let Some(obj) = &#self_name.#field_name {
                         #size_increase_option
                     }
                 }
@@ -119,27 +119,39 @@ impl<'a> StructInfo<'a> {
         let ref_table_size_8 = self.fields.len();
         let ref_table_size_16 = self.fields.len() * 2;
         let ref_table_size_32 = self.fields.len() * 4;
-        v.push(quote! {
-            let ref_table_size: usize;
-            let offset_size: RefOffsetSize;
-            let mut flags: u8;
-            if size < 0x100 {
-                // 8 bits
-                offset_size = RefOffsetSize::U8;
-                ref_table_size = #ref_table_size_8;
-                flags = 0b0000_0000;
-            } else if size < 0x10000 {
-                // 16 bits
-                offset_size = RefOffsetSize::U16;
-                ref_table_size = #ref_table_size_16;
-                flags = 0b0000_0001;
-            } else {
-                // 32 bits
-                offset_size = RefOffsetSize::U32;
-                ref_table_size = #ref_table_size_32;
-                flags = 0b0000_0010;
-            }
-        });
+        if no_flags {
+            v.push(quote! {
+                let ref_table_size: usize = if size < 0x100 {
+                    #ref_table_size_8
+                } else if size < 0x10000 {
+                    #ref_table_size_16
+                } else {
+                    #ref_table_size_32
+                };
+            });
+        } else {
+            v.push(quote! {
+                let ref_table_size: usize;
+                let offset_size: RefOffsetSize;
+                let mut flags: u8;
+                if size < 0x100 {
+                    // 8 bits
+                    offset_size = RefOffsetSize::U8;
+                    ref_table_size = #ref_table_size_8;
+                    flags = 0b0000_0000;
+                } else if size < 0x10000 {
+                    // 16 bits
+                    offset_size = RefOffsetSize::U16;
+                    ref_table_size = #ref_table_size_16;
+                    flags = 0b0000_0001;
+                } else {
+                    // 32 bits
+                    offset_size = RefOffsetSize::U32;
+                    ref_table_size = #ref_table_size_32;
+                    flags = 0b0000_0010;
+                }
+            });
+        }
         v
     }
     fn generate_hash_table_code(&self) -> Vec<proc_macro2::TokenStream> {
@@ -158,7 +170,8 @@ impl<'a> StructInfo<'a> {
         }
         v
     }
-    fn generate_fields_serialize_code(&self, ref_size: u8) -> Vec<proc_macro2::TokenStream> {
+    fn generate_fields_serialize_code(&self, ref_size: u8, use_self: bool) -> Vec<proc_macro2::TokenStream> {
+        let self_name = StructInfo::self_name(use_self);
         let v: Vec<_> = self.fields.iter().map(|field| {
             let field_name = syn::Ident::new(field.name.as_str(), proc_macro2::Span::call_site());
             let hash_table_order = field.hash_table_order as usize;
@@ -205,7 +218,7 @@ impl<'a> StructInfo<'a> {
                 
             let serialize_code = if field.data_type.option {
                 quote! {
-                    if let Some(obj) = &self.#field_name {
+                    if let Some(obj) = &#self_name.#field_name {
                         #refcode
                         buf_pos = ::flat_message::#serde_trait::write(obj, buffer, buf_pos);
                     } else {
@@ -215,7 +228,7 @@ impl<'a> StructInfo<'a> {
             } else {
                 quote! {
                     #refcode
-                    buf_pos = ::flat_message::#serde_trait::write(&self.#field_name, buffer, buf_pos);
+                    buf_pos = ::flat_message::#serde_trait::write(&#self_name.#field_name, buffer, buf_pos);
                 }
             };
             quote! {
@@ -672,7 +685,8 @@ impl<'a> StructInfo<'a> {
         }
     }
     fn generate_const_type_assertion(&self, field: &FieldInfo, error_msg: &str) -> proc_macro2::TokenStream {
-        let ty = format_ident!("{}",field.data_type.name);
+        let path_str = field.data_type.name.replace(' ', ""); 
+        let ty: syn::Path = syn::parse_str(&path_str).unwrap();
         let const_assert_name = format_ident!("_CONST_ASSERT_{}_{}",self.name,field.name);        
         let df = format_ident!("{}",field.data_type.data_format.to_string());
         let field_name = format!("{}::{}",self.name, field.name);
@@ -699,12 +713,12 @@ impl<'a> StructInfo<'a> {
     fn generate_serialize_to_methods(&self) -> proc_macro2::TokenStream {
         let fields_count = self.fields.len() as u16;
         // serialize fields
-        let serialize_code_u8 = self.generate_fields_serialize_code(1);
-        let serialize_code_u16 = self.generate_fields_serialize_code(2);
-        let serialize_code_u32 = self.generate_fields_serialize_code(4);
+        let serialize_code_u8 = self.generate_fields_serialize_code(1, true);
+        let serialize_code_u16 = self.generate_fields_serialize_code(2, true);
+        let serialize_code_u32 = self.generate_fields_serialize_code(4, true);
         let metadata_serialization_code = self.generate_metadata_serialization_code();
         let hash_table_code = self.generate_hash_table_code();
-        let compute_size_code = self.generate_compute_size_code();
+        let compute_size_code = self.generate_compute_size_code(true, false);
         let flags_code = self.generate_flags_code();
         let magic = constants::MAGIC_V1;
         let version = self.config.version;
@@ -848,38 +862,17 @@ impl<'a> StructInfo<'a> {
     }
     pub(crate) fn generate_code(&self) -> proc_macro::TokenStream {
         let name = self.name;
-        //let visibility = self.visibility;
         let generics = self.generics;
         let implicit_lifetime = if generics.lifetimes().count() > 0 {
             quote! { #generics }
         } else {
             quote! { <'_>}
         };
-        // let struct_fields = self.fields_name.named.iter().map(|field| {
-        //     let field_name = &field.ident;
-        //     let field_visibility = &field.vis;
-        //     let field_ty = &field.ty;
-        //     Some(quote! {
-        //         #field_visibility #field_name: #field_ty,
-        //     })
-        // });
-        // let metadata_field = if self.config.metadata {
-        //     quote! {#visibility metadata: flat_message::MetaData}
-        // } else {
-        //     quote! {}
-        // };
         let serialize_to_methods = self.generate_serialize_to_methods();
         let deserialize_from_methods = self.generate_deserialize_from_methods();
-        //let derives = &self.derives;
         let const_assertion_functions = self.generate_const_assertion_functions();
 
         let new_code = quote! {
-
-            // #(#derives)*
-            // #visibility struct #name #generics {
-            //     #(#struct_fields)*
-            //     #metadata_field
-            // }
 
             #(#const_assertion_functions)*
 
@@ -890,6 +883,116 @@ impl<'a> StructInfo<'a> {
         };
         new_code.into()
     }
+
+
+    fn generate_serde_write_method(&self) -> proc_macro2::TokenStream {
+        let fields_count = self.fields.len() as u16;
+        // serialize fields
+        let serialize_code_u8 = self.generate_fields_serialize_code(1, false);
+        let serialize_code_u16 = self.generate_fields_serialize_code(2, false);
+        let serialize_code_u32 = self.generate_fields_serialize_code(4, false);
+        let hash_table_code = self.generate_hash_table_code();
+        let compute_size_code = self.generate_compute_size_code(false, false);
+        let hash = 0u32;
+        quote! {
+            unsafe fn write(object: &Self, p: *mut u8, pos: usize) -> usize {                
+                use ::std::ptr;
+                enum RefOffsetSize {
+                    U8,
+                    U16,
+                    U32,
+                }
+                // basic header (magic + fields count + flags + version)
+                let mut buf_pos = 8usize;
+                let mut size = 8usize;
+                // Step 1: compute size --> all items will start from offset 8
+                #(#compute_size_code)*
+                // Step 2: compute flags and metadata size
+                size = (size + 3) & !3;
+                let hash_table_offset = size;
+                let ref_offset = size + 4 * #fields_count as usize;
+                size = ref_offset + ref_table_size;
+                // Step 4: compute aditional size of metainformation
+                // Step 5: create a header
+                let header = flat_message::headers::HeaderV1 {
+                    magic: #hash,
+                    fields_count: #fields_count,
+                    version: 0,
+                    flags,
+                };
+                // Step 7: allocate memory
+                // fill with 0 ?!?!
+
+                let buffer: *mut u8 = unsafe { p.add(pos) };
+                unsafe {
+                    // header
+                    ptr::write_unaligned(buffer as *mut flat_message::headers::HeaderV1, header);
+                    // write serialization code
+                    match offset_size {
+                        RefOffsetSize::U8 => {
+                            #(#serialize_code_u8)*
+                        }
+                        RefOffsetSize::U16 => {
+                            #(#serialize_code_u16)*
+                        }
+                        RefOffsetSize::U32 => {
+                            #(#serialize_code_u32)*
+                        }
+                    }
+                    // hash table
+                    #(#hash_table_code)*
+                }
+                size
+            }
+        }
+    }    
+    fn generate_serde_size_method(&self) -> proc_macro2::TokenStream {
+        let fields_count = self.fields.len() as u16;
+        // serialize fields
+        let compute_size_code = self.generate_compute_size_code(false, true);
+        quote! {
+            fn size(object: &Self) -> usize {                
+                let mut size = 8usize;
+                #(#compute_size_code)*
+                size = (size + 3) & !3;
+                let ref_offset = size + 4 * #fields_count as usize;
+                size = ref_offset + ref_table_size;
+                size
+            }
+        }
+    }    
+
+    pub(crate) fn generate_serde_code(&self) -> proc_macro::TokenStream {
+        let name = self.name;
+        let generics = self.generics;
+        let implicit_lifetime = if generics.lifetimes().count() > 0 {
+            quote! { #generics }
+        } else {
+            quote! { <'_>}
+        };
+        let serde_write = self.generate_serde_write_method();
+        let serde_size = self.generate_serde_size_method();
+        let deserialize_from_methods = self.generate_deserialize_from_methods();
+        let const_assertion_functions = self.generate_const_assertion_functions();
+
+        let serde_code = quote! {
+
+            #(#const_assertion_functions)*
+
+            unsafe impl #generics flat_message::SerDe #implicit_lifetime for #name #generics {
+                const DATA_FORMAT: DataFormat;
+                unsafe fn from_buffer_unchecked(buf: &[u8], pos: usize) -> Self {
+
+                }
+                fn from_buffer(buf: &[u8], pos: usize) -> Option<Self> {
+
+                }
+                #serde_write
+                #serde_size
+            }
+        };
+        serde_code.into()
+    }    
 
     pub(crate) fn new(
         input: &'a DeriveInput,
@@ -944,14 +1047,6 @@ impl<'a> StructInfo<'a> {
             for (idx, dm) in data_members.iter_mut().enumerate() {
                 dm.hash_table_order = idx as u32;
             }
-
-            // // generate a list of derives
-            // let mut derives = Vec::new();
-            // for attr in input.attrs.iter() {
-            //     if attr.path().is_ident("derive") {
-            //         derives.push(attr);
-            //     }
-            // }
 
             // now sort the key backwards based on their serialization alignment
             data_members.sort_unstable_by_key(|field_info| {

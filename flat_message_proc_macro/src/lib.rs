@@ -112,6 +112,25 @@ pub fn flat_message_flags(input: TokenStream) -> TokenStream {
     flags.generate_code().into()
 }
 
+#[proc_macro_derive(FlatMessageStruct)]
+pub fn flat_message_structs(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as syn::DeriveInput);
+    if let syn::Data::Struct(s) = &input.data {
+        match StructInfo::new(&input, s, Config::default()) {
+            Ok(si) => si.generate_serde_code(),
+            Err(e) => quote! {
+                compile_error!(#e);
+            }
+            .into(),
+        }
+    } else {
+        quote! {
+            compile_error!("You need to use the FlatMessageStruct derive macro on a struct!");
+        }
+        .into()
+    }
+}
+
 
 #[proc_macro]
 pub fn name(input: TokenStream) -> TokenStream {

@@ -61,7 +61,7 @@ impl DataType {
         } else {
             FieldType::Object
         };
-        //println!(" -------- DataType: {def}");
+        //println!(" -------- DataType: {def} 3");
         let unique_id = matches!(def.as_str(), "UniqueID" | "flat_message :: UniqueID");
         let timestamp = matches!(def.as_str(), "Timestamp" | "flat_message :: Timestamp");
         let zst = def.starts_with("PhantomData")

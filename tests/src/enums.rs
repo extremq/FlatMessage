@@ -107,8 +107,6 @@ fn check_enum_add_variant() {
 
 #[test]
 fn check_enum_add_variant_sealed() {
-
-
     let mut v = Storage::default();
     let s = v3::TestStruct {
         value: 123,
@@ -334,7 +332,7 @@ fn check_enum_slice_u32bits() {
     s.serialize_to(&mut v, Config::default()).unwrap();
     let ds = TestStruct::deserialize_from(&v).unwrap();
     assert_eq!(s.value, ds.value);
-    assert_eq!(s.color, ds.color);    
+    assert_eq!(s.color, ds.color);
 }
 
 #[test]
@@ -592,6 +590,44 @@ fn check_enum_vec_and_slice_u32align() {
             70, 76, 77, 1, 3, 0, 0, 0, 213, 43, 122, 128, 3, 0, 0, 0, 1, 0, 0, 0, 128, 150, 152, 0,
             0, 202, 154, 59, 123, 237, 103, 151, 167, 3, 1, 10, 100, 0, 0, 0, 1, 211, 94, 66, 149,
             67, 175, 201, 147, 206, 4, 209, 28, 8, 29
+        ]
+    );
+}
+
+#[test]
+fn check_enum_from_module() {
+    mod m1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
+        #[repr(u8)]
+        pub enum Color {
+            Red = 1,
+            Green = 10,
+            Blue = 100,
+        }
+    }
+
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct TestStruct {
+        value: u8,
+        #[flat_message_item(repr = u8, kind = enum)]
+        color: m1::Color,
+    }
+    let mut v = Storage::default();
+    let s = TestStruct {
+        value: 123,
+        color: m1::Color::Green,
+    };
+    s.serialize_to(&mut v, Config::default()).unwrap();
+    let ds = TestStruct::deserialize_from(&v).unwrap();
+    assert_eq!(s.value, ds.value);
+    assert_eq!(s.color, ds.color);
+    assert_eq!(
+        v.as_slice(),
+        &[
+            70, 76, 77, 1, 2, 0, 0, 0, 237, 103, 151, 167, 10, 123, 0, 0, 19, 98, 126, 61, 1, 211,
+            94, 66, 8, 13
         ]
     );
 }
