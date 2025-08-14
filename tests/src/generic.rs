@@ -871,13 +871,13 @@ fn check_without_mandatory_field() {
 }
 
 
-// #[test]
-// fn check_struct() {
-//     #[derive(FlatMessageStruct)]
-//     struct MyDataV1 {
-//         a: u8,
-//         b: u32,
-//         c: u16,
-//         d: String
-//     }
-// }
+#[test]
+fn check_struct() {
+    #[derive(FlatMessageStruct)]
+    struct MyDataV1 {
+        a: u8,  
+        b: u32,
+        c: u16,
+        d: String
+    }
+}

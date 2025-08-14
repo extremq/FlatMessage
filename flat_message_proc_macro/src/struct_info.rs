@@ -402,11 +402,15 @@ impl<'a> StructInfo<'a> {
         field_name_hash: u32,
         unchecked_code: bool,
         option: bool,
+        return_err: bool,
     ) -> proc_macro2::TokenStream {
+        let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
+        let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
+        let unknown_hash = if return_err { quote! { Err(flat_message::Error::UnknownHash(#field_name_hash)) }  } else { quote! { None } };
         let unsafe_init = quote! {
             // fallback for cases where we have a serialized option
             if offset==0 {
-                return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
+                return #invalid_field_offset;
             }            
             let #inner_var: #ty = unsafe { flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset) };
         };
@@ -419,10 +423,10 @@ impl<'a> StructInfo<'a> {
         };
         let safe_init = quote! {
             if offset<8 || offset >= hash_table_offset {
-                return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
+                return #invalid_field_offset;
             }
             let Some(#inner_var): Option<#ty> = flat_message::#serde_trait::from_buffer(data_buffer, offset) else {
-                return Err(flat_message::Error::FailToDeserialize(#field_name_hash));
+                return #fail_to_deserialize;
             };
         };
         let safe_init_option = quote! {
@@ -430,13 +434,13 @@ impl<'a> StructInfo<'a> {
                 if offset == 0 {
                     None
                 } else {
-                    return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
+                    return #invalid_field_offset;
                 }
             } else {
                 // the type is alread an Option
                 let tmp: #ty =  flat_message::#serde_trait::from_buffer(data_buffer, offset);
                 if tmp.is_none() {
-                    return Err(flat_message::Error::FailToDeserialize(#field_name_hash));
+                    return #fail_to_deserialize;
                 };
                 tmp
             };
@@ -458,7 +462,7 @@ impl<'a> StructInfo<'a> {
             unsafe { 
                 loop {
                     if ptr_it == p_end {
-                        return Err(flat_message::Error::UnknownHash(#field_name_hash));
+                        return #unknown_hash;
                     }
                     if *ptr_it == #field_name_hash {
                         ptr_it = ptr_it.add(1);  
@@ -491,11 +495,14 @@ impl<'a> StructInfo<'a> {
         field_name_hash: u32,
         unchecked_code: bool,
         option: bool,
+        return_err: bool
     ) -> proc_macro2::TokenStream {
+        let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
+
         let unsafe_init = quote! {
             // fallback for cases where we have a serialized option
             if offset==0 {
-                return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
+                return #invalid_field_offset;
             }            
             unsafe { flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset) }
         };
@@ -508,7 +515,7 @@ impl<'a> StructInfo<'a> {
         };
         let safe_init = quote! {
             if offset<8 || offset >= hash_table_offset {
-                return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
+                return #invalid_field_offset;
             }
             flat_message::#serde_trait::from_buffer(data_buffer, offset).unwrap_or_default()
         };
@@ -517,7 +524,7 @@ impl<'a> StructInfo<'a> {
                 if offset == 0 {
                     None
                 } else {
-                    return Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32)));
+                    return #invalid_field_offset;
                 }
             } else {
                 Some(flat_message::#serde_trait::from_buffer(data_buffer, offset).unwrap_or_default())
@@ -584,6 +591,7 @@ impl<'a> StructInfo<'a> {
         &self,
         ref_size: u8,
         unchecked_code: bool,
+        return_err: bool,
     ) -> Vec<proc_macro2::TokenStream> {
         struct HashAndInnerVar {
             hash: u32,
@@ -628,6 +636,7 @@ impl<'a> StructInfo<'a> {
                     obj.hash,
                     unchecked_code,
                     obj.option,
+                    return_err
                 ));
             } else {
                 v.push(self.generate_field_deserialize_code_optional_field(
@@ -637,6 +646,7 @@ impl<'a> StructInfo<'a> {
                     obj.hash,
                     unchecked_code,
                     obj.option,
+                    return_err
                 ));
             }
         }
@@ -674,14 +684,14 @@ impl<'a> StructInfo<'a> {
         } else {
             quote! {}
         };    
-        let ignored_fields = self.generate_default_code_for_ignored_fields();    
+        let ignored_fields = self.generate_default_code_for_ignored_fields(); 
         quote! {
-            return Ok(Self {
+            Self {
                 #(#struct_fields)*
                 #unique_id_field
                 #timestamp_field
                 #(#ignored_fields)*
-            });
+            }
         }
     }
     fn generate_const_type_assertion(&self, field: &FieldInfo, error_msg: &str) -> proc_macro2::TokenStream {
@@ -799,31 +809,31 @@ impl<'a> StructInfo<'a> {
     }
     fn generate_deserialize_from_methods(&self) -> proc_macro2::TokenStream {
         let header_deserialization_code = self.generate_header_deserialization_code();
-        let deserializaton_code_u8 = self.generate_fields_deserialize_code(1, false);
-        let deserializaton_code_u16 = self.generate_fields_deserialize_code(2, false);
-        let deserializaton_code_u32 = self.generate_fields_deserialize_code(4, false);
+        let deserializaton_code_u8 = self.generate_fields_deserialize_code(1, false, true);
+        let deserializaton_code_u16 = self.generate_fields_deserialize_code(2, false, true);
+        let deserializaton_code_u32 = self.generate_fields_deserialize_code(4, false, true);
         let checksum_check_code = self.generate_checksum_check_code();
         let ctor_code = self.generate_struct_construction_code();
         let lifetimes = &self.generics.params;
 
         let unchecked_code = if self.config.optimized_unchecked_code {
-            let deserializaton_code_u8_unchecked = self.generate_fields_deserialize_code(1, true);
-            let deserializaton_code_u16_unchecked = self.generate_fields_deserialize_code(2, true);
-            let deserializaton_code_u32_unchecked = self.generate_fields_deserialize_code(4, true);
+            let deserializaton_code_u8_unchecked = self.generate_fields_deserialize_code(1, true, true);
+            let deserializaton_code_u16_unchecked = self.generate_fields_deserialize_code(2, true, true);
+            let deserializaton_code_u32_unchecked = self.generate_fields_deserialize_code(4, true, true);
             quote! {
                 #header_deserialization_code
                 match ref_offset_size {
                     RefOffsetSize::U8 => {
                         #(#deserializaton_code_u8_unchecked)*
-                        #ctor_code
+                        Ok(#ctor_code)
                     }
                     RefOffsetSize::U16 => {
                         #(#deserializaton_code_u16_unchecked)*
-                        #ctor_code
+                        Ok(#ctor_code)
                     }
                     RefOffsetSize::U32 => {
                         #(#deserializaton_code_u32_unchecked)*
-                        #ctor_code
+                        Ok(#ctor_code)
                     }
                 }
             }
@@ -842,15 +852,15 @@ impl<'a> StructInfo<'a> {
                 match ref_offset_size {
                     RefOffsetSize::U8 => {
                         #(#deserializaton_code_u8)*
-                        #ctor_code
+                        Ok(#ctor_code)
                     }
                     RefOffsetSize::U16 => {
                         #(#deserializaton_code_u16)*
-                        #ctor_code
+                        Ok(#ctor_code)
                     }
                     RefOffsetSize::U32 => {
                         #(#deserializaton_code_u32)*
-                        #ctor_code
+                        Ok(#ctor_code)
                     }
                 }
             }
@@ -913,20 +923,14 @@ impl<'a> StructInfo<'a> {
                 let ref_offset = size + 4 * #fields_count as usize;
                 size = ref_offset + ref_table_size;
                 // Step 4: compute aditional size of metainformation
-                // Step 5: create a header
-                let header = flat_message::headers::HeaderV1 {
-                    magic: #hash,
-                    fields_count: #fields_count,
-                    version: 0,
-                    flags,
-                };
-                // Step 7: allocate memory
+                let sz_flags_pack: u32 = ((size as u32) << 8) | (flags as u32) | ((#fields_count << 2) & 0xFF) as u32;
                 // fill with 0 ?!?!
 
                 let buffer: *mut u8 = unsafe { p.add(pos) };
                 unsafe {
                     // header
-                    ptr::write_unaligned(buffer as *mut flat_message::headers::HeaderV1, header);
+                    ptr::write_unaligned(buffer as *mut u32, #hash);
+                    ptr::write_unaligned(buffer.add(4) as *mut u32, sz_flags_pack);
                     // write serialization code
                     match offset_size {
                         RefOffsetSize::U8 => {
@@ -961,8 +965,74 @@ impl<'a> StructInfo<'a> {
             }
         }
     }    
+    fn generate_serde_dataformat_value(&self) -> proc_macro2::TokenStream {
+        let mut align = 0;
+        for field in self.fields.iter() {
+            align = align.max(field.data_type.serialization_alignment());
+        }
+        // minimum alignment is 4 bytes (for hash table)
+        match align {
+            8 => quote! { DataFormat::Struct8 },
+            16 => quote! { DataFormat::Struct16 },
+            _ => quote! { DataFormat::Struct4 },
+        }
+    }
+    fn generate_serde_header_read(&self) -> proc_macro2::TokenStream {
+        let hash = constants::MAGIC_V1;
+
+        quote! {
+                use ::std::ptr;
+                let input = &buf[pos..];
+                enum RefOffsetSize {
+                    U8,
+                    U16,
+                    U32,
+                }
+                let buffer_len = input.len();
+                if buffer_len < 8 {
+                    return None;
+                }
+                let buffer = input.as_ptr();
+                let hash = unsafe { ptr::read_unaligned(buffer as *const u32) };
+                let size_and_flags = unsafe { ptr::read_unaligned(buffer.add(4) as *const u32) };
+                if hash != #hash {
+                    return None;
+                }
+                let fields_count = (size_and_flags & 0xFF) >> 2;
+                let ref_offset_size = match size_and_flags & 0b0000_0011 {
+                    0 => RefOffsetSize::U8,
+                    1 => RefOffsetSize::U16,
+                    2 => RefOffsetSize::U32,
+                    _ => return None,
+                };
+                let ref_table_size =  match ref_offset_size {
+                    RefOffsetSize::U8 => fields_count as usize,
+                    RefOffsetSize::U16 =>fields_count as usize * 2,
+                    RefOffsetSize::U32 =>fields_count as usize * 4,
+                };
+                let hash_table_size = fields_count as usize * 4;
+                let struct_len = (size_and_flags >> 8) as usize;
+                if struct_len > buffer_len {
+                    return None;
+                }
+                let hash_table_offset = struct_len - ref_table_size - hash_table_size;
+                let ref_table_offset = hash_table_offset + hash_table_size;
+                let data_buffer = &input[..hash_table_offset];
+                let mut ptr_it = unsafe { buffer.add(hash_table_offset) as *const u32 };
+                let p_end = unsafe { ptr_it.add(fields_count as usize) };
+        }
+    }
+
+
 
     pub(crate) fn generate_serde_code(&self) -> proc_macro::TokenStream {
+        // we need less than 63 fields to fit in the flags pack
+        if self.fields.len() > 63 {
+            return quote! {
+                compile_error!("Structs with more than 63 fields are not supported for this type of serialization !");
+            }
+            .into();
+        }
         let name = self.name;
         let generics = self.generics;
         let implicit_lifetime = if generics.lifetimes().count() > 0 {
@@ -972,20 +1042,39 @@ impl<'a> StructInfo<'a> {
         };
         let serde_write = self.generate_serde_write_method();
         let serde_size = self.generate_serde_size_method();
-        let deserialize_from_methods = self.generate_deserialize_from_methods();
         let const_assertion_functions = self.generate_const_assertion_functions();
+        let dataformat_value = self.generate_serde_dataformat_value();
+        let header_read = self.generate_serde_header_read();
+        let deserializaton_code_u8 = self.generate_fields_deserialize_code(1, false, false);
+        let deserializaton_code_u16 = self.generate_fields_deserialize_code(2, false, false);
+        let deserializaton_code_u32 = self.generate_fields_deserialize_code(4, false, false);
+        let ctor_code = self.generate_struct_construction_code();
 
         let serde_code = quote! {
 
             #(#const_assertion_functions)*
 
             unsafe impl #generics flat_message::SerDe #implicit_lifetime for #name #generics {
-                const DATA_FORMAT: DataFormat;
+                const DATA_FORMAT: DataFormat = #dataformat_value;
                 unsafe fn from_buffer_unchecked(buf: &[u8], pos: usize) -> Self {
-
+                    flat_message::SerDe::from_buffer(buf, pos).unwrap()
                 }
                 fn from_buffer(buf: &[u8], pos: usize) -> Option<Self> {
-
+                    #header_read
+                    match ref_offset_size {
+                        RefOffsetSize::U8 => {
+                            #(#deserializaton_code_u8)*
+                            Some(#ctor_code)
+                        }
+                        RefOffsetSize::U16 => {
+                            #(#deserializaton_code_u16)*
+                            Some(#ctor_code)
+                        }
+                        RefOffsetSize::U32 => {
+                            #(#deserializaton_code_u32)*
+                            Some(#ctor_code)
+                        }
+                    }                    
                 }
                 #serde_write
                 #serde_size

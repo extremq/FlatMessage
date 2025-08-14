@@ -37,6 +37,9 @@ pub enum DataFormat {
     Flags32,
     Flags64,
     Flags128,
+    Struct4,
+    Struct8,
+    Struct16,
     POD8,
     POD16,
     POD32,
@@ -122,6 +125,9 @@ impl DataFormat {
             DataFormat::POD32 => 4,
             DataFormat::POD64 => 8,
             DataFormat::POD128 => 16,
+            DataFormat::Struct4 => 4,
+            DataFormat::Struct8 => 8,
+            DataFormat::Struct16 => 16,
             DataFormat::Unknwon => 1,
         }
     }
@@ -165,6 +171,9 @@ impl Display for DataFormat {
             DataFormat::POD32 => write!(f, "POD32"),
             DataFormat::POD64 => write!(f, "POD64"),
             DataFormat::POD128 => write!(f, "POD128"),
+            DataFormat::Struct4 => write!(f, "Struct4"),
+            DataFormat::Struct8 => write!(f, "Struct8"),
+            DataFormat::Struct16 => write!(f, "Struct16"),
             DataFormat::Unknwon => write!(f, "Unknwon"),
         }
     }
@@ -215,6 +224,10 @@ impl From<&str> for DataFormat {
             "flags_u32" => DataFormat::Flags32,
             "flags_u64" => DataFormat::Flags64,
             "flags_u128" => DataFormat::Flags128,
+            // struct
+            "struct_4" => DataFormat::Struct4,
+            "struct_8" => DataFormat::Struct8,
+            "struct_16" => DataFormat::Struct16,
             // copy struct
             "pod_1" => DataFormat::POD8,
             "pod_2" => DataFormat::POD16,
