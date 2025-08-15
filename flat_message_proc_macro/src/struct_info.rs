@@ -714,7 +714,7 @@ impl<'a> StructInfo<'a> {
         quote! {
             #[allow(non_upper_case_globals)]
             const #const_assert_name: () = if <#ty as #serde_ty>::DATA_FORMAT as u8 != flat_message::DataFormat::#df as u8 {
-                const v: u8  = <MyDataV1 as SerDe>::DATA_FORMAT as u8;
+                const v: u8  = <#ty as SerDe>::DATA_FORMAT as u8;
                 const STRUCT4_ID: u8 = flat_message::DataFormat::Struct4 as u8;
                 const STRUCT8_ID: u8 = flat_message::DataFormat::Struct8 as u8;
                 const STRUCT16_ID: u8 = flat_message::DataFormat::Struct16 as u8;        

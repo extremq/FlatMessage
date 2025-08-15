@@ -249,5 +249,79 @@ fn check_slice() {
     let mut s = Storage::default();
     t.serialize_to(&mut s, Config::default()).unwrap();
     let t2 = Test::deserialize_from(&s).unwrap();
-    assert_eq!(t,t2);
+    assert_eq!(t, t2);
+}
+
+#[test]
+fn check_struct_some() {
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct Configuration {
+        timeout: u32,
+        retries: u8,
+    }
+
+    #[derive(Debug, FlatMessage, Eq, PartialEq)]
+    #[flat_message_options(store_name: false)]
+    struct Request {
+        #[flat_message_item(align = 4, kind = struct)]
+        config: Option<Configuration>,
+    }
+    let t = Request {
+        config: Some(Configuration {
+            timeout: 1000,
+            retries: 3,
+        }),
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    let t2 = Request::deserialize_from(&s).unwrap();
+    assert_eq!(t, t2);
+}
+
+#[test]
+fn check_struct_none() {
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct Configuration {
+        timeout: u32,
+        retries: u8,
+    }
+
+    #[derive(Debug, FlatMessage, Eq, PartialEq)]
+    #[flat_message_options(store_name: false)]
+    struct Request {
+        #[flat_message_item(align = 4, kind = struct)]
+        config: Option<Configuration>,
+    }
+    let t = Request { config: None };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    let t2 = Request::deserialize_from(&s).unwrap();
+    assert_eq!(t, t2);
+}
+
+#[test]
+fn check_struct_none_repr() {
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct Configuration {
+        timeout: u32,
+        retries: u8,
+    }
+
+    #[derive(Debug, FlatMessage, Eq, PartialEq)]
+    #[flat_message_options(store_name: false)]
+    struct Request {
+        #[flat_message_item(align = 4, kind = struct)]
+        config: Option<Configuration>,
+    }
+    let t = Request { config: None };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(
+        s.as_slice(),
+        &[
+            70, 76, 77, 1, 1, 0, 0, 0, // Header
+            32, 102, 255, 35, // hash for config
+            0, // offset of config (0 = None)
+        ]
+    );
 }
