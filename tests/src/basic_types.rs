@@ -580,12 +580,12 @@ fn check_aliganemnt_order_u32_u16_string() {
             5, // size of string_u8_aligned (5 bytes) - aligned to 1 byte
             72, 101, 108, 108, 111, // string_u8_aligned = "Hello"
             0, 0, // padding
-            14, 159, 54, 27, // hash for string_u8_aligned 
+            14, 159, 54, 27, // hash for string_u8_aligned
             131, 216, 51, 208, // hash for buf_u32_aligned
             130, 226, 119, 250, // hash for list_u16_aligned
-            36, // offset for string_u8_aligned - 36
-            8, // offset for buf_u32_aligned - 8
-            28 // offset for list_u16_aligned - 28
+            36,  // offset for string_u8_aligned - 36
+            8,   // offset for buf_u32_aligned - 8
+            28   // offset for list_u16_aligned - 28
         ]
     );
 }
@@ -638,4 +638,40 @@ fn check_serde_128_bits_buffers() {
     assert_eq!(s.checked, ds.checked);
 }
 
-
+#[test]
+fn check_u128_repr() {
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name = false)]
+    struct Test {
+        x: u8,
+        d: Vec<u128>,
+        a: u8,
+    }
+    let t = Test {
+        x: 1,
+        d: vec![1, 2, 3],
+        a: 5,
+    };
+    let mut storage = Storage::default();
+    t.serialize_to(&mut storage, Config::default()).unwrap();
+    assert_eq!(
+        storage.as_slice(),
+        &[
+            70, 76, 77, 1, 3, 0, 0, 0, 
+            0, 0, 0, 0, 0, 0, 0, 0, // alignament for d (16 bytes)            
+            3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // number of elements in d
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // d[0]
+            2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // d[1]
+            3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // d[2]
+            5, // Test::a
+            1, 0, // Test::x
+            0, // Padding
+            133, 36, 12, 225, // Hash for Test::d
+            1, 41, 12, 228, // Hash for Test::a
+            1, 80, 12, 253, // Hash for Test::x
+            16, // Offset of Test::d
+            80, // Offset of Test::a
+            81  // Offset of Test::x
+        ]
+    );
+}

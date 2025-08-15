@@ -177,16 +177,12 @@ impl<'a> StructInfo<'a> {
             let hash_table_order = field.hash_table_order as usize;
             let serde_trait = field.serialization_trait();
             let serialization_alignment = field.serialization_alignment();
-            let alignament_code = match field.data_type.field_type {
-                FieldType::Object => quote! {},
-                FieldType::Slice | FieldType::Vector => 
-                if serialization_alignment>1 {
+            let alignament_code = if serialization_alignment>1 {
                     quote! {
                         buf_pos = (buf_pos + #serialization_alignment - 1) & !(#serialization_alignment - 1);
                     }
                 } else {
                     quote! {}
-                }
             };
             let refcode = match ref_size {
                 1 => {
@@ -928,7 +924,7 @@ impl<'a> StructInfo<'a> {
         let serialize_code_u16 = self.generate_fields_serialize_code(2, false);
         let serialize_code_u32 = self.generate_fields_serialize_code(4, false);
         let hash_table_code = self.generate_hash_table_code();
-        let compute_size_code = self.generate_compute_size_code(false, false);
+        let compute_size_code = self.generate_compute_size_code(false, false);        
         quote! {
             unsafe fn write(object: &Self, p: *mut u8, pos: usize) -> usize {                
                 use ::std::ptr;
@@ -949,8 +945,7 @@ impl<'a> StructInfo<'a> {
                 size = ref_offset + ref_table_size;
                 // Step 4: compute aditional size of metainformation
                 let sz_flags_pack: u32 = ((size as u32) << 8) | (flags as u32) | ((#fields_count << 2) & 0xFF) as u32;
-                // fill with 0 ?!?!
-
+                // fill with 0 --> not really needed as the storage is already zeroed before writing
                 let buffer: *mut u8 = unsafe { p.add(pos) };
                 unsafe {
                     // header
@@ -1038,6 +1033,10 @@ impl<'a> StructInfo<'a> {
                 if struct_len > buffer_len {
                     return None;
                 }
+                // add default values for timestamp and unique_id 
+                const timestamp: u64 = 0;
+                const unique_id: u64 = 0;
+                
                 let hash_table_offset = struct_len - ref_table_size - hash_table_size;
                 let ref_table_offset = hash_table_offset + hash_table_size;
                 let data_buffer = &input[..hash_table_offset];
