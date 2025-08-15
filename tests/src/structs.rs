@@ -358,3 +358,96 @@ fn check_simple_serde_unique_id() {
     assert_eq!(t2.d.u.value(), 0); // unique_id is not serialized
     assert_eq!(MyDataV1::DATA_FORMAT, DataFormat::Struct4);
 }
+
+#[test]
+fn check_nested_2_levels() {
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct LevelTwo {
+        a: bool,
+        l: Vec<i8>,
+    }
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct LevelOne {
+        a: u8,
+        b: u32,
+        c: u16,
+        d: String,
+        #[flat_message_item(align = 4, kind = struct)]
+        e: LevelTwo,
+    }
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name = false)]
+    struct Test {
+        x: u8,
+        #[flat_message_item(align = 4, kind = struct)]
+        d: LevelOne,
+        a: u8,
+    }
+    let t = Test {
+        x: 1,
+        d: LevelOne {
+            a: 2,
+            b: 3,
+            c: 4,
+            d: "Hello".to_string(),
+            e: LevelTwo {
+                a: true,
+                l: vec![1, 2, 3],
+            },
+        },
+        a: 5,
+    };
+    let mut storage = Storage::default();
+    t.serialize_to(&mut storage, Config::default()).unwrap();
+    let t2 = Test::deserialize_from(&storage).unwrap();
+    assert_eq!(t, t2);
+    assert_eq!(LevelOne::DATA_FORMAT, DataFormat::Struct4);
+    assert_eq!(LevelTwo::DATA_FORMAT, DataFormat::Struct4);
+}
+
+#[test]
+fn check_nested_2_levels_second_level_128_alignament() {
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct LevelTwo {
+        a: bool,
+        l: Vec<i128>,
+    }
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct LevelOne {
+        a: u8,
+        b: u32,
+        c: u16,
+        d: String,
+        #[flat_message_item(align = 16, kind = struct)]
+        e: LevelTwo,
+    }
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name = false)]
+    struct Test {
+        x: u8,
+        #[flat_message_item(align = 16, kind = struct)]
+        d: LevelOne,
+        a: u8,
+    }
+    let t = Test {
+        x: 1,
+        d: LevelOne {
+            a: 2,
+            b: 3,
+            c: 4,
+            d: "Hello".to_string(),
+            e: LevelTwo {
+                a: true,
+                l: vec![1, 2, 3],
+            },
+        },
+        a: 5,
+    };
+    let mut storage = Storage::default();
+    t.serialize_to(&mut storage, Config::default()).unwrap();
+    let t2 = Test::deserialize_from(&storage).unwrap();
+    assert_eq!(t, t2);
+    // both should be 16 bytes alignament
+    assert_eq!(LevelOne::DATA_FORMAT, DataFormat::Struct16);
+    assert_eq!(LevelTwo::DATA_FORMAT, DataFormat::Struct16);
+}

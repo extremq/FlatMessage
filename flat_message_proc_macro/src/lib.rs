@@ -112,7 +112,7 @@ pub fn flat_message_flags(input: TokenStream) -> TokenStream {
     flags.generate_code().into()
 }
 
-#[proc_macro_derive(FlatMessageStruct)]
+#[proc_macro_derive(FlatMessageStruct, attributes(flat_message_item))]
 pub fn flat_message_structs(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);
     if let syn::Data::Struct(s) = &input.data {
