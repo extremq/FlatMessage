@@ -143,6 +143,34 @@ Custom structs with explicit alignment are supported for serialization and deser
     }
     ```
 
+7. Nested structs:
+    ```rust
+    use flat_message::*;
+
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct LevelTwo {
+        a: bool,
+        l: Vec<i8>,
+    }
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct LevelOne {
+        a: u8,
+        b: u32,
+        c: u16,
+        d: String,
+        #[flat_message_item(align = 4, kind = struct)]
+        e: LevelTwo,
+    }
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name = false)]
+    struct Test {
+        x: u8,
+        #[flat_message_item(align = 4, kind = struct)]
+        d: LevelOne,
+        a: u8,
+    }
+    ```
+
 ## Serialization Behavior
 
 When structs are serialized:
