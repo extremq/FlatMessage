@@ -135,18 +135,18 @@ impl DataType {
                     self.data_format = new_data_format;
                     return Ok(());
                 }
-                if kind == "pod" {
+                if kind == "struct" {
                     if !has_align {
-                        return Err(format!("If we provided the 'kind' attribute with the value 'pod' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
+                        return Err(format!("If we provided the 'kind' attribute with the value 'struct' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
                     }
                     let align = attr.get("align").unwrap();
-                    let new_name = format!("pod_{}", align);
-                    let new_data_format = DataFormat::from(new_name.as_str());
-                    if new_data_format.is_pod() == false {
-                        return Err(format!("Invalid alignment for a pod: '{}' in field: '{}'. The possible alignments for a pod are: 1, 2, 4, 8 and 16.",align, field_nane));
-                    }
-                    self.data_format = new_data_format;
-                    return Ok(());
+                    match align.as_str() {
+                        "4" => self.data_format = DataFormat::Struct4,
+                        "8" => self.data_format = DataFormat::Struct8,
+                        "16" => self.data_format = DataFormat::Struct16,
+                        _ => return Err(format!("Invalid alignment for a struct: '{}' in field: '{}'. The possible alignments for a struct are: 4, 8 and 16.",align, field_nane)),
+                    };    
+                    return Ok(());                
                 }
                 return Err(format!(
                     "Invalid kind: '{}' in field: '{}'. The possible kinds are: 'enum' or 'pod'.",
@@ -184,7 +184,9 @@ impl DataType {
 
     pub(crate) fn serialization_alignment(&self) -> usize {
         match self.field_type {
-            FieldType::Object => 1,
+            FieldType::Object => {
+                if self.data_format.is_object_container() { self.data_format.alignament() as usize } else { 1 }
+            },
             FieldType::Slice | FieldType::Vector => self.data_format.alignament() as usize,
         }
     }

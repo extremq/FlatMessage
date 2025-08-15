@@ -22,6 +22,8 @@ mod fix_arrays;
 mod pod;
 #[cfg(test)]
 mod flags;
+#[cfg(test)]
+mod structs;
 
 #[cfg(test)]
 pub(crate) use flat_message::{Config, FlatMessage, Storage};

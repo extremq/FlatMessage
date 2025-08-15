@@ -895,7 +895,7 @@ impl<'a> StructInfo<'a> {
     }
 
 
-    fn generate_serde_write_method(&self) -> proc_macro2::TokenStream {
+    fn generate_serde_write_method(&self, hash: u32) -> proc_macro2::TokenStream {
         let fields_count = self.fields.len() as u16;
         // serialize fields
         let serialize_code_u8 = self.generate_fields_serialize_code(1, false);
@@ -903,7 +903,6 @@ impl<'a> StructInfo<'a> {
         let serialize_code_u32 = self.generate_fields_serialize_code(4, false);
         let hash_table_code = self.generate_hash_table_code();
         let compute_size_code = self.generate_compute_size_code(false, false);
-        let hash = 0u32;
         quote! {
             unsafe fn write(object: &Self, p: *mut u8, pos: usize) -> usize {                
                 use ::std::ptr;
@@ -946,7 +945,7 @@ impl<'a> StructInfo<'a> {
                     // hash table
                     #(#hash_table_code)*
                 }
-                size
+                pos + size
             }
         }
     }    
@@ -977,9 +976,7 @@ impl<'a> StructInfo<'a> {
             _ => quote! { DataFormat::Struct4 },
         }
     }
-    fn generate_serde_header_read(&self) -> proc_macro2::TokenStream {
-        let hash = constants::MAGIC_V1;
-
+    fn generate_serde_header_read(&self, hash: u32) -> proc_macro2::TokenStream {
         quote! {
                 use ::std::ptr;
                 let input = &buf[pos..];
@@ -1033,6 +1030,7 @@ impl<'a> StructInfo<'a> {
             }
             .into();
         }
+        let name_hash = hashes::fnv_32(self.name.to_string().as_str());
         let name = self.name;
         let generics = self.generics;
         let implicit_lifetime = if generics.lifetimes().count() > 0 {
@@ -1040,11 +1038,11 @@ impl<'a> StructInfo<'a> {
         } else {
             quote! { <'_>}
         };
-        let serde_write = self.generate_serde_write_method();
+        let serde_write = self.generate_serde_write_method(name_hash);
         let serde_size = self.generate_serde_size_method();
         let const_assertion_functions = self.generate_const_assertion_functions();
         let dataformat_value = self.generate_serde_dataformat_value();
-        let header_read = self.generate_serde_header_read();
+        let header_read = self.generate_serde_header_read(name_hash);
         let deserializaton_code_u8 = self.generate_fields_deserialize_code(1, false, false);
         let deserializaton_code_u16 = self.generate_fields_deserialize_code(2, false, false);
         let deserializaton_code_u32 = self.generate_fields_deserialize_code(4, false, false);

@@ -54,6 +54,9 @@ pub enum DataFormat {
     // DateTime -> maybe from chronno
 }
 impl DataFormat {
+    pub fn is_object_container(&self) -> bool {
+        matches!(self, DataFormat::Struct4 | DataFormat::Struct8 | DataFormat::Struct16)
+    }
     pub fn is_enum(&self) -> bool {
         match self {
             DataFormat::EnumI8
