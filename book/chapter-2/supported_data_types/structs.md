@@ -112,7 +112,7 @@ Custom structs with explicit alignment are supported for serialization and deser
     use flat_message::*;
 
     #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
-    struct Config {
+    struct Configuration {
         timeout: u32,
         retries: u8,
     }
@@ -120,7 +120,7 @@ Custom structs with explicit alignment are supported for serialization and deser
     #[derive(Debug, FlatMessage)]
     struct Request {
         #[flat_message_item(align = 4, kind = struct)]
-        config: Option<Config>,
+        config: Option<Configuration>,
     }
     ```
 
