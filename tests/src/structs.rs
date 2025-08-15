@@ -69,7 +69,7 @@ fn check_simple_serde_repr() {
             146, 207, 36, 196, // Hash for MyDataV1
             16, 44, 0, 0, // MyDataV1 - > 16 >> 2 = 4 fields, size = 44 octeti
             5, 72, 101, 108, 108, 111, // Test::d::d -> Hello (size 5)
-            2, // Test::d::a 
+            2,   // Test::d::a
             4, 0, // Test::d::c
             3, 0, 0, 0, // Test::d::b
             0, 0, 0, // Padding
@@ -77,19 +77,19 @@ fn check_simple_serde_repr() {
             1, 41, 12, 228, // Hash for Test::d::a (1 = u8)
             2, 44, 12, 230, // Hash for Test::d::c (2 = u16)
             3, 45, 12, 231, // Hash for Test::d::b (3 = u32)
-            8, // Offset of Test::d::d 
-            14, // Offset of Test::d::a 
-            15, // Offset of Test::d::c 
-            17, // Offset of Test::d::b 
-            5, // Test::a
-            1, // Test::x
+            8,   // Offset of Test::d::d
+            14,  // Offset of Test::d::a
+            15,  // Offset of Test::d::c
+            17,  // Offset of Test::d::b
+            5,   // Test::a
+            1,   // Test::x
             0, 0, // Padding
             32, 36, 12, 225, // Hash for Test::d (32 = Struct4)
             1, 41, 12, 228, // Hash for Test::a (1 = u8)
             1, 80, 12, 253, // Hash for Test::x (1 = u8)
-            8, // Offset of Test::d
-            52, // Offset of Test::a
-            53 // // Offset of Test::x
+            8,   // Offset of Test::d
+            52,  // Offset of Test::a
+            53   // // Offset of Test::x
         ]
     );
 }
