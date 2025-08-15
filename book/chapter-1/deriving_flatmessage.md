@@ -93,7 +93,8 @@ enum Status {
 | Option             | Values                                               | Description                                                 |
 | ------------------ | ---------------------------------------------------- | ----------------------------------------------------------- |
 | `repr`             | `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64` | Representation type                                         |
-| `kind`             | `enum`, `flags`                                      | Marks field as enum or flags type                           |
+| `kind`             | `enum`, `flags`, `struct`                            | Marks field as enum , flags or a structure type             |
+| `align`            | `4`, `8`, `16`                                       | Alignment of the field (only for structures)                |
 | `ignore` or `skip` | `true` or `false` (default is **false**)             | Ignores the field during serialization and deserialization  |
 | `mandatory`        | `true` or `false` (default is **true**)              | Marks the field as mandatory (required) for deserialization |
 
