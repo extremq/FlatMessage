@@ -24,6 +24,8 @@ mod pod;
 mod flags;
 #[cfg(test)]
 mod structs;
+#[cfg(test)]
+mod variant;
 
 #[cfg(test)]
 pub(crate) use flat_message::{Config, FlatMessage, Storage};

@@ -2,6 +2,7 @@ mod attribute_parser;
 mod config;
 mod data_type;
 mod enum_info;
+mod variant;
 mod pod;
 mod enum_memory_representation;
 mod field_info;
@@ -129,6 +130,21 @@ pub fn flat_message_structs(input: TokenStream) -> TokenStream {
         }
         .into()
     }
+}
+
+#[proc_macro_derive(FlatMessageVariant, attributes(flat_message_item))]
+pub fn flat_message_variant(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as syn::DeriveInput);
+    let variant = match variant::Variant::try_from(input) {
+        Ok(variant) => variant,
+        Err(e) => {
+            return quote::quote! {
+                compile_error!(#e);
+            }
+            .into();
+        }
+    };
+    variant.generate_code().into()
 }
 
 

@@ -1,7 +1,12 @@
 use std::collections::HashMap;
 
+use crate::attribute_parser;
+
 use super::utils;
 use common::data_format::DataFormat;
+use proc_macro::TokenStream;
+use syn::Attribute;
+use quote::{quote, ToTokens};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum FieldType {
@@ -80,6 +85,24 @@ impl DataType {
         }
     }
 
+    pub(crate) fn parse_attr(&mut self, attr: &Attribute, field_name: &str)-> Result<(), String> {
+        if attr.path().is_ident("flat_message_item") {
+            let all_tokens = attr.meta.clone().into_token_stream();
+            let mut tokens = TokenStream::default();
+            let mut iter = all_tokens.into_iter();
+            while let Some(token) = iter.next() {
+                if let proc_macro2::TokenTree::Group(group) = token {
+                    if group.delimiter() == proc_macro2::Delimiter::Parenthesis {
+                        tokens = group.stream().into();
+                        break;
+                    }
+                }
+            }
+            let attr = attribute_parser::parse(tokens);
+            self.update(&attr, field_name)?;
+        }
+        Ok(())      
+    }
     pub(crate) fn update(
         &mut self,
         attr: &HashMap<String, String>,

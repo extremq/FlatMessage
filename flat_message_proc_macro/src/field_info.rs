@@ -49,31 +49,32 @@ impl TryFrom<&Field> for FieldInfo {
         let ty_str = quote! {#ty}.to_string();
         let mut data_type = DataType::new(ty.clone(), ty_str);
         for attr in field.attrs.iter() {
-            if attr.path().is_ident("flat_message_item") {
-                let all_tokens = attr.meta.clone().into_token_stream();
-                let mut tokens = TokenStream::default();
-                let mut iter = all_tokens.into_iter();
-                while let Some(token) = iter.next() {
-                    if let proc_macro2::TokenTree::Group(group) = token {
-                        if group.delimiter() == proc_macro2::Delimiter::Parenthesis {
-                            tokens = group.stream().into();
-                            break;
-                        }
-                    }
-                }
-                let attr = attribute_parser::parse(tokens);
-                data_type.update(&attr, name.as_str())?;
-            } else {
-                if attr.path().is_ident("doc") {
-                    // skip it until I find a better solutiion:)
-                    continue;
-                }
-                return Err(format!(
-                    "Attribute '{}' is not supported for field '{}'",
-                    attr.to_token_stream(),
-                    name
-                ));
-            }
+            data_type.parse_attr(attr, &name)?;
+            // if attr.path().is_ident("flat_message_item") {
+            //     let all_tokens = attr.meta.clone().into_token_stream();
+            //     let mut tokens = TokenStream::default();
+            //     let mut iter = all_tokens.into_iter();
+            //     while let Some(token) = iter.next() {
+            //         if let proc_macro2::TokenTree::Group(group) = token {
+            //             if group.delimiter() == proc_macro2::Delimiter::Parenthesis {
+            //                 tokens = group.stream().into();
+            //                 break;
+            //             }
+            //         }
+            //     }
+            //     let attr = attribute_parser::parse(tokens);
+            //     data_type.update(&attr, name.as_str())?;
+            // } else {
+            //     if attr.path().is_ident("doc") {
+            //         // skip it until I find a better solutiion:)
+            //         continue;
+            //     }
+            //     return Err(format!(
+            //         "Attribute '{}' is not supported for field '{}'",
+            //         attr.to_token_stream(),
+            //         name
+            //     ));
+            // }
         }
         // if the data format is unknown, we need to check if the field is a unique id or a timestamp
         if data_type.data_format == common::data_format::DataFormat::Unknwon
