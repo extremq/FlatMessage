@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{Data, DeriveInput, Fields};
 
-struct VariantField {
+struct VariantItem {
     name: String,
     name_ident: syn::Ident,
     data_type: Option<DataType>,
@@ -15,7 +15,7 @@ struct VariantField {
 }
 pub struct Variant {
     name: syn::Ident,
-    variants: Vec<VariantField>,
+    variants: Vec<VariantItem>,
     sealed_enum: bool,
     data_format: DataFormat,
 }
@@ -131,16 +131,76 @@ impl Variant {
         }
     }
     fn generate_serde_from_buffer(&self) -> TokenStream {
+        let variant_name_hash = self.compute_hash();
+        let mut v = Vec::new();
+        for variant in &self.variants {
+            let name = variant.name_ident.clone();
+            let serde_trait = variant.serde_trait.clone();
+            let extra_size = variant.extra_size;
+            let hash = variant.hash;
+            if let Some(dt) = &variant.data_type {
+                let ty = dt.ty.clone();
+                v.push(quote! {
+                    #hash => {
+                        let obj: #ty = ::flat_message::#serde_trait::from_buffer(buf, pos+#extra_size)?;
+                        Some(Self::#name(obj))
+                    }
+                });
+            } else {
+                v.push(quote! {                    
+                    #hash=> Some(Self::#name),
+                });
+            }
+        }
+
         quote! {
             fn from_buffer(buf: &[u8], pos: usize) -> Option<Self> {
-                todo!()
+                if pos + 8 < buf.len() {
+                    return None;
+                }
+                let p = buf.as_ptr();
+                let hash = unsafe { std::ptr::read_unaligned(p.add(pos) as *const u32) };
+                if hash != #variant_name_hash {
+                    return None;
+                }
+                let hash = unsafe { std::ptr::read_unaligned(p.add(pos+4) as *const u32) };
+                match hash {
+                    #(#v)*
+                    _ => None
+                }
             }
         }
     }
     fn generate_serde_from_buffer_unchecked(&self) -> TokenStream {
+        let mut v = Vec::new();
+        for variant in &self.variants {
+            let name = variant.name_ident.clone();
+            let serde_trait = variant.serde_trait.clone();
+            let extra_size = variant.extra_size;
+            let hash = variant.hash;
+            if let Some(dt) = &variant.data_type {
+                let ty = dt.ty.clone();
+                v.push(quote! {
+                    #hash => {
+                        let obj: #ty = unsafe { ::flat_message::#serde_trait::from_buffer_unchecked(buf, pos+#extra_size) };
+                        Self::#name(obj)
+                    }
+                });
+            } else {
+                v.push(quote! {                    
+                    #hash=> Self::#name,
+                });
+            }
+        }
+
         quote! {
             unsafe fn from_buffer_unchecked(buf: &[u8], pos: usize) -> Self {
-                todo!()
+                let p = buf.as_ptr();
+                let hash = unsafe { std::ptr::read_unaligned(p.add(pos+4) as *const u32) };
+                match hash {
+                    #(#v)*
+                    _ => panic!("Invalid/Unknown variant !")
+                }
             }
         }
     }
@@ -198,7 +258,7 @@ impl TryFrom<syn::DeriveInput> for Variant {
             match &v.fields {
                 Fields::Unit => {
                     hash = (hash & 0xFFFFFF00) | 0xFF;
-                    variants.push(VariantField {
+                    variants.push(VariantItem {
                         name: name.to_string(),
                         name_ident: name,
                         data_type: None,
@@ -228,7 +288,7 @@ impl TryFrom<syn::DeriveInput> for Variant {
                         _ => panic!("Internal error: expected a Variant data format"),
                     };
                     hash = (hash & 0xFFFFFF00) | dt.type_hash();
-                    variants.push(VariantField {
+                    variants.push(VariantItem {
                         name: name_str,
                         name_ident: name,
                         data_type: Some(dt),

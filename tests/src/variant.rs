@@ -12,4 +12,5 @@ fn check_simple_serde() {
         //Reject(u8, String),
         SimpleVariant,
     }
+    
 }
