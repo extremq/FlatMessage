@@ -155,7 +155,7 @@ impl Variant {
 
         quote! {
             fn from_buffer(buf: &[u8], pos: usize) -> Option<Self> {
-                if pos + 8 < buf.len() {
+                if pos + 8 >= buf.len() {
                     return None;
                 }
                 let p = buf.as_ptr();

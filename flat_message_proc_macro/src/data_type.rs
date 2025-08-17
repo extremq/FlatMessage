@@ -178,8 +178,23 @@ impl DataType {
                     };
                     return Ok(());
                 }
+                if kind == "variant" {
+                    if !has_align {
+                        return Err(format!("If we provided the 'kind' attribute with the value 'variant' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
+                    }
+                    let align = attr.get("align").unwrap();
+                    match align.as_str() {
+                        "1" => self.data_format = DataFormat::Variant8,
+                        "2" => self.data_format = DataFormat::Variant16,
+                        "4" => self.data_format = DataFormat::Variant32,
+                        "8" => self.data_format = DataFormat::Variant64,
+                        "16" => self.data_format = DataFormat::Variant128,
+                        _ => return Err(format!("Invalid alignment for a variant: '{}' in field: '{}'. The possible alignments for a variant are: 1,2,4,8 and 16.",align, field_nane)),
+                    };
+                    return Ok(());
+                }
                 return Err(format!(
-                    "Invalid kind: '{}' in field: '{}'. The possible kinds are: 'enum' or 'pod'.",
+                    "Invalid kind: '{}' in field: '{}'. The possible kinds are: 'enum', 'flags', 'struct' or 'variant'.",
                     kind, field_nane
                 ));
             }

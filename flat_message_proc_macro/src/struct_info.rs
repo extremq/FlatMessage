@@ -707,7 +707,7 @@ impl<'a> StructInfo<'a> {
     fn generate_const_type_assertion_struct(&self, field: &FieldInfo) -> proc_macro2::TokenStream {
         let path_str = field.data_type.name.replace(' ', ""); 
         let ty: syn::Path = syn::parse_str(&path_str).unwrap();
-        let const_assert_name = format_ident!("_CONST_ASSERT_{}_{}",self.name,field.name);        
+        let const_assert_name = format_ident!("_CONST_ASSERT_STRUCT_{}_{}",self.name,field.name);        
         let df = format_ident!("{}",field.data_type.data_format.to_string());
         let field_name = format!("{}::{}",self.name, field.name);
         let serde_ty = format_ident!("{}",field.data_type.field_type.serde_trait());
@@ -727,6 +727,35 @@ impl<'a> StructInfo<'a> {
             };
         }
     }    
+    fn generate_const_type_assertion_variant(&self, field: &FieldInfo) -> proc_macro2::TokenStream {
+        let path_str = field.data_type.name.replace(' ', ""); 
+        let ty: syn::Path = syn::parse_str(&path_str).unwrap();
+        let const_assert_name = format_ident!("_CONST_ASSERT_VARIANT_{}_{}",self.name,field.name);        
+        let df = format_ident!("{}",field.data_type.data_format.to_string());
+        let field_name = format!("{}::{}",self.name, field.name);
+        let serde_ty = format_ident!("{}",field.data_type.field_type.serde_trait());
+        quote! {
+            #[allow(non_upper_case_globals)]
+            const #const_assert_name: () = if <#ty as #serde_ty>::DATA_FORMAT as u8 != flat_message::DataFormat::#df as u8 {
+                const v: u8  = <#ty as SerDe>::DATA_FORMAT as u8;
+                const VARIANT8_ID: u8 = flat_message::DataFormat::Variant8 as u8;
+                const VARIANT16_ID: u8 = flat_message::DataFormat::Variant16 as u8;
+                const VARIANT32_ID: u8 = flat_message::DataFormat::Variant32 as u8;
+                const VARIANT64_ID: u8 = flat_message::DataFormat::Variant64 as u8;
+                const VARIANT128_ID: u8 = flat_message::DataFormat::Variant128 as u8;        
+                match v {
+                    VARIANT8_ID  => panic!(concat!("Incorect representation for field '", #field_name, "' in the #[flat_message_item(...)] attribute ! Make sure that #[flat_message_item(...)] contains the following (align = 1) !")),
+                    VARIANT16_ID => panic!(concat!("Incorect representation for field '", #field_name, "' in the #[flat_message_item(...)] attribute ! Make sure that #[flat_message_item(...)] contains the following (align = 2) !")),
+                    VARIANT32_ID => panic!(concat!("Incorect representation for field '", #field_name, "' in the #[flat_message_item(...)] attribute ! Make sure that #[flat_message_item(...)] contains the following (align = 4) !")),
+                    VARIANT64_ID => panic!(concat!("Incorect representation for field '", #field_name, "' in the #[flat_message_item(...)] attribute ! Make sure that #[flat_message_item(...)] contains the following (align = 8) !")),
+                    VARIANT128_ID => panic!(concat!("Incorect representation for field '", #field_name, "' in the #[flat_message_item(...)] attribute ! Make sure that #[flat_message_item(...)] contains the following (align = 16) !")),
+                    _  => panic!(concat!("Incorect representation for variant field '", #field_name, "' in the #[flat_message_item(...)] attribute ! Make sure that #[flat_message_item(...)] contains the following (align = <unexpected>) !")),
+                }
+            };
+        }
+    }   
+
+
     fn generate_const_assertion_functions(&self) -> Vec<proc_macro2::TokenStream> {
         let mut v = Vec::with_capacity(8);
         for field in self.fields.iter() {
@@ -736,9 +765,13 @@ impl<'a> StructInfo<'a> {
             if field.data_type.data_format.is_flags() { 
                 v.push(self.generate_const_type_assertion(field,"Validate that the underline type is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
             }  
-            if field.data_type.data_format.is_object_container() {
+            if field.data_type.data_format.is_struct() {
                 v.push(self.generate_const_type_assertion_struct(field));
             }
+            if field.data_type.data_format.is_variant() {
+                v.push(self.generate_const_type_assertion_variant(field));
+            }
+
         }
         v
     }

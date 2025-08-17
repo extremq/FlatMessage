@@ -62,6 +62,12 @@ impl DataFormat {
     pub fn is_object_container(&self) -> bool {
         matches!(self, DataFormat::Struct4 | DataFormat::Struct8 | DataFormat::Struct16 | DataFormat::Variant8 | DataFormat::Variant16 | DataFormat::Variant32 | DataFormat::Variant64 | DataFormat::Variant128)
     }
+    pub fn is_variant(&self) -> bool {
+        matches!(self, DataFormat::Variant8 | DataFormat::Variant16 | DataFormat::Variant32 | DataFormat::Variant64 | DataFormat::Variant128)
+    }
+    pub fn is_struct(&self) -> bool {
+        matches!(self, DataFormat::Struct4 | DataFormat::Struct8 | DataFormat::Struct16)
+    }
     pub fn is_enum(&self) -> bool {
         match self {
             DataFormat::EnumI8
