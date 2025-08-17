@@ -8,7 +8,7 @@ fn check_simple_serde() {
         Byte(u8),
         DWord(u32),
         String(String),
-        Vector(Vec<u64>),
+        Vector(Vec<u128>),
         //Reject(u8, String),
         SimpleVariant,
     }

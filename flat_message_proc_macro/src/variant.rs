@@ -1,5 +1,5 @@
-use crate::data_type::DataType;
 use super::utils;
+use crate::data_type::DataType;
 use common::data_format::DataFormat;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
@@ -63,28 +63,24 @@ impl Variant {
     //     }
     // }
 
-
     fn generate_serde_size(&self) -> TokenStream {
-        let extra_size = match self.data_format {
-            DataFormat::Variant8 |
-            DataFormat::Variant16 |
-            DataFormat::Variant32 |
-            DataFormat::Variant64 => quote! {8},
-            DataFormat::Variant128 => quote! {16},
-            _ => panic!("Internal error: expected a Variant data format"),
-        };
         let struct_name = self.name.clone();
         let mut v = Vec::new();
         for (name, opt_dt) in &self.variants {
             let name = syn::Ident::new(name, proc_macro2::Span::call_site());
             if let Some(dt) = opt_dt {
+                let extra_size = match dt.serialization_alignment() {
+                    1 | 2 | 4 | 8 => quote! {8},
+                    16 => quote! {16},
+                    _ => panic!("Internal error: expected a Variant data format"),
+                };
                 let serde_trait = dt.serde_trait();
                 v.push(quote! {
                     #struct_name::#name(obj) => ::flat_message::#serde_trait::size(obj) + #extra_size,
                 });
             } else {
                 v.push(quote! {
-                    #struct_name::#name => #extra_size,
+                    #struct_name::#name => 8,
                 });
             }
         }
@@ -93,7 +89,7 @@ impl Variant {
                 match obj {
                     #(#v)*
                 }
-            }            
+            }
         }
     }
     fn generate_serde_write(&self) -> TokenStream {
@@ -109,17 +105,17 @@ impl Variant {
                 todo!()
             }
         }
-    }      
+    }
     fn generate_serde_from_buffer_unchecked(&self) -> TokenStream {
         quote! {
             unsafe fn from_buffer_unchecked(buf: &[u8], pos: usize) -> Self {
                 todo!()
             }
         }
-    }        
+    }
     pub fn generate_code(&self) -> TokenStream {
         let name = &self.name;
-        let df = format_ident!("{}",self.data_format.to_string());
+        let df = format_ident!("{}", self.data_format.to_string());
         let size_code = self.generate_serde_size();
         let from_buffer_code = self.generate_serde_from_buffer();
         let from_buffer_unchecked_code = self.generate_serde_from_buffer_unchecked();
@@ -146,7 +142,6 @@ impl TryFrom<syn::DeriveInput> for Variant {
     type Error = String;
 
     fn try_from(input: DeriveInput) -> Result<Self, Self::Error> {
-
         let mut sealed_enum = false;
         for attr in input.attrs.iter() {
             if attr.path().is_ident("sealed") {
@@ -155,15 +150,19 @@ impl TryFrom<syn::DeriveInput> for Variant {
         }
 
         let mut variants = Vec::new();
-        let data_enum = match &input.data {
-            Data::Enum(data_enum) => data_enum,
-            _ => return Err("FlatMessageVariant can only be used on enums with variants of multiple types".to_string()),
-        };
+        let data_enum =
+            match &input.data {
+                Data::Enum(data_enum) => data_enum,
+                _ => return Err(
+                    "FlatMessageVariant can only be used on enums with variants of multiple types"
+                        .to_string(),
+                ),
+            };
 
         let mut align = 1;
         for v in &data_enum.variants {
             let name = v.ident.clone();
-            
+
             match &v.fields {
                 Fields::Unit => {
                     variants.push((name.to_string(), None));
@@ -184,7 +183,13 @@ impl TryFrom<syn::DeriveInput> for Variant {
                         dt.parse_attr(attr, &name_str)?;
                     }
                     align = align.max(dt.serialization_alignment());
-                    println!("Variant {} -> type: {} -> {:?}, align = {}",name, ty_str_clone, dt.data_format, dt.serialization_alignment());
+                    println!(
+                        "Variant {} -> type: {} -> {:?}, align = {}",
+                        name,
+                        ty_str_clone,
+                        dt.data_format,
+                        dt.serialization_alignment()
+                    );
                     variants.push((name.to_string(), Some(dt)));
                 }
                 Fields::Named(_) => {
@@ -207,7 +212,7 @@ impl TryFrom<syn::DeriveInput> for Variant {
             name: input.ident,
             variants,
             sealed_enum,
-            data_format
+            data_format,
         })
     }
 }
