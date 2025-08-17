@@ -5,29 +5,37 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{Data, DeriveInput, Fields};
 
+struct VariantField {
+    name: String,
+    name_ident: syn::Ident,
+    data_type: Option<DataType>,
+    serde_trait: syn::Ident,
+    extra_size: usize,
+    hash: u32,
+}
 pub struct Variant {
     name: syn::Ident,
-    variants: Vec<(String, Option<DataType>)>,
+    variants: Vec<VariantField>,
     sealed_enum: bool,
     data_format: DataFormat,
 }
 
 impl Variant {
-    // fn compute_hash(&self) -> u32 {
-    //     if self.sealed_enum {
-    //         let mut name = self.name.to_string();
-    //         let mut v = self.variants.clone();
-    //         v.sort_by(|a, b| a.0.cmp(&b.0));
-    //         for (variant_name, value) in v {
-    //             name.push_str(variant_name.as_str());
-    //             name.push_str(value.to_string().as_str());
-    //         }
-    //         common::hashes::crc32(name.as_bytes())
-    //     } else {
-    //         let name = self.name.to_string();
-    //         common::hashes::crc32(name.as_bytes())
-    //     }
-    // }
+    fn compute_hash(&self) -> u32 {
+        if self.sealed_enum {
+            let mut name = self.name.to_string();
+            let mut v: Vec<_> = self.variants.iter().map(|v| v.name.as_str()).collect();            
+            v.sort();
+            for variant_name in v {
+                name.push_str(variant_name);
+                name.push_str(",");
+            }
+            common::hashes::crc32(name.as_bytes())
+        } else {
+            let name = self.name.to_string();
+            common::hashes::crc32(name.as_bytes())
+        }
+    }
     // fn generate_variant_validation_match(&self, generate_value: bool) -> TokenStream {
     //     let mut first = true;
     //     let variants: Vec<_> = self
@@ -66,15 +74,11 @@ impl Variant {
     fn generate_serde_size(&self) -> TokenStream {
         let struct_name = self.name.clone();
         let mut v = Vec::new();
-        for (name, opt_dt) in &self.variants {
-            let name = syn::Ident::new(name, proc_macro2::Span::call_site());
-            if let Some(dt) = opt_dt {
-                let extra_size = match dt.serialization_alignment() {
-                    1 | 2 | 4 | 8 => quote! {8},
-                    16 => quote! {16},
-                    _ => panic!("Internal error: expected a Variant data format"),
-                };
-                let serde_trait = dt.serde_trait();
+        for variant in &self.variants {
+            let name = variant.name_ident.clone();
+            let serde_trait = variant.serde_trait.clone();
+            let extra_size = variant.extra_size;
+            if let Some(_) = &variant.data_type {
                 v.push(quote! {
                     #struct_name::#name(obj) => ::flat_message::#serde_trait::size(obj) + #extra_size,
                 });
@@ -93,9 +97,36 @@ impl Variant {
         }
     }
     fn generate_serde_write(&self) -> TokenStream {
+        let struct_name = self.name.clone();
+        let variant_name_hash = self.compute_hash();
+        let mut v = Vec::new();
+        for variant in &self.variants {
+            let name = variant.name_ident.clone();
+            let serde_trait = variant.serde_trait.clone();
+            let extra_size = variant.extra_size;
+            let hash = variant.hash;
+            if let Some(_) = &variant.data_type {
+                v.push(quote! {
+                    #struct_name::#name(obj) => {
+                        std::ptr::write_unaligned(p.add(pos+4) as *mut u32, #hash);
+                        ::flat_message::#serde_trait::write(obj,p,pos+#extra_size)
+                    }
+                });
+            } else {
+                v.push(quote! {                    
+                    #struct_name::#name => {
+                        std::ptr::write_unaligned(p.add(pos+4) as *mut u32, #hash);
+                        pos+8
+                    }
+                });
+            }
+        }
         quote! {
             unsafe fn write(obj: &Self, p: *mut u8, pos: usize) -> usize {
-                todo!()
+                std::ptr::write_unaligned(p.add(pos) as *mut u32, #variant_name_hash);
+                match obj {
+                    #(#v)*
+                }
             }
         }
     }
@@ -162,10 +193,19 @@ impl TryFrom<syn::DeriveInput> for Variant {
         let mut align = 1;
         for v in &data_enum.variants {
             let name = v.ident.clone();
-
+            let name_str = name.to_string();
+            let mut hash = common::hashes::crc32(name_str.as_bytes());
             match &v.fields {
                 Fields::Unit => {
-                    variants.push((name.to_string(), None));
+                    hash = (hash & 0xFFFFFF00) | 0xFF;
+                    variants.push(VariantField {
+                        name: name.to_string(),
+                        name_ident: name,
+                        data_type: None,
+                        serde_trait: syn::Ident::new("None", proc_macro2::Span::call_site()),
+                        extra_size: 0,
+                        hash,
+                    });
                 }
                 Fields::Unnamed(fields) => {
                     if fields.unnamed.len() != 1 {
@@ -176,21 +216,26 @@ impl TryFrom<syn::DeriveInput> for Variant {
                     }
                     let ty = fields.unnamed[0].ty.clone();
                     let ty_str = quote! {#ty}.to_string();
-                    let ty_str_clone = ty_str.clone();
-                    let mut dt = DataType::new(ty, ty_str);
-                    let name_str = name.to_string();
+                    let mut dt = DataType::new(ty, ty_str);                    
                     for attr in fields.unnamed[0].attrs.iter() {
                         dt.parse_attr(attr, &name_str)?;
                     }
                     align = align.max(dt.serialization_alignment());
-                    println!(
-                        "Variant {} -> type: {} -> {:?}, align = {}",
-                        name,
-                        ty_str_clone,
-                        dt.data_format,
-                        dt.serialization_alignment()
-                    );
-                    variants.push((name.to_string(), Some(dt)));
+                    let serde_trait = dt.serde_trait();
+                    let extra_size = match dt.serialization_alignment() {
+                        1 | 2 | 4 | 8 => 8,
+                        16 => 16,
+                        _ => panic!("Internal error: expected a Variant data format"),
+                    };
+                    hash = (hash & 0xFFFFFF00) | dt.type_hash();
+                    variants.push(VariantField {
+                        name: name_str,
+                        name_ident: name,
+                        data_type: Some(dt),
+                        serde_trait,
+                        extra_size,
+                        hash,
+                    });
                 }
                 Fields::Named(_) => {
                     return Err(format!(
