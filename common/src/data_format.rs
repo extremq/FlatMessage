@@ -40,6 +40,11 @@ pub enum DataFormat {
     Struct4,
     Struct8,
     Struct16,
+    Variant8,
+    Variant16,
+    Variant32,
+    Variant64,
+    Variant128,
     POD8,
     POD16,
     POD32,
@@ -55,7 +60,7 @@ pub enum DataFormat {
 }
 impl DataFormat {
     pub fn is_object_container(&self) -> bool {
-        matches!(self, DataFormat::Struct4 | DataFormat::Struct8 | DataFormat::Struct16)
+        matches!(self, DataFormat::Struct4 | DataFormat::Struct8 | DataFormat::Struct16 | DataFormat::Variant8 | DataFormat::Variant16 | DataFormat::Variant32 | DataFormat::Variant64 | DataFormat::Variant128)
     }
     pub fn is_enum(&self) -> bool {
         match self {
@@ -131,6 +136,11 @@ impl DataFormat {
             DataFormat::Struct4 => 4,
             DataFormat::Struct8 => 8,
             DataFormat::Struct16 => 16,
+            DataFormat::Variant8 => 1,
+            DataFormat::Variant16 => 2,
+            DataFormat::Variant32 => 4,
+            DataFormat::Variant64 => 8,
+            DataFormat::Variant128 => 16,
             DataFormat::Unknwon => 1,
         }
     }
@@ -177,6 +187,11 @@ impl Display for DataFormat {
             DataFormat::Struct4 => write!(f, "Struct4"),
             DataFormat::Struct8 => write!(f, "Struct8"),
             DataFormat::Struct16 => write!(f, "Struct16"),
+            DataFormat::Variant8 => write!(f, "Variant8"),
+            DataFormat::Variant16 => write!(f, "Variant16"),
+            DataFormat::Variant32 => write!(f, "Variant32"),
+            DataFormat::Variant64 => write!(f, "Variant64"),
+            DataFormat::Variant128 => write!(f, "Variant128"),
             DataFormat::Unknwon => write!(f, "Unknwon"),
         }
     }
@@ -231,6 +246,12 @@ impl From<&str> for DataFormat {
             "struct_4" => DataFormat::Struct4,
             "struct_8" => DataFormat::Struct8,
             "struct_16" => DataFormat::Struct16,
+            // variant
+            "variant_8" => DataFormat::Variant8,
+            "variant_16" => DataFormat::Variant16,
+            "variant_32" => DataFormat::Variant32,
+            "variant_64" => DataFormat::Variant64,
+            "variant_128" => DataFormat::Variant128,
             // copy struct
             "pod_1" => DataFormat::POD8,
             "pod_2" => DataFormat::POD16,

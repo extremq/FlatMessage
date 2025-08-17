@@ -83,7 +83,7 @@ impl<'a> StructInfo<'a> {
         let self_name = StructInfo::self_name(use_self);
         let compute_size_code = self.fields.iter().map(|field| {
             let field_name = field.name_ident();
-            let serialization_trait = field.serialization_trait();
+            let serialization_trait = field.data_type.serde_trait();
             let serialization_alignment = field.serialization_alignment();
             let size_increase = if serialization_alignment>1 {
                 quote! {
@@ -175,7 +175,7 @@ impl<'a> StructInfo<'a> {
         let v: Vec<_> = self.fields.iter().map(|field| {
             let field_name = syn::Ident::new(field.name.as_str(), proc_macro2::Span::call_site());
             let hash_table_order = field.hash_table_order as usize;
-            let serde_trait = field.serialization_trait();
+            let serde_trait = field.data_type.serde_trait();
             let serialization_alignment = field.serialization_alignment();
             let alignament_code = if serialization_alignment>1 {
                     quote! {
@@ -604,7 +604,7 @@ impl<'a> StructInfo<'a> {
             .map(|field| HashAndInnerVar {
                 hash: field.hash,
                 inner_var: field.inner_var(),
-                serde_trait: field.serialization_trait(),
+                serde_trait: field.data_type.serde_trait(),
                 ty: field.data_type.ty.clone(),
                 option: field.data_type.option,
                 mandatory: field.data_type.mandatory,

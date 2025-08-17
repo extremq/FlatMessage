@@ -5,8 +5,8 @@ use crate::attribute_parser;
 use super::utils;
 use common::data_format::DataFormat;
 use proc_macro::TokenStream;
+use quote::ToTokens;
 use syn::Attribute;
-use quote::{quote, ToTokens};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum FieldType {
@@ -43,6 +43,13 @@ impl DataType {
             FieldType::Object => self.data_format as u32,
             FieldType::Slice | FieldType::Vector => (self.data_format as u32) | 0x80,
         }
+    }
+    #[inline(always)]
+    pub(crate) fn serde_trait(&self) -> syn::Ident {
+        syn::Ident::new(
+            self.field_type.serde_trait(),
+            proc_macro2::Span::call_site(),
+        )
     }
     pub(crate) fn new(ty: syn::Type, mut def: String) -> Self {
         utils::type_name_formatter(&mut def);
@@ -85,7 +92,7 @@ impl DataType {
         }
     }
 
-    pub(crate) fn parse_attr(&mut self, attr: &Attribute, field_name: &str)-> Result<(), String> {
+    pub(crate) fn parse_attr(&mut self, attr: &Attribute, field_name: &str) -> Result<(), String> {
         if attr.path().is_ident("flat_message_item") {
             let all_tokens = attr.meta.clone().into_token_stream();
             let mut tokens = TokenStream::default();
@@ -101,7 +108,7 @@ impl DataType {
             let attr = attribute_parser::parse(tokens);
             self.update(&attr, field_name)?;
         }
-        Ok(())      
+        Ok(())
     }
     pub(crate) fn update(
         &mut self,
@@ -168,8 +175,8 @@ impl DataType {
                         "8" => self.data_format = DataFormat::Struct8,
                         "16" => self.data_format = DataFormat::Struct16,
                         _ => return Err(format!("Invalid alignment for a struct: '{}' in field: '{}'. The possible alignments for a struct are: 4, 8 and 16.",align, field_nane)),
-                    };    
-                    return Ok(());                
+                    };
+                    return Ok(());
                 }
                 return Err(format!(
                     "Invalid kind: '{}' in field: '{}'. The possible kinds are: 'enum' or 'pod'.",
@@ -188,7 +195,8 @@ impl DataType {
             }
             // check for other errors
             // possible parameters
-            static KEYS: &[&'static str] = &["kind", "repr", "align", "ignore", "skip", "mandatory"];
+            static KEYS: &[&'static str] =
+                &["kind", "repr", "align", "ignore", "skip", "mandatory"];
             for key in KEYS {
                 if attr.contains_key(*key) {
                     continue;
@@ -208,8 +216,12 @@ impl DataType {
     pub(crate) fn serialization_alignment(&self) -> usize {
         match self.field_type {
             FieldType::Object => {
-                if self.data_format.is_object_container() { self.data_format.alignament() as usize } else { 1 }
-            },
+                if self.data_format.is_object_container() {
+                    self.data_format.alignament() as usize
+                } else {
+                    1
+                }
+            }
             FieldType::Slice | FieldType::Vector => self.data_format.alignament() as usize,
         }
     }

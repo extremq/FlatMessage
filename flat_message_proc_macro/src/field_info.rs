@@ -1,6 +1,4 @@
-use super::attribute_parser;
 use common::hashes;
-use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
 use syn::Field;
 
@@ -23,13 +21,13 @@ impl FieldInfo {
     pub(crate) fn name_ident(&self) -> syn::Ident {
         syn::Ident::new(self.name.as_str(), proc_macro2::Span::call_site())
     }
-    #[inline(always)]
-    pub(crate) fn serialization_trait(&self) -> syn::Ident {
-        syn::Ident::new(
-            self.data_type.field_type.serde_trait(),
-            proc_macro2::Span::call_site(),
-        )
-    }
+    // #[inline(always)]
+    // pub(crate) fn serialization_trait(&self) -> syn::Ident {
+    //     syn::Ident::new(
+    //         self.data_type.field_type.serde_trait(),
+    //         proc_macro2::Span::call_site(),
+    //     )
+    // }
     #[inline(always)]
     pub(crate) fn serialization_alignment(&self) -> usize {
         self.data_type.serialization_alignment()
@@ -50,31 +48,6 @@ impl TryFrom<&Field> for FieldInfo {
         let mut data_type = DataType::new(ty.clone(), ty_str);
         for attr in field.attrs.iter() {
             data_type.parse_attr(attr, &name)?;
-            // if attr.path().is_ident("flat_message_item") {
-            //     let all_tokens = attr.meta.clone().into_token_stream();
-            //     let mut tokens = TokenStream::default();
-            //     let mut iter = all_tokens.into_iter();
-            //     while let Some(token) = iter.next() {
-            //         if let proc_macro2::TokenTree::Group(group) = token {
-            //             if group.delimiter() == proc_macro2::Delimiter::Parenthesis {
-            //                 tokens = group.stream().into();
-            //                 break;
-            //             }
-            //         }
-            //     }
-            //     let attr = attribute_parser::parse(tokens);
-            //     data_type.update(&attr, name.as_str())?;
-            // } else {
-            //     if attr.path().is_ident("doc") {
-            //         // skip it until I find a better solutiion:)
-            //         continue;
-            //     }
-            //     return Err(format!(
-            //         "Attribute '{}' is not supported for field '{}'",
-            //         attr.to_token_stream(),
-            //         name
-            //     ));
-            // }
         }
         // if the data format is unknown, we need to check if the field is a unique id or a timestamp
         if data_type.data_format == common::data_format::DataFormat::Unknwon
