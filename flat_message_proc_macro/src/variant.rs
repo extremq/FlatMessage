@@ -1,4 +1,4 @@
-use super::utils;
+use super::ConstAssertions;
 use crate::data_type::DataType;
 use common::data_format::DataFormat;
 use proc_macro2::TokenStream;
@@ -36,40 +36,34 @@ impl Variant {
             common::hashes::crc32(name.as_bytes())
         }
     }
-    // fn generate_variant_validation_match(&self, generate_value: bool) -> TokenStream {
-    //     let mut first = true;
-    //     let variants: Vec<_> = self
-    //         .variants
-    //         .iter()
-    //         .map(|(name, value)| {
-    //             let name = syn::Ident::new(name, proc_macro2::Span::call_site());
-    //             let value = proc_macro2::Literal::i128_unsuffixed(*value);
-    //             if generate_value {
-    //                 quote! { #value => Some(Self::#name), }
-    //             } else if first {
-    //                 first = false;
-    //                 quote! { #value }
-    //             } else {
-    //                 quote! { | #value }
-    //             }
-    //         })
-    //         .collect();
-    //     if generate_value {
-    //         quote! {
-    //             match value {
-    //                 #(#variants)*
-    //                 _ => None,
-    //             }
-    //         }
-    //     } else {
-    //         quote! {
-    //             match value {
-    //                 #(#variants)* => {},
-    //                 _ => return None,
-    //             }
-    //         }
-    //     }
-    // }
+    fn generate_const_assertion_functions(&self) -> Vec<proc_macro2::TokenStream> {
+        let mut v = Vec::with_capacity(8);
+        for variant in self.variants.iter() {
+            if let Some(data_type) = &variant.data_type {
+                if data_type.data_format.is_enum() {
+                    v.push(ConstAssertions::for_enum_flags(self.name.clone(), &variant.name, &data_type,"Validate that the type describe in the #[repr(...)] attribute of the enum is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
+                }
+                if data_type.data_format.is_flags() {
+                    v.push(ConstAssertions::for_enum_flags(self.name.clone(), &variant.name, &data_type,"Validate that the underline type is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
+                }
+                if data_type.data_format.is_struct() {
+                    v.push(ConstAssertions::for_struct(
+                        self.name.clone(),
+                        &variant.name,
+                        &data_type,
+                    ));
+                }
+                if data_type.data_format.is_variant() {
+                    v.push(ConstAssertions::for_variant(
+                        self.name.clone(),
+                        &variant.name,
+                        &data_type,
+                    ));
+                }
+            }
+        }
+        v
+    }
 
     fn generate_serde_size(&self) -> TokenStream {
         let struct_name = self.name.clone();
@@ -211,8 +205,10 @@ impl Variant {
         let from_buffer_code = self.generate_serde_from_buffer();
         let from_buffer_unchecked_code = self.generate_serde_from_buffer_unchecked();
         let write_code = self.generate_serde_write();
+        let const_assertions = self.generate_const_assertion_functions();
 
         quote! {
+            #(#const_assertions)*
             unsafe impl<'a> SerDe<'a> for #name {
                 const DATA_FORMAT: flat_message::DataFormat = flat_message::DataFormat::#df;
 

@@ -469,19 +469,19 @@ fn check_combo_enum_and_flags_repr_flags() {
     assert_eq!(
         s.as_slice(),
         &[
-            70, 76, 77, 1, 3, 0, 0, 0, // header    
+            70, 76, 77, 1, 3, 0, 0, 0, // header
             10, 35, 89, 217, // hash over the variant MyVariant
             27, 133, 93, 57, // hash over the variant FlagsEntry (27 = Flags8 (8 bits))
             190, 110, 196, 202, // hash over the type Flags
-            7, // value of variant FlagsEntry (7 = A | B | C)
+            7,   // value of variant FlagsEntry (7 = A | B | C)
             2, 0, // Test::y = 2
             1, // Test::x = 1
             35, 64, 12, 243, // hash for Test::v
             2, 78, 12, 252, // hash for Test::y
             1, 80, 12, 253, // hash for Test::x
-            8, // offset for Test::v (offset 8)
-            21, // offset for Test::y (offset 21)
-            23, // offset for Test::x (offset 23)
+            8,   // offset for Test::v (offset 8)
+            21,  // offset for Test::y (offset 21)
+            23,  // offset for Test::x (offset 23)
         ]
     );
 }
@@ -547,9 +547,154 @@ fn check_combo_enum_and_flags_repr_enum() {
             35, 64, 12, 243, // hash for Test::v
             2, 78, 12, 252, // hash for Test::y
             1, 80, 12, 253, // hash for Test::x
+            8,   // offset for Test::v (offset 8)
+            24,  // offset for Test::y (offset 24)
+            26,  // offset for Test::x (offset 26)
+        ]
+    );
+}
+
+#[test]
+fn check_combo_structs() {
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct MyStruct1 {
+        a: u8,
+        b: u32,
+        c: u16,
+        d: String,
+    }
+
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct MyStruct2 {
+        a: u8,
+        b: Vec<u32>,
+    }
+
+    #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+    enum MyVariant {
+        Byte(u8),
+        StringValue(String),
+        #[flat_message_item(kind = struct, align = 4)]
+        S1(MyStruct1),
+        #[flat_message_item(kind = struct, align = 4)]
+        S2(MyStruct2),
+    }
+
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: u8,
+        y: u16,
+        #[flat_message_item(kind = variant, align = 4)]
+        v: MyVariant,
+    }
+
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::Byte(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::StringValue("Hello".to_string()),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::S1(MyStruct1 {
+            a: 1,
+            b: 2,
+            c: 3,
+            d: "Hello".to_string(),
+        }),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::S2(MyStruct2 {
+            a: 1,
+            b: vec![2, 3, 4],
+        }),
+    });
+}
+
+#[test]
+fn check_combo_structs_repr() {
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct MyStruct1 {
+        a: u8,
+        b: u32,
+        c: u16,
+        d: String,
+    }
+
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    struct MyStruct2 {
+        a: u8,
+        b: Vec<u32>,
+    }
+
+    #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+    enum MyVariant {
+        Byte(u8),
+        StringValue(String),
+        #[flat_message_item(kind = struct, align = 4)]
+        S1(MyStruct1),
+        #[flat_message_item(kind = struct, align = 4)]
+        S2(MyStruct2),
+    }
+
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: u8,
+        y: u16,
+        #[flat_message_item(kind = variant, align = 4)]
+        v: MyVariant,
+    }
+    let t = Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::S1(MyStruct1 {
+            a: 1,
+            b: 2,
+            c: 3,
+            d: "Hello".to_string(),
+        }),
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(
+        s.as_slice(),
+        &[
+            70, 76, 77, 1, 3, 0, 0, 0, // header
+            10, 35, 89, 217, // hash over the variant MyVariant
+            32, 28, 145, 129, // hash over the variant S1 (32 = Struct4)
+            177, 148, 3, 133, // hash over the type MyStruct1
+            16, 44, 0, 0, // number of fields = 4 (16>>2), size = 44 bytes
+            5, 72, 101, 108, 108, 111, // value of the variant Test::v::S1::d ("Hello")
+            1, // Test::v::S1::a = 1 (u8)
+            3, 0, // Test::v::S1::c = 3 (u16)
+            2, 0, 0, 0, // Test::v::S1::b = 2 (u32)
+            0, 0, 0, // padding to 4 bytes
+            14, 36, 12, 225, // hash for Test::v::S1::d
+            1, 41, 12, 228, // hash for Test::v::S1::a
+            2, 44, 12, 230, // hash for Test::v::S1::c
+            3, 45, 12, 231, // hash for Test::v::S1::b
+            8, // offset for Test::v::S1::d (offset 8)
+            14, // offset for Test::v::S1::a (offset 14)
+            15, // offset for Test::v::S1::c (offset 15)
+            17, // offset for Test::v::S1::b (offset 17)
+            2, 0, // valu of Test::y = 2
+            1, // value of Test::x = 1
+            0, // padding to 4 bytes
+            37, 64, 12, 243, // hash for Test::v
+            2, 78, 12, 252, // hash for Test::y
+            1, 80, 12, 253, // hash for Test::x
             8, // offset for Test::v (offset 8)
-            24, // offset for Test::y (offset 24)
-            26, // offset for Test::x (offset 26)
+            60, // offset for Test::y (offset 60)
+            62, // offset for Test::x (offset 62)
         ]
     );
 }

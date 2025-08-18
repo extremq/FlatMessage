@@ -4,6 +4,7 @@ mod data_type;
 mod enum_info;
 mod variant;
 mod pod;
+mod const_assetions;
 mod enum_memory_representation;
 mod field_info;
 mod struct_info;
@@ -18,6 +19,7 @@ use quote::quote;
 use std::str::FromStr;
 use struct_info::StructInfo;
 use syn::{parse_macro_input, DeriveInput};
+use const_assetions::ConstAssertions;
 
 
 extern crate proc_macro;
