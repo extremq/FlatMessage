@@ -134,7 +134,7 @@ pub fn flat_message_structs(input: TokenStream) -> TokenStream {
     }
 }
 
-#[proc_macro_derive(FlatMessageVariant, attributes(flat_message_item))]
+#[proc_macro_derive(FlatMessageVariant, attributes(sealed,flat_message_item))]
 pub fn flat_message_variant(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);
     let variant = match variant::Variant::try_from(input) {

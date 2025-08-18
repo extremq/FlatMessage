@@ -1,6 +1,94 @@
 use super::*;
 use flat_message::*;
 
+
+mod v1 {
+    use flat_message::*;
+    #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+    pub enum MyEnum {
+        Byte(u8),
+        DWord(u32),
+        String(String),
+    }
+
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name: false)]
+    pub struct Test {
+        pub x: u8,
+        pub y: u16,
+        #[flat_message_item(kind = variant, align = 1)]
+        pub v: MyEnum,
+    }
+    impl Test {
+        pub fn new() -> Self {
+            Test {
+                x: 1,
+                y: 2,
+                v: MyEnum::String(String::from("Hello"))
+            }
+        }
+    }
+}
+
+mod v1_sealed {
+    use flat_message::*;
+    #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+    #[sealed]
+    pub enum MyEnum {
+        Byte(u8),
+        DWord(u32),
+        String(String),
+    }
+
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name: false)]
+    pub struct Test {
+        pub x: u8,
+        pub y: u16,
+        #[flat_message_item(kind = variant, align = 1)]
+        pub v: MyEnum,
+    }
+    impl Test {
+        pub fn new() -> Self {
+            Test {
+                x: 1,
+                y: 2,
+                v: MyEnum::String(String::from("Hello"))
+            }
+        }
+    }
+}
+
+mod v2 {
+    use flat_message::*;
+    #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+    pub enum MyEnum {
+        Byte(u8),
+        DWord(u32),
+        String(String),
+        Vector(Vec<u8>),        
+        SimpleVariant,
+    }
+
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name: false)]
+    pub struct Test {
+        pub x: u8,
+        pub y: u16,
+        #[flat_message_item(kind = variant, align = 1)]
+        pub v: MyEnum,
+    }
+    impl Test {
+        pub fn new() -> Self {
+            Test {
+                x: 1,
+                y: 2,
+                v: MyEnum::String(String::from("Hello"))
+            }
+        }
+    }
+}
+
 #[test]
 fn check_align_16() {
     #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
@@ -845,4 +933,115 @@ fn check_option_with_some_repr() {
             24 // Offset of Test::x
         ]
     );
+}
+
+
+#[test]
+fn chcck_v1_in_v2() {
+    let t_v1 = v1::Test::new();
+    let mut s = Storage::default();
+    t_v1.serialize_to(&mut s, Config::default()).unwrap();
+    let t_v2 = v2::Test::deserialize_from(&s).unwrap();
+    assert_eq!(t_v1.x, t_v2.x);
+    assert_eq!(t_v1.y, t_v2.y);
+    match t_v1.v {
+        v1::MyEnum::String(v) => assert_eq!(&v, "Hello"),
+        _ => panic!("Expected String variant"),
+    }
+    match t_v2.v {
+        v2::MyEnum::String(v) => assert_eq!(&v, "Hello"),
+        _ => panic!("Expected String variant"),
+    }    
+}
+
+#[test]
+fn chcck_v2_in_v1_same_fields() {
+    let t_v2 = v2::Test::new();
+    let mut s = Storage::default();
+    t_v2.serialize_to(&mut s, Config::default()).unwrap();
+    let t_v1 = v1::Test::deserialize_from(&s).unwrap();
+    assert_eq!(t_v2.x, t_v1.x);
+    assert_eq!(t_v2.y, t_v1.y);
+    match t_v2.v {
+        v2::MyEnum::String(v) => assert_eq!(&v, "Hello"),
+        _ => panic!("Expected String variant"),
+    }
+    match t_v1.v {
+        v1::MyEnum::String(v) => assert_eq!(&v, "Hello"),
+        _ => panic!("Expected String variant"),
+    }    
+}
+
+#[test]
+fn chcck_v1_sealed_in_v1() {
+    let t_v1_sealed = v1_sealed::Test::new();
+    let mut s = Storage::default();
+    t_v1_sealed.serialize_to(&mut s, Config::default()).unwrap();
+    let t_v1 = v1::Test::deserialize_from(&s);  
+    match t_v1 {
+        Ok(_) => {
+            panic!("Expected error - sealed enum can't be deserialized to v1");
+        }
+        Err(e) => {
+            match e {   
+                Error::FailToDeserialize(_) => {
+                    // Ok
+                }
+                _ => {
+                    panic!("Expected error - sealed enum can't be deserialized to v1");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn chcck_v1_in_v1_sealed() {
+    let t_v1 = v1::Test::new();
+    let mut s = Storage::default();
+    t_v1.serialize_to(&mut s, Config::default()).unwrap();
+    let t_v1_sealed = v1_sealed::Test::deserialize_from(&s);  
+    match t_v1_sealed {
+        Ok(_) => {
+            panic!("Expected error - v1 enum can't be deserialized to v1_sealed");
+        }
+        Err(e) => {
+            match e {   
+                Error::FailToDeserialize(_) => {
+                    // Ok
+                }
+                _ => {
+                    panic!("Expected error - sealed enum can't be deserialized to v1");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn chcck_v2_in_v1_new_added_fields() {
+    let t_v2 = v2::Test {
+        x: 1,
+        y: 2,
+        // MyEnum::Vector is not present in v1
+        v: v2::MyEnum::Vector(vec![1, 2, 3]),
+    };
+    let mut s = Storage::default();
+    t_v2.serialize_to(&mut s, Config::default()).unwrap();
+    let t_v1 = v1::Test::deserialize_from(&s);
+    match t_v1 {
+        Ok(_) => {
+            panic!("Expected error - v2 enum can't be deserialized to v1");
+        }
+        Err(e) => {
+            match e {   
+                Error::FailToDeserialize(_) => {
+                    // Ok
+                }
+                _ => {
+                    panic!("Expected error - v2 enum can't be deserialized to v1");
+                }
+            }
+        }
+    } 
 }
