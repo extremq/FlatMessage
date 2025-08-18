@@ -2,7 +2,7 @@ use super::ConstAssertions;
 use crate::data_type::DataType;
 use common::data_format::DataFormat;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, ToTokens};
+use quote::{format_ident, quote};
 use syn::{Data, DeriveInput, Fields};
 
 struct VariantItem {
