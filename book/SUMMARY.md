@@ -17,6 +17,7 @@
     - [Flags](chapter-2/supported_data_types/flags.md)
     - [Fixed Size Buffer](chapter-2/supported_data_types/fixed_size_buffer.md)
     - [Structures](chapter-2/supported_data_types/structs.md)
+    - [Variants](chapter-2/supported_data_types/variants.md)
   <!-- - [Builder API](chapter-2/builder_api.md)
   - [FlatMessage Buffer](chapter-2/flat_message_buffer.md) -->
 <!-- - [Advanced Features](chapter-3/versioning.md)
