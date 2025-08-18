@@ -21,11 +21,31 @@ fn check_align_16() {
         v: MyEnum,
     }
 
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::Byte(3)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::DWord(3)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::String("Hello".to_string())});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::Vector(vec![1, 2, 3])});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::SimpleVariant});
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::Byte(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::DWord(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::String("Hello".to_string()),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::Vector(vec![1, 2, 3]),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::SimpleVariant,
+    });
 }
 
 #[test]
@@ -96,11 +116,31 @@ fn check_align_1() {
         v: MyEnum,
     }
 
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::Byte(3)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::DWord(3)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::String("Hello".to_string())});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::Vector(vec![1, 2, 3])});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::SimpleVariant});
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::Byte(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::DWord(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::String("Hello".to_string()),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::Vector(vec![1, 2, 3]),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::SimpleVariant,
+    });
 }
 
 #[test]
@@ -123,11 +163,31 @@ fn check_align_2() {
         v: MyEnum,
     }
 
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::Byte(3)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::DWord(3)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::String("Hello".to_string())});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::Vector(vec![1, 2, 3])});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::SimpleVariant});
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::Byte(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::DWord(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::String("Hello".to_string()),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::Vector(vec![1, 2, 3]),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::SimpleVariant,
+    });
 }
 
 #[test]
@@ -150,11 +210,31 @@ fn check_align_4() {
         v: MyEnum,
     }
 
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::Byte(3)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::DWord(3)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::String("Hello".to_string())});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::Vector(vec![1, 2, 3])});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::SimpleVariant});
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::Byte(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::DWord(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::String("Hello".to_string()),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::Vector(vec![1, 2, 3]),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::SimpleVariant,
+    });
 }
 
 #[test]
@@ -177,11 +257,31 @@ fn check_align_8() {
         v: MyEnum,
     }
 
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::Byte(3)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::DWord(3)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::String("Hello".to_string())});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::Vector(vec![1, 2, 3])});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyEnum::SimpleVariant});
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::Byte(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::DWord(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::String("Hello".to_string()),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::Vector(vec![1, 2, 3]),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::SimpleVariant,
+    });
 }
 
 #[test]
@@ -211,7 +311,7 @@ fn check_align_4_repr() {
     };
 
     let mut s = Storage::default();
-    t.serialize_to(&mut s, Config::default()).unwrap(); 
+    t.serialize_to(&mut s, Config::default()).unwrap();
     assert_eq!(
         s.as_slice(),
         &[
@@ -225,9 +325,9 @@ fn check_align_4_repr() {
             37, 64, 12, 243, // hash for Test::v
             2, 78, 12, 252, // hash for Test::y
             1, 80, 12, 253, // hash for Test::x
-            8, // offset for Test::v (offset 8)
-            22, // offset for Test::y (offset 22)
-            24, // offset for Test::x (offset 24)
+            8,   // offset for Test::v (offset 8)
+            22,  // offset for Test::y (offset 22)
+            24,  // offset for Test::x (offset 24)
         ]
     );
 }
@@ -253,6 +353,92 @@ fn check_combo_enum_and_flags() {
         Pressue = 10000,
     }
 
+    #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+    enum MyVariant {
+        Byte(u8),
+        StringValue(String),
+        #[flat_message_item(kind = flags, repr = u8)]
+        FlagsEntry(Flags),
+        #[flat_message_item(kind = enum, repr = u32)]
+        MetricEntry(Metric),
+    }
+
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: u8,
+        y: u16,
+        #[flat_message_item(kind = variant, align = 1)]
+        v: MyVariant,
+    }
+
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::Byte(3),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::StringValue("Hello".to_string()),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::FlagsEntry(Flags::A),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::FlagsEntry(Flags::B | Flags::C),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::FlagsEntry(Flags::A | Flags::B | Flags::C),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::MetricEntry(Metric::Km),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::MetricEntry(Metric::Liters),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::MetricEntry(Metric::Temperature),
+    });
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::MetricEntry(Metric::Pressue),
+    });
+}
+
+#[test]
+fn check_combo_enum_and_flags_repr_flags() {
+    #[derive(Copy, Clone, FlatMessageFlags, Eq, PartialEq, Debug)]
+    #[repr(transparent)]
+    #[flags(A, B, C)]
+    pub struct Flags(u8);
+    impl Flags {
+        add_flag!(A = 1);
+        add_flag!(B = 2);
+        add_flag!(C = 4);
+    }
+
+    #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
+    #[repr(u32)]
+    enum Metric {
+        Km = 1,
+        Liters = 10000000,
+        Temperature = 1000000000,
+        Pressue = 10000,
+    }
 
     #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
     enum MyVariant {
@@ -273,13 +459,97 @@ fn check_combo_enum_and_flags() {
         v: MyVariant,
     }
 
-    validate_correct_serde(Test {x: 1, y: 2, v: MyVariant::Byte(3)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyVariant::StringValue("Hello".to_string())});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyVariant::FlagsEntry(Flags::A)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyVariant::FlagsEntry(Flags::B | Flags::C)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyVariant::FlagsEntry(Flags::A | Flags::B | Flags::C)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyVariant::MetricEntry(Metric::Km)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyVariant::MetricEntry(Metric::Liters)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyVariant::MetricEntry(Metric::Temperature)});
-    validate_correct_serde(Test {x: 1, y: 2, v: MyVariant::MetricEntry(Metric::Pressue)});
+    let t = Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::FlagsEntry(Flags::A | Flags::B | Flags::C),
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(
+        s.as_slice(),
+        &[
+            70, 76, 77, 1, 3, 0, 0, 0, // header    
+            10, 35, 89, 217, // hash over the variant MyVariant
+            27, 133, 93, 57, // hash over the variant FlagsEntry (27 = Flags8 (8 bits))
+            190, 110, 196, 202, // hash over the type Flags
+            7, // value of variant FlagsEntry (7 = A | B | C)
+            2, 0, // Test::y = 2
+            1, // Test::x = 1
+            35, 64, 12, 243, // hash for Test::v
+            2, 78, 12, 252, // hash for Test::y
+            1, 80, 12, 253, // hash for Test::x
+            8, // offset for Test::v (offset 8)
+            21, // offset for Test::y (offset 21)
+            23, // offset for Test::x (offset 23)
+        ]
+    );
+}
+
+#[test]
+fn check_combo_enum_and_flags_repr_enum() {
+    #[derive(Copy, Clone, FlatMessageFlags, Eq, PartialEq, Debug)]
+    #[repr(transparent)]
+    #[flags(A, B, C)]
+    pub struct Flags(u8);
+    impl Flags {
+        add_flag!(A = 1);
+        add_flag!(B = 2);
+        add_flag!(C = 4);
+    }
+
+    #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
+    #[repr(u32)]
+    enum Metric {
+        Km = 1,
+        Liters = 10000000,
+        Temperature = 1000000000,
+        Pressue = 10000,
+    }
+
+    #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+    enum MyVariant {
+        Byte(u8),
+        StringValue(String),
+        #[flat_message_item(kind = flags, repr = u8)]
+        FlagsEntry(Flags),
+        #[flat_message_item(kind = enum, repr = u32)]
+        MetricEntry(Metric),
+    }
+
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: u8,
+        y: u16,
+        #[flat_message_item(kind = variant, align = 1)]
+        v: MyVariant,
+    }
+
+    let t = Test {
+        x: 1,
+        y: 2,
+        v: MyVariant::MetricEntry(Metric::Km),
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(
+        s.as_slice(),
+        &[
+            70, 76, 77, 1, 3, 0, 0, 0, // header
+            10, 35, 89, 217, // hash over the variant MyVariant
+            21, 31, 35, 190, // hash over the variant MetricEntry (21 = EnumU32)
+            213, 43, 122, 128, // hash over the type Metric
+            1, 0, 0, 0, // value of variant MetricEntry (1 = Km)
+            2, 0, // Test::y = 2
+            1, // Test::x = 1
+            0, // padding
+            35, 64, 12, 243, // hash for Test::v
+            2, 78, 12, 252, // hash for Test::y
+            1, 80, 12, 253, // hash for Test::x
+            8, // offset for Test::v (offset 8)
+            24, // offset for Test::y (offset 24)
+            26, // offset for Test::x (offset 26)
+        ]
+    );
 }
