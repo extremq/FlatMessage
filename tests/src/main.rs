@@ -41,6 +41,8 @@ where
     obj.serialize_to(&mut storage, Config::default()).unwrap();
     let deserialized = T::deserialize_from(&storage).unwrap();
     assert_eq!(obj, deserialized);
+    let deseralized_unchecked = unsafe { T::deserialize_from_unchecked(&storage).unwrap() };
+    assert_eq!(obj, deseralized_unchecked);
 }
 
 fn main() {

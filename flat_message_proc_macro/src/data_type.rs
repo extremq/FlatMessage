@@ -106,6 +106,8 @@ impl DataType {
                 }
             }
             let attr = attribute_parser::parse(tokens);
+            // println!("Field name: {}", field_name);
+            // println!("Attr: {:?}", attr);
             self.update(&attr, field_name)?;
         }
         Ok(())

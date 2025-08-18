@@ -24,7 +24,7 @@ impl Variant {
     fn compute_hash(&self) -> u32 {
         if self.sealed_enum {
             let mut name = self.name.to_string();
-            let mut v: Vec<_> = self.variants.iter().map(|v| v.name.as_str()).collect();            
+            let mut v: Vec<_> = self.variants.iter().map(|v| v.name.as_str()).collect();
             v.sort();
             for variant_name in v {
                 name.push_str(variant_name);
@@ -113,7 +113,7 @@ impl Variant {
                     }
                 });
             } else {
-                v.push(quote! {                    
+                v.push(quote! {
                     #struct_name::#name => {
                         std::ptr::write_unaligned(p.add(pos+4) as *mut u32, #hash);
                         pos+8
@@ -147,7 +147,7 @@ impl Variant {
                     }
                 });
             } else {
-                v.push(quote! {                    
+                v.push(quote! {
                     #hash=> Some(Self::#name),
                 });
             }
@@ -187,7 +187,7 @@ impl Variant {
                     }
                 });
             } else {
-                v.push(quote! {                    
+                v.push(quote! {
                     #hash=> Self::#name,
                 });
             }
@@ -276,8 +276,8 @@ impl TryFrom<syn::DeriveInput> for Variant {
                     }
                     let ty = fields.unnamed[0].ty.clone();
                     let ty_str = quote! {#ty}.to_string();
-                    let mut dt = DataType::new(ty, ty_str);                    
-                    for attr in fields.unnamed[0].attrs.iter() {
+                    let mut dt = DataType::new(ty, ty_str);
+                    for attr in v.attrs.iter() {
                         dt.parse_attr(attr, &name_str)?;
                     }
                     align = align.max(dt.serialization_alignment());
@@ -287,6 +287,19 @@ impl TryFrom<syn::DeriveInput> for Variant {
                         16 => 16,
                         _ => panic!("Internal error: expected a Variant data format"),
                     };
+                    // if the data format is unknown, we need to check if the field is a unique id or a timestamp
+                    if dt.data_format == DataFormat::Unknwon {
+                        return Err(format!("Please provide aditional specifications via #[flat_message_item(...)] for the field '{}' !", name));
+                    }
+                    if dt.unique_id {
+                        return Err(format!("Unique IDs can not used inside a variant enum - for field {} in structure {} !", name, input.ident));
+                    }
+                    if dt.timestamp {
+                        return Err(format!("Timestamp can not used inside a variant enum - for field {} in structure {} !", name, input.ident));
+                    }
+                    if dt.ignore_field {
+                        return Err(format!("Ignore fields are not allowed in a variant enum - for field {} in structure {} !", name, input.ident));
+                    }
                     hash = (hash & 0xFFFFFF00) | dt.type_hash();
                     variants.push(VariantItem {
                         name: name_str,
