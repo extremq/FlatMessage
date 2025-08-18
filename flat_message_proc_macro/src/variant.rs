@@ -21,6 +21,9 @@ pub struct Variant {
 }
 
 impl Variant {
+    fn option_hash_from_hash(hash: u32) -> u32 {
+        hash | 0x40
+    }
     fn compute_hash(&self) -> u32 {
         if self.sealed_enum {
             let mut name = self.name.to_string();
@@ -72,10 +75,16 @@ impl Variant {
             let name = variant.name_ident.clone();
             let serde_trait = variant.serde_trait.clone();
             let extra_size = variant.extra_size;
-            if let Some(_) = &variant.data_type {
-                v.push(quote! {
+            if let Some(dt) = &variant.data_type {
+                if dt.option {
+                    v.push(quote! {
+                        #struct_name::#name(obj) => if let Some(obj) = obj { ::flat_message::#serde_trait::size(obj) + #extra_size } else { #extra_size },
+                    });
+                } else {
+                    v.push(quote! {
                     #struct_name::#name(obj) => ::flat_message::#serde_trait::size(obj) + #extra_size,
                 });
+                }
             } else {
                 v.push(quote! {
                     #struct_name::#name => 8,
@@ -99,13 +108,28 @@ impl Variant {
             let serde_trait = variant.serde_trait.clone();
             let extra_size = variant.extra_size;
             let hash = variant.hash;
-            if let Some(_) = &variant.data_type {
-                v.push(quote! {
-                    #struct_name::#name(obj) => {
-                        std::ptr::write_unaligned(p.add(pos+4) as *mut u32, #hash);
-                        ::flat_message::#serde_trait::write(obj,p,pos+#extra_size)
-                    }
-                });
+            if let Some(dt) = &variant.data_type {
+                if dt.option {
+                    let hash_none = Self::option_hash_from_hash(hash);
+                    v.push(quote! {
+                        #struct_name::#name(obj) => {
+                            if let Some(obj) = obj {
+                                std::ptr::write_unaligned(p.add(pos+4) as *mut u32, #hash);
+                                ::flat_message::#serde_trait::write(obj,p,pos+#extra_size)
+                            } else {
+                                std::ptr::write_unaligned(p.add(pos+4) as *mut u32, #hash_none);
+                                pos+#extra_size
+                            }
+                        }
+                    });
+                } else {
+                    v.push(quote! {
+                        #struct_name::#name(obj) => {
+                            std::ptr::write_unaligned(p.add(pos+4) as *mut u32, #hash);
+                            ::flat_message::#serde_trait::write(obj,p,pos+#extra_size)
+                        }
+                    });
+                }
             } else {
                 v.push(quote! {
                     #struct_name::#name => {
@@ -134,12 +158,25 @@ impl Variant {
             let hash = variant.hash;
             if let Some(dt) = &variant.data_type {
                 let ty = dt.ty.clone();
-                v.push(quote! {
-                    #hash => {
-                        let obj: #ty = ::flat_message::#serde_trait::from_buffer(buf, pos+#extra_size)?;
-                        Some(Self::#name(obj))
-                    }
-                });
+                if dt.option {
+                    let hash_none = Self::option_hash_from_hash(hash);
+                    v.push(quote! {
+                        #hash => {
+                            let obj: #ty = Some(::flat_message::#serde_trait::from_buffer(buf, pos+#extra_size)?);
+                            Some(Self::#name(obj))
+                        }
+                        #hash_none => {
+                            Some(Self::#name(None))
+                        }
+                    });
+                } else {
+                    v.push(quote! {
+                        #hash => {
+                            let obj: #ty = ::flat_message::#serde_trait::from_buffer(buf, pos+#extra_size)?;
+                            Some(Self::#name(obj))
+                        }
+                    });
+                }
             } else {
                 v.push(quote! {
                     #hash=> Some(Self::#name),
@@ -174,12 +211,25 @@ impl Variant {
             let hash = variant.hash;
             if let Some(dt) = &variant.data_type {
                 let ty = dt.ty.clone();
-                v.push(quote! {
-                    #hash => {
-                        let obj: #ty = unsafe { ::flat_message::#serde_trait::from_buffer_unchecked(buf, pos+#extra_size) };
-                        Self::#name(obj)
-                    }
-                });
+                if dt.option {
+                    let hash_none = Self::option_hash_from_hash(hash);
+                    v.push(quote! {
+                        #hash => {
+                            let obj: #ty = Some(unsafe { ::flat_message::#serde_trait::from_buffer_unchecked(buf, pos+#extra_size) });
+                            Self::#name(obj)
+                        }
+                        #hash_none => {
+                            Self::#name(None)
+                        }
+                    });
+                } else {
+                    v.push(quote! {
+                        #hash => {
+                            let obj: #ty = unsafe { ::flat_message::#serde_trait::from_buffer_unchecked(buf, pos+#extra_size) };
+                            Self::#name(obj)
+                        }
+                    });
+                }
             } else {
                 v.push(quote! {
                     #hash=> Self::#name,
@@ -296,6 +346,9 @@ impl TryFrom<syn::DeriveInput> for Variant {
                     if dt.ignore_field {
                         return Err(format!("Ignore fields are not allowed in a variant enum - for field {} in structure {} !", name, input.ident));
                     }
+                    // if dt.option {
+                    //     println!("Found option -> DataType: {} -> String Type: {} -> Type: {}",dt.data_format, dt.name, dt.ty.to_token_stream());
+                    // }
                     hash = (hash & 0xFFFFFF00) | dt.type_hash();
                     variants.push(VariantItem {
                         name: name_str,

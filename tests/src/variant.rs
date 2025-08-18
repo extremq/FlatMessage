@@ -674,7 +674,7 @@ fn check_combo_structs_repr() {
             177, 148, 3, 133, // hash over the type MyStruct1
             16, 44, 0, 0, // number of fields = 4 (16>>2), size = 44 bytes
             5, 72, 101, 108, 108, 111, // value of the variant Test::v::S1::d ("Hello")
-            1, // Test::v::S1::a = 1 (u8)
+            1,   // Test::v::S1::a = 1 (u8)
             3, 0, // Test::v::S1::c = 3 (u16)
             2, 0, 0, 0, // Test::v::S1::b = 2 (u32)
             0, 0, 0, // padding to 4 bytes
@@ -682,19 +682,167 @@ fn check_combo_structs_repr() {
             1, 41, 12, 228, // hash for Test::v::S1::a
             2, 44, 12, 230, // hash for Test::v::S1::c
             3, 45, 12, 231, // hash for Test::v::S1::b
-            8, // offset for Test::v::S1::d (offset 8)
-            14, // offset for Test::v::S1::a (offset 14)
-            15, // offset for Test::v::S1::c (offset 15)
-            17, // offset for Test::v::S1::b (offset 17)
+            8,   // offset for Test::v::S1::d (offset 8)
+            14,  // offset for Test::v::S1::a (offset 14)
+            15,  // offset for Test::v::S1::c (offset 15)
+            17,  // offset for Test::v::S1::b (offset 17)
             2, 0, // valu of Test::y = 2
             1, // value of Test::x = 1
             0, // padding to 4 bytes
             37, 64, 12, 243, // hash for Test::v
             2, 78, 12, 252, // hash for Test::y
             1, 80, 12, 253, // hash for Test::x
-            8, // offset for Test::v (offset 8)
-            60, // offset for Test::y (offset 60)
-            62, // offset for Test::x (offset 62)
+            8,   // offset for Test::v (offset 8)
+            60,  // offset for Test::y (offset 60)
+            62,  // offset for Test::x (offset 62)
+        ]
+    );
+}
+
+#[test]
+fn check_option_with_none() {
+    #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+    enum MyEnum {
+        Byte(u8),
+        DWord(u32),
+        String(Option<String>),
+        Vector(Vec<u8>),
+        SimpleVariant,
+    }
+
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: u8,
+        y: u16,
+        #[flat_message_item(kind = variant, align = 1)]
+        v: MyEnum,
+    }
+
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::String(None),
+    });
+}
+
+#[test]
+fn check_option_with_none_repr() {
+    #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+    enum MyEnum {
+        Byte(u8),
+        DWord(u32),
+        String(Option<String>),
+        Vector(Vec<u8>),
+        SimpleVariant,
+    }
+
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: u8,
+        y: u16,
+        #[flat_message_item(kind = variant, align = 1)]
+        v: MyEnum,
+    }
+
+    let t = Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::String(None),
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(
+        s.as_slice(),
+        &[
+            70, 76, 77, 1, 3, 0, 0, 0, // header
+            220, 228, 14, 121, // hash for MyEnum
+            78, 183, 18,
+            153, // hash for MyEnum::String (String variant), 78 = 0x4E -> 0x40 (Option::None) | 0x0E (String)
+            2, 0, // Test::y
+            1, // Test::x
+            0, // padding
+            35, 64, 12, 243, // hash for Test::v
+            2, 78, 12, 252, // hash for Test::y
+            1, 80, 12, 253, // hash for Test::x
+            8,   // Offset of Test::v
+            16,  // Offset of Test::y
+            18   // Offset of Test::x
+        ]
+    );
+}
+
+#[test]
+fn check_option_with_some() {
+    #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+    enum MyEnum {
+        Byte(u8),
+        DWord(u32),
+        String(Option<String>),
+        Vector(Vec<u8>),
+        SimpleVariant,
+    }
+
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: u8,
+        y: u16,
+        #[flat_message_item(kind = variant, align = 1)]
+        v: MyEnum,
+    }
+
+    validate_correct_serde(Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::String(Some(String::from("Hello"))),
+    });
+}
+
+#[test]
+fn check_option_with_some_repr() {
+    #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+    enum MyEnum {
+        Byte(u8),
+        DWord(u32),
+        String(Option<String>),
+        Vector(Vec<u8>),
+        SimpleVariant,
+    }
+
+    #[derive(FlatMessage, Debug, PartialEq, Eq)]
+    #[flat_message_options(store_name: false)]
+    struct Test {
+        x: u8,
+        y: u16,
+        #[flat_message_item(kind = variant, align = 1)]
+        v: MyEnum,
+    }
+
+    let t = Test {
+        x: 1,
+        y: 2,
+        v: MyEnum::String(Some(String::from("Hello"))),
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    assert_eq!(
+        s.as_slice(),
+        &[
+            70, 76, 77, 1, 3, 0, 0, 0, // Header
+            220, 228, 14, 121, // hash for MyEnum
+            14, 183, 18, 153, // hash for MyEnum::String (14 = String) or Some(String)
+            5, 72, 101, 108, 108, 111, // Test::v::String -> Hello (size = 5)
+            2, 0, // Test::y
+            1, // Test::x
+            0, 0, 0, // padding
+            35, 64, 12, 243, // hash for Test::v
+            2, 78, 12, 252,  // hash for Test::y
+            1, 80, 12, 253,  // hash for Test::x
+            8, // Offset of Test::v
+            22, // Offset of Test::y
+            24 // Offset of Test::x
         ]
     );
 }
