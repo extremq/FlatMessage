@@ -35,6 +35,7 @@ pub(crate) struct DataType {
     pub(crate) ignore_field: bool,
     pub(crate) option: bool,
     pub(crate) mandatory: bool,
+    pub(crate) default_value: Option<String>,
 }
 
 impl DataType {
@@ -89,6 +90,7 @@ impl DataType {
             ignore_field: zst,
             option,
             mandatory: true,
+            default_value: None,
         }
     }
 
@@ -105,16 +107,16 @@ impl DataType {
                     }
                 }
             }
-            let attr = attribute_parser::parse(tokens);
+            let mut attr = attribute_parser::parse(tokens);
             // println!("Field name: {}", field_name);
             // println!("Attr: {:?}", attr);
-            self.update(&attr, field_name)?;
+            self.update(&mut attr, field_name)?;
         }
         Ok(())
     }
-    pub(crate) fn update(
+    fn update(
         &mut self,
-        attr: &HashMap<String, String>,
+        attr: &mut HashMap<String, String>,
         field_nane: &str,
     ) -> Result<(), String> {
         if attr.len() == 0 {
@@ -132,6 +134,9 @@ impl DataType {
         } else {
             false
         };
+        if let Some(value) = attr.remove("default") {
+            self.default_value = Some(value);
+        }
         if has_mandatory {
             self.mandatory = utils::to_bool(attr.get("mandatory").unwrap()).unwrap_or(true);
         }
