@@ -90,13 +90,14 @@ enum Status {
 
 ### Field Options
 
-| Option             | Values                                               | Description                                                 |
-| ------------------ | ---------------------------------------------------- | ----------------------------------------------------------- |
-| `repr`             | `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64` | Representation type                                         |
-| `kind`             | `enum`, `flags`, `struct`, `variant`                 | Marks field as enum , flags, variant or a structure type    |
-| `align`            | `1`, `2`, `4`, `8`, `16`                             | Alignment of the field (only for structures and variants)   |
-| `ignore` or `skip` | `true` or `false` (default is **false**)             | Ignores the field during serialization and deserialization  |
-| `mandatory`        | `true` or `false` (default is **true**)              | Marks the field as mandatory (required) for deserialization |
+| Option             | Values                                               | Description                                                                                                                                                   |
+| ------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `repr`             | `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64` | Representation type                                                                                                                                           |
+| `kind`             | `enum`, `flags`, `struct`, `variant`                 | Marks field as enum , flags, variant or a structure type                                                                                                      |
+| `align`            | `1`, `2`, `4`, `8`, `16`                             | Alignment of the field (only for structures and variants)                                                                                                     |
+| `ignore` or `skip` | `true` or `false` (default is **false**)             | Ignores the field during serialization and deserialization                                                                                                    |
+| `mandatory`        | `true` or `false` (default is **true**)              | Marks the field as mandatory (required) for deserialization                                                                                                   |
+| `default`          | *string*                                             | Default value for the field. If specified, and the field is not mandatory, the default value will be used if the field is not present in the serialized data. |
 
 **Remarks:**
 - Fields of type `PhantomData<T>` are automatically ignored during serialization:
@@ -127,6 +128,22 @@ enum Status {
     }
     ```
 - Mandatory fields are required for deserialization. If a mandatory field is not present in the serialized data, the deserialization will fail. On the other hand, if a field is not mandatory, and it is not found in the serialized data or there are some issues trying to deserialize it, it will be defaulted to the default value of the type. This implies that the trait `Default` is implemented for that type.
+- The `default` option can be used to provide a default value for a field. This is useful when you want to provide a default value for a field that is not mandatory. The default value can be a string literal, a function call, or a macro call.
+    ```rust
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct MyDataV1 {
+        a: u8,
+    }
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct MyDataV2 {
+        a: u8,
+        // if the field is not present in the serialized data, it will be defaulted to vec![1,2,3]
+        #[flat_message_item(mandatory = false, default = "vec![1,2,3]")]
+        b: Vec<u8>,
+    }
+    ```
 
 ## Generated Code
 
