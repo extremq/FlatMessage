@@ -5,12 +5,11 @@ use common::constants;
 use common::hashes;
 use quote::format_ident;
 use quote::quote;
+use syn::parse_str;
 use super::ConstAssertions;
 use syn::{DataStruct, DeriveInput};
 
 pub(crate) struct StructInfo<'a> {
-    //fields_name: &'a FieldsNamed,
-    //visibility: &'a syn::Visibility,
     generics: &'a syn::Generics,
     name: &'a syn::Ident,
     fields: Vec<FieldInfo>,
@@ -18,7 +17,6 @@ pub(crate) struct StructInfo<'a> {
     timestamp: Option<FieldInfo>,
     ignored_fields: Vec<FieldInfo>,  
     config: Config,
-    //derives: Vec<&'a Attribute>,
 }
 
 impl<'a> StructInfo<'a> {
@@ -491,7 +489,8 @@ impl<'a> StructInfo<'a> {
         field_name_hash: u32,
         unchecked_code: bool,
         option: bool,
-        return_err: bool
+        return_err: bool,
+        default_value: Option<String>,
     ) -> proc_macro2::TokenStream {
         let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
 
@@ -539,11 +538,16 @@ impl<'a> StructInfo<'a> {
                 quote! { #safe_init }
             }
         };
+        let default_value = if let Some(default_value) = default_value {
+            parse_str(&default_value).unwrap()
+        } else {
+            quote! { #ty::default() }
+        };
         quote! {
             let #inner_var = loop { 
                 unsafe {
                     if ptr_it == p_end {
-                        break #ty::default();
+                        break #default_value;
                     }
                     if *ptr_it >= #field_name_hash {
                         if *ptr_it == #field_name_hash {
@@ -553,7 +557,7 @@ impl<'a> StructInfo<'a> {
                             ptr_it = ptr_it.add(1);  
                             break { #checks_and_init };                          
                         } else {
-                            break #ty::default();
+                            break #default_value;
                         }
                     }
                     p_ofs = p_ofs.add(1); 
@@ -596,6 +600,7 @@ impl<'a> StructInfo<'a> {
             ty: syn::Type,
             option: bool,
             mandatory: bool,
+            default_value: Option<String>,
         }
         let mut v = Vec::with_capacity(4);
         let mut hashes: Vec<_> = self
@@ -608,6 +613,7 @@ impl<'a> StructInfo<'a> {
                 ty: field.data_type.ty.clone(),
                 option: field.data_type.option,
                 mandatory: field.data_type.mandatory,
+                default_value: field.data_type.default_value.clone(),
             })
             .collect();
         hashes.sort_by_key(|hash| hash.hash);
@@ -642,7 +648,8 @@ impl<'a> StructInfo<'a> {
                     obj.hash,
                     unchecked_code,
                     obj.option,
-                    return_err
+                    return_err,
+                    obj.default_value
                 ));
             }
         }

@@ -110,11 +110,32 @@ impl DataType {
             let mut attr = attribute_parser::parse(tokens);
             // println!("Field name: {}", field_name);
             // println!("Attr: {:?}", attr);
-            self.update(&mut attr, field_name)?;
+            self.update_attributes(&mut attr, field_name)?; 
+            self.update_default_value(&mut attr, field_name)?;       
         }
         Ok(())
     }
-    fn update(
+    fn update_default_value(&mut self, attr: &mut HashMap<String, String>, field_name: &str)-> Result<(), String> {
+        if let Some(value) = attr.remove("default") {
+            self.default_value = Some(value);
+        }
+        // some basic checks
+        // 1. we should provide a default value for &str
+        if self.name == "&str" {
+            if self.default_value.is_none() {
+                // empty string
+                self.default_value = Some("\"\"".to_string());
+            } else {
+                let mut value = self.default_value.take().unwrap();
+                value.insert_str(0, "r#\"");
+                value.push_str("\"#");
+                self.default_value = Some(value);
+            }
+        }
+
+        Ok(())
+    }
+    fn update_attributes(
         &mut self,
         attr: &mut HashMap<String, String>,
         field_nane: &str,
@@ -134,9 +155,6 @@ impl DataType {
         } else {
             false
         };
-        if let Some(value) = attr.remove("default") {
-            self.default_value = Some(value);
-        }
         if has_mandatory {
             self.mandatory = utils::to_bool(attr.get("mandatory").unwrap()).unwrap_or(true);
         }
@@ -218,7 +236,7 @@ impl DataType {
             // check for other errors
             // possible parameters
             static KEYS: &[&'static str] =
-                &["kind", "repr", "align", "ignore", "skip", "mandatory"];
+                &["kind", "repr", "align", "ignore", "skip", "mandatory", "default"];
             for key in KEYS {
                 if attr.contains_key(*key) {
                     continue;

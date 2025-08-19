@@ -885,7 +885,7 @@ fn check_without_mandatory_field() {
 #[test]
 fn check_mandatory_string_reference_field() {
     #[derive(FlatMessage)]
-    #[flat_message_options(store_name = false)]
+    #[flat_message_options(store_name = "false")]
     struct MyDataV1 {
         a: u8,
     }
@@ -902,4 +902,48 @@ fn check_mandatory_string_reference_field() {
     let data_v2 = MyDataV2::deserialize_from(&storage).unwrap();
     assert_eq!(data_v2.a, 1);
     assert_eq!(data_v2.b, "");
+}
+
+#[test]
+fn check_mandatory_default_value_for_string_reference_field() {
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = "false")]
+    struct MyDataV1 {
+        a: u8,
+    }
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct MyDataV2<'a> {
+        a: u8,
+        #[flat_message_item(mandatory = false, default = "Hello")]
+        b: &'a str,
+    }
+    let mut storage = Storage::default();
+    let data_v1 = MyDataV1 { a: 1 };
+    data_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let data_v2 = MyDataV2::deserialize_from(&storage).unwrap();
+    assert_eq!(data_v2.a, 1);
+    assert_eq!(data_v2.b, "Hello");
+}
+
+#[test]
+fn check_mandatory_default_value_for_a_vector() {
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = "false")]
+    struct MyDataV1 {
+        a: u8,
+    }
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct MyDataV2 {
+        a: u8,
+        #[flat_message_item(mandatory = false, default = "vec![1,2,3]")]
+        b: Vec<u8>,
+    }
+    let mut storage = Storage::default();
+    let data_v1 = MyDataV1 { a: 1 };
+    data_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let data_v2 = MyDataV2::deserialize_from(&storage).unwrap();
+    assert_eq!(data_v2.a, 1);
+    assert_eq!(data_v2.b, vec![1,2,3]);
 }
