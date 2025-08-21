@@ -128,7 +128,7 @@ fn check_version_from_structure_info() {
 #[test]
 fn check_v1_to_v2_scenario_2() {
     use scenario_2::*;
-    // v1 to v2 for scenario 2 should fail
+    // v1 to v2 for scenario 2 should fail even if v2 has compatible_versions = "1,2"
     let mut storage = Storage::default();
     let d_v1 = v1::TestStruct { value: 1 };
     d_v1.serialize_to(&mut storage, Config::default()).unwrap();
