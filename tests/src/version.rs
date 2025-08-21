@@ -135,7 +135,7 @@ fn check_v1_to_v2_scenario_2() {
     let result = v2::TestStruct::deserialize_from(&mut storage);
     // v2 contsins a mandatory field "value2" that is not present in v1 -> Error::MissingField
     assert!(result.is_err());
-    println!("{:?}", result);
+    //println!("{:?}", result);
     assert_eq!(
         matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
         true
@@ -146,9 +146,16 @@ fn check_v1_to_v2_scenario_2() {
 fn check_v2_to_v1_scenario_2() {
     use scenario_2::*;
     // v2 to v1 for scenario 2 should work correctly (v1 only needs the field 'value' from v2)
+    // however, this deserialization will fail as v1 only accepts the version "1" (from check_v1_to_v2_scenario_2)
     let mut storage = Storage::default();
     let d_v2 = v2::TestStruct { value: 1, value2: 2 };
     d_v2.serialize_to(&mut storage, Config::default()).unwrap();
-    let d_v1 = v1::TestStruct::deserialize_from(&mut storage).unwrap();
-    assert_eq!(d_v1.value, 1);
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    //println!("{:?}", result);
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::IncompatibleVersion(2))),
+        true
+    );
+
 }
