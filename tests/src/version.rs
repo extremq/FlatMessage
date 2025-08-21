@@ -150,6 +150,46 @@ mod scenario_7 {
     }
 }
 
+mod scenario_1_enum {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
+        #[repr(u8)]
+        pub enum Color {
+            Red = 1,
+            Green = 10,
+            Blue = 100,
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = enum)]
+            pub color: Color,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
+        #[repr(u8)]
+        pub enum Color {
+            Red = 1,
+            Green = 10,
+            Blue = 100,
+            Yellow = 200,
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = enum)]
+            pub color: Color,
+        }
+    } 
+}
+
 #[test]
 fn check_serde_version_compatibility_check() {
     use scenario_1::{v1, v2, v3};
@@ -396,6 +436,49 @@ fn check_v1_to_v2_scenario_7_not_using_compatible_versions_with_a_mandatory_opti
     assert!(result.is_err());
     assert_eq!(
         matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_1_enum() {
+    use scenario_1_enum::*;
+    // v1 to v2 for scenario 1_enum the code will work as `v1::Color` is compatible with `v2::Color`
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { value: 1, color: v1::Color::Green };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.value, 1);
+    assert_eq!(d_v2.color, v2::Color::Green);
+}
+
+#[test]
+fn check_v2_to_v1_scenario_1_enum_without_yellow() {
+    use scenario_1_enum::*;
+    // v2 to v1 for scenario 1_enum the code will work as `v2::Color` uses a value that is not present in `v1::Color`
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, color: v2::Color::Green };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+    assert_eq!(d_v1.color, v1::Color::Green);
+}
+
+#[test]
+fn check_v2_to_v1_scenario_1_enum_with_yellow() {
+    use scenario_1_enum::*;
+    // v2 to v1 for scenario 1_enum the code will fail becase there is no variant `Yellow` in `v1::Color`
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, color: v2::Color::Yellow };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
         true
     );
 }
