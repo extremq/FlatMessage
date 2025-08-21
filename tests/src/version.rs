@@ -47,6 +47,88 @@ mod scenario_2 {
     }
 }
 
+mod scenario_3 {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 1)]
+        pub struct TestStruct {
+            pub value: u8,
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 2)]
+        pub struct TestStruct {
+            pub value: u8,
+            pub value2: u16, // new mandatory field added
+        }
+    }
+}
+
+mod scenario_4 {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 1)]
+        pub struct TestStruct {
+            pub value: u8,
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 2)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(mandatory = false, default = 3)]
+            pub value2: u16, // new optional field added
+        }
+    }
+}
+
+mod scenario_5 {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 1)]
+        pub struct TestStruct {
+            pub value: u8,
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 2)]
+        pub struct TestStruct {
+            pub value: u8,
+            pub value2: Option<u16>, // new mandatory field added
+        }
+    }
+}
+
+mod scenario_6 {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 1)]
+        pub struct TestStruct {
+            pub value: u8,
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 2)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(mandatory = false, default = "Some(3)")]
+            pub value2: Option<u16>, // new optional field added
+        }
+    }
+}
+
 #[test]
 fn check_serde_version_compatibility_check() {
     use scenario_1::{v1, v2, v3};
@@ -126,7 +208,7 @@ fn check_version_from_structure_info() {
 }
 
 #[test]
-fn check_v1_to_v2_scenario_2() {
+fn check_v1_to_v2_scenario_2_using_compatible_versions() {
     use scenario_2::*;
     // v1 to v2 for scenario 2 should fail even if v2 has compatible_versions = "1,2"
     let mut storage = Storage::default();
@@ -143,7 +225,7 @@ fn check_v1_to_v2_scenario_2() {
 }
 
 #[test]
-fn check_v2_to_v1_scenario_2() {
+fn check_v2_to_v1_scenario_2_using_compatible_versions() {
     use scenario_2::*;
     // v2 to v1 for scenario 2 should work correctly (v1 only needs the field 'value' from v2)
     // however, this deserialization will fail as v1 only accepts the version "1" (from check_v1_to_v2_scenario_2)
@@ -157,5 +239,114 @@ fn check_v2_to_v1_scenario_2() {
         matches!(result.err(), Some(flat_message::Error::IncompatibleVersion(2))),
         true
     );
+}
 
+#[test]
+fn check_v1_to_v2_scenario_3_not_using_compatible_versions() {
+    use scenario_3::*;
+    // v1 to v2 for scenario 3 should fail base valuef2 is mandatory
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { value: 1 };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    // v2 contsins a mandatory field "value2" that is not present in v1 -> Error::MissingField
+    assert!(result.is_err());
+    //println!("{:?}", result);
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_3_not_using_compatible_versions() {
+    use scenario_3::*;
+    // v2 to v1 for scenario 3 should work correctly (v1 only needs the field 'value' from v2)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, value2: 2 };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());    
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+}
+
+
+#[test]
+fn check_v1_to_v2_scenario_4_not_using_compatible_versions_with_mandatory_false() {
+    use scenario_4::*;
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { value: 1 };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.value, 1);
+    assert_eq!(d_v2.value2, 3);
+}
+#[test]
+fn check_v2_to_v1_scenario_4_not_using_compatible_versions_with_mandatory_false() {
+    use scenario_4::*;
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, value2: 2 };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());    
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+}
+
+#[test]
+fn check_v2_to_v1_scenario_5_not_using_compatible_versions_with_option_field_without_mandatory_false() {
+    use scenario_5::*;
+    // v2 to v1 for scenario 5 should work correctly (v1 only needs the field 'value' from v2)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, value2: Some(2) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+}
+
+#[test]
+fn check_v1_to_v2_scenario_5_not_using_compatible_versions_with_option_field_without_mandatory_false() {
+    use scenario_5::*;
+    // v1 to v2 for scenario 5 should work correctly (v2 only needs the field 'value' from v1)
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { value: 1 };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    // using Option<T> without mandatory = false does NOT mean that the field will be defaulted if it is not present
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_6_not_using_compatible_versions_with_option_field_with_mandatory_false_field() {
+    use scenario_6::*;
+    // v2 to v1 for scenario 6 should work correctly (v1 only needs the field 'value' from v2)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, value2: Some(2) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+}
+
+#[test]
+fn check_v1_to_v2_scenario_6_not_using_compatible_versions_with_option_field_with_mandatory_false_field() {
+    use scenario_6::*;
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { value: 1 };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.value, 1);
+    assert_eq!(d_v2.value2, Some(3));
 }
