@@ -177,6 +177,51 @@ mod v2 {
 - v1 data → v2 struct: ✅ Works (value2 = 3 default)
 - v2 data → v1 struct: ✅ Works (v1 ignores extra fields)
 
+### Scenario 4: Safe Evolution with Option<T> Fields
+
+```rust
+mod v1 {
+    #[derive(FlatMessage)]
+    #[flat_message_options(version = 1)]
+    struct Config {
+        value: u8,
+    }
+}
+
+mod v2 {
+    #[derive(FlatMessage)]
+    #[flat_message_options(version = 2)]
+    struct Config {
+        value: u8,
+        value2: Option<u16>,  // Option<T> automatically optional
+    }
+}
+```
+
+**Results:**
+- v1 data → v2 struct: ✅ Works (value2 = None default)
+- v2 data → v1 struct: ✅ Works (v1 ignores extra fields)
+
+**Key Insight:** `Option<T>` fields are automatically optional, making them ideal for safe version evolution.
+
+### Scenario 5: Explicit Mandatory Option<T>
+
+```rust
+mod v2 {
+    #[derive(FlatMessage)]
+    #[flat_message_options(version = 2)]
+    struct Config {
+        value: u8,
+        #[flat_message_item(mandatory = true)]
+        value2: Option<u16>,  // Explicitly mandatory Option<T>
+    }
+}
+```
+
+**Results:**
+- v1 data → v2 struct: ❌ Fails with `FieldIsMissing` (explicit mandatory override)
+- v2 data → v1 struct: ✅ Works (v1 ignores extra fields)
+
 ## Common Version Compatibility Patterns
 
 ### Strict Version Matching
@@ -193,7 +238,7 @@ mod v2 {
 // Version 3 struct can read data from versions 1, 2, and 3
 ```
 
-**Use case:** When newer code needs to read older data formats. Requires careful field design with optional fields for additions.
+**Use case:** When newer code needs to read older data formats. Requires careful field design with optional fields for additions. `Option<T>` fields are automatically optional, making this easier.
 
 ### Forward Compatibility
 ```rust
@@ -327,5 +372,9 @@ impl Config {
 
 1. **Assuming version compatibility handles fields**: `compatible_versions` only controls version acceptance, not field compatibility
 2. **Adding mandatory fields to backward-compatible versions**: This breaks compatibility even with version ranges
-3. **Confusing Option<T> with optional fields**: `Option<T>` fields are still mandatory unless marked with `mandatory = false`
+3. **Not understanding Option<T> default behavior**: `Option<T>` fields are automatically optional unless explicitly marked with `mandatory = true`
 4. **Not testing field compatibility**: Version compatibility tests must also verify field-level compatibility
+
+## Key Takeaway
+
+This versioning system, combined with careful field management and the automatic optional behavior of `Option<T>` fields, provides the foundation for robust data evolution in FlatMessage. The automatic optional behavior of `Option<T>` fields makes version evolution much safer and easier - when adding new fields to existing structures, prefer `Option<T>` types as they automatically provide backward compatibility without requiring explicit `mandatory = false` attributes.

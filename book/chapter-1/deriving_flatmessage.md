@@ -128,6 +128,7 @@ enum Status {
     }
     ```
 - Mandatory fields are required for deserialization. If a mandatory field is not present in the serialized data, the deserialization will fail. On the other hand, if a field is not mandatory, and it is not found in the serialized data or there are some issues trying to deserialize it, it will be defaulted to the default value of the type. This implies that the trait `Default` is implemented for that type.
+- By default, fields are mandatory, except for `Option<T>` fields that are marked with `mandatory = false` (unless you specify the attribute `#[flat_message_item(mandatory = true)]`).
 - The `default` option can be used to provide a default value for a field. This is useful when you want to provide a default value for a field that is not mandatory. The default value can be a string literal, a function call, or a macro call.
     ```rust
     #[derive(FlatMessage)]
