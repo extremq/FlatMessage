@@ -10,7 +10,7 @@ pub enum Error {
     InvalidHash((u32, u32)),
     InvalidSizeToStoreFieldsTable((u32, u32)),
     IncompatibleVersion(u8),
-    UnknownHash(u32),
+    FieldIsMissing(u32),
     InvalidFieldOffset((u32, u32)),
     FailToDeserialize(u32),
     NameNotStored,
@@ -50,7 +50,7 @@ impl fmt::Display for Error {
                 "Invalid buffer size to store fields table (expected at least {} bytes - but found: {})",
                 expected, actual
             ),
-            Error::UnknownHash(hash) => write!(f, "Unknown hash: 0x{:08X}", hash),
+            Error::FieldIsMissing(hash) => write!(f, "Field is missing - hash : 0x{:08X}", hash),
             Error::InvalidFieldOffset((actual, expected)) => write!(
                 f,
                 "Invalid field offset (expected an offset between 8 and {} - but found: {})",

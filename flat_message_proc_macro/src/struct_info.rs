@@ -400,7 +400,7 @@ impl<'a> StructInfo<'a> {
     ) -> proc_macro2::TokenStream {
         let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
         let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
-        let unknown_hash = if return_err { quote! { Err(flat_message::Error::UnknownHash(#field_name_hash)) }  } else { quote! { None } };
+        let field_is_missing = if return_err { quote! { Err(flat_message::Error::FieldIsMissing(#field_name_hash)) }  } else { quote! { None } };
         let unsafe_init = quote! {
             // fallback for cases where we have a serialized option
             if offset==0 {
@@ -456,7 +456,7 @@ impl<'a> StructInfo<'a> {
             unsafe { 
                 loop {
                     if ptr_it == p_end {
-                        return #unknown_hash;
+                        return #field_is_missing;
                     }
                     if *ptr_it == #field_name_hash {
                         ptr_it = ptr_it.add(1);  
@@ -472,7 +472,7 @@ impl<'a> StructInfo<'a> {
             //             break;
             //         }
             //     } else {
-            //         return Err(flat_message::Error::UnknownHash(#field_name_hash));
+            //         return Err(flat_message::Error::FieldIsMissing(#field_name_hash));
             //     }
             //     unsafe { p_ofs = p_ofs.add(1); }
             // };

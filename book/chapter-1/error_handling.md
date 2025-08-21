@@ -16,7 +16,7 @@ The following table lists all FlatMessage error types with their causes, typical
 | `InvalidHash((u32, u32))`                   | (actual, expected) | CRC32 hash mismatch                           | Data corruption, tampering     | Re-transmit data, check integrity   |
 | `InvalidSizeToStoreFieldsTable((u32, u32))` | (actual, expected) | Buffer too small for field table              | Truncated data                 | Ensure complete data transfer       |
 | `IncompatibleVersion(u8)`                   | Version number     | Structure version incompatibility             | Version mismatch               | Migrate data, update code           |
-| `UnknownHash(u32)`                          | Field hash         | Field in data not in struct definition        | Schema evolution, wrong struct | Check struct version, migrate       |
+| `FieldIsMissing(u32)`                       | Field hash         | Field in data not in struct definition        | Schema evolution, wrong struct | Check struct version, migrate       |
 | `InvalidFieldOffset((u32, u32))`            | (actual, max)      | Field offset out of bounds                    | Corruption, format error       | Validate data integrity             |
 | `FailToDeserialize(u32)`                    | Field hash         | Failed to deserialize specific field          | Type mismatch, corruption      | Check field compatibility           |
 | `NameNotStored`                             | -                  | Name validation requested but not in data     | Missing metadata               | Disable validation or add metadata  |
@@ -38,7 +38,7 @@ The following table lists all FlatMessage error types with their causes, typical
 - **Recovery**: Re-transmit data, use error correction
 
 ### Structure Compatibility Errors
-- `IncompatibleVersion`, `UnknownHash`, `UnmatchedName`
+- `IncompatibleVersion`, `FieldIsMissing`, `UnmatchedName`
 - **Cause**: Schema evolution, version mismatches
 - **Recovery**: Migrate data, update compatibility rules
 

@@ -877,8 +877,8 @@ fn check_without_mandatory_field() {
     let result = MyDataV1::deserialize_from(&storage);
     assert!(result.is_err());
     match result.err() {
-        Some(flat_message::Error::UnknownHash(_)) => {}
-        _ => panic!("Invalid error - expected UnknownHash"),
+        Some(flat_message::Error::FieldIsMissing(_)) => {}
+        _ => panic!("Invalid error - expected FieldIsMissing"),
     }
 }
 
@@ -946,4 +946,27 @@ fn check_mandatory_default_value_for_a_vector() {
     let data_v2 = MyDataV2::deserialize_from(&storage).unwrap();
     assert_eq!(data_v2.a, 1);
     assert_eq!(data_v2.b, vec![1,2,3]);
+}
+
+#[test]
+fn check_mandatory_default_value_for_a_u32() {
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = "false")]
+    struct MyDataV1 {
+        a: u8,
+    }
+    const DEFAULT_VALUE: u32 = 1234567890;
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct MyDataV2 {
+        a: u8,
+        #[flat_message_item(mandatory = false, default = "DEFAULT_VALUE")]
+        b: u32,
+    }
+    let mut storage = Storage::default();
+    let data_v1 = MyDataV1 { a: 1 };
+    data_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let data_v2 = MyDataV2::deserialize_from(&storage).unwrap();
+    assert_eq!(data_v2.a, 1);
+    assert_eq!(data_v2.b, DEFAULT_VALUE);
 }

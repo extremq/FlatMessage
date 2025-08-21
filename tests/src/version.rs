@@ -1,8 +1,7 @@
 use flat_message::*;
 
-#[test]
-fn check_serde_version_compatibility_check() {
-    mod v1 {
+mod scenario_1 {
+    pub mod v1 {
         use flat_message::*;
         #[derive(Debug, PartialEq, Eq, FlatMessage)]
         #[flat_message_options(version = 1, compatible_versions = "1")]
@@ -10,7 +9,7 @@ fn check_serde_version_compatibility_check() {
             pub value: u64,
         }
     }
-    mod v2 {
+    pub mod v2 {
         use flat_message::*;
         #[derive(Debug, PartialEq, Eq, FlatMessage)]
         #[flat_message_options(version = 2, compatible_versions = "1,2")]
@@ -18,7 +17,7 @@ fn check_serde_version_compatibility_check() {
             pub value: u64,
         }
     }
-    mod v3 {
+    pub mod v3 {
         use flat_message::*;
         #[derive(Debug, PartialEq, Eq, FlatMessage)]
         #[flat_message_options(version = 3, compatible_versions = "<3")]
@@ -26,15 +25,40 @@ fn check_serde_version_compatibility_check() {
             pub value: u64,
         }
     }
+}
+
+mod scenario_2 {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 1, compatible_versions = "1")]
+        pub struct TestStruct {
+            pub value: u8,
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 2, compatible_versions = "1,2")]
+        pub struct TestStruct {
+            pub value: u8,
+            pub value2: u16, // new mandatory field added
+        }
+    }
+}
+
+#[test]
+fn check_serde_version_compatibility_check() {
+    use scenario_1::{v1, v2, v3};
     let mut o1 = Storage::default();
     let mut o2 = Storage::default();
     let mut o3 = Storage::default();
     {
-        let v3_struct = v3::TestStruct { value: 3 };
+        let v3_struct = v3::TestStruct { value: 3u64 };
         v3_struct.serialize_to(&mut o3, Config::default()).unwrap();
     }
     {
-        let v2_struct = v2::TestStruct { value: 2 };
+        let v2_struct = v2::TestStruct { value: 2u64 };
         v2_struct.serialize_to(&mut o2, Config::default()).unwrap();
     }
     {
@@ -87,7 +111,6 @@ fn check_version_buffer() {
     );
 }
 
-
 #[test]
 fn check_version_from_structure_info() {
     #[derive(FlatMessage)]
@@ -100,4 +123,32 @@ fn check_version_from_structure_info() {
     t.serialize_to(&mut v, Config::default()).unwrap();
     let si = StructureInformation::try_from(&v).unwrap();
     assert_eq!(si.version(), Some(11));
+}
+
+#[test]
+fn check_v1_to_v2_scenario_2() {
+    use scenario_2::*;
+    // v1 to v2 for scenario 2 should fail
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { value: 1 };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    // v2 contsins a mandatory field "value2" that is not present in v1 -> Error::MissingField
+    assert!(result.is_err());
+    println!("{:?}", result);
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_2() {
+    use scenario_2::*;
+    // v2 to v1 for scenario 2 should work correctly (v1 only needs the field 'value' from v2)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, value2: 2 };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let d_v1 = v1::TestStruct::deserialize_from(&mut storage).unwrap();
+    assert_eq!(d_v1.value, 1);
 }

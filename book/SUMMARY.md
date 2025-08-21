@@ -18,7 +18,10 @@
     - [Fixed Size Buffer](chapter-2/supported_data_types/fixed_size_buffer.md)
     - [Structures](chapter-2/supported_data_types/structs.md)
     - [Variants](chapter-2/supported_data_types/variants.md)
-  <!-- - [Builder API](chapter-2/builder_api.md)
+- [Serialization Compatibility](chapter-3/compatibility.md)
+ <!-- - [Versioning ???](chapter-3/versioning.md)
+  - [Sealed vs Non-Sealed](chapter-3/sealed_vs_non_sealed.md)
+   - [Builder API](chapter-2/builder_api.md)
   - [FlatMessage Buffer](chapter-2/flat_message_buffer.md) -->
 <!-- - [Advanced Features](chapter-3/versioning.md)
   - [Versioning](chapter-3/versioning.md)
