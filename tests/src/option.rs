@@ -254,13 +254,13 @@ fn check_slice() {
 
 #[test]
 fn check_struct_some() {
-    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq, Default)]
     struct Configuration {
         timeout: u32,
         retries: u8,
     }
 
-    #[derive(Debug, FlatMessage, Eq, PartialEq)]
+    #[derive(Debug, FlatMessage, Eq, PartialEq, Default)]
     #[flat_message_options(store_name: false)]
     struct Request {
         #[flat_message_item(align = 4, kind = struct)]
@@ -280,7 +280,7 @@ fn check_struct_some() {
 
 #[test]
 fn check_struct_none() {
-    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq, Default)]
     struct Configuration {
         timeout: u32,
         retries: u8,
@@ -301,13 +301,13 @@ fn check_struct_none() {
 
 #[test]
 fn check_struct_none_repr() {
-    #[derive(FlatMessageStruct, Debug, PartialEq, Eq)]
+    #[derive(FlatMessageStruct, Debug, PartialEq, Eq, Default)]
     struct Configuration {
         timeout: u32,
         retries: u8,
     }
 
-    #[derive(Debug, FlatMessage, Eq, PartialEq)]
+    #[derive(Debug, FlatMessage, Eq, PartialEq, Default)]
     #[flat_message_options(store_name: false)]
     struct Request {
         #[flat_message_item(align = 4, kind = struct)]

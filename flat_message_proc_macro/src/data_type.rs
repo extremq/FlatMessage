@@ -89,7 +89,7 @@ impl DataType {
             timestamp,
             ignore_field: zst,
             option,
-            mandatory: true,
+            mandatory: !option,
             default_value: None,
         }
     }

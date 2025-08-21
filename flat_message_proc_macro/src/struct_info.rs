@@ -539,9 +539,15 @@ impl<'a> StructInfo<'a> {
             }
         };
         let default_value = if let Some(default_value) = default_value {
-            parse_str(&default_value).unwrap()
+            let default_value_parsed : proc_macro2::TokenStream = parse_str(&default_value).unwrap();
+            if option {
+                quote! { Some(#default_value_parsed) } 
+            } else {
+                quote! { #default_value_parsed }
+            }
         } else {
-            quote! { #ty::default() }
+            if option { quote! { None } }
+            else { quote! { #ty::default() } }
         };
         quote! {
             let #inner_var = loop { 

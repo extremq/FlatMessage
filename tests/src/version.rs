@@ -103,7 +103,7 @@ mod scenario_5 {
         #[flat_message_options(version = 2)]
         pub struct TestStruct {
             pub value: u8,
-            pub value2: Option<u16>, // new mandatory field added
+            pub value2: Option<u16>, // new optional field added
         }
     }
 }
@@ -123,8 +123,29 @@ mod scenario_6 {
         #[flat_message_options(version = 2)]
         pub struct TestStruct {
             pub value: u8,
-            #[flat_message_item(mandatory = false, default = "Some(3)")]
+            #[flat_message_item(mandatory = false, default = 3)]
             pub value2: Option<u16>, // new optional field added
+        }
+    }
+}
+
+mod scenario_7 {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 1)]
+        pub struct TestStruct {
+            pub value: u8,
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(version = 2)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(mandatory = true)]
+            pub value2: Option<u16>, // new mandatory field
         }
     }
 }
@@ -317,12 +338,12 @@ fn check_v1_to_v2_scenario_5_not_using_compatible_versions_with_option_field_wit
     let d_v1 = v1::TestStruct { value: 1 };
     d_v1.serialize_to(&mut storage, Config::default()).unwrap();
     let result = v2::TestStruct::deserialize_from(&mut storage);
-    // using Option<T> without mandatory = false does NOT mean that the field will be defaulted if it is not present
-    assert!(result.is_err());
-    assert_eq!(
-        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
-        true
-    );
+    // By default, Option<T> is marked with mandatory = false, so it will be defaulted to None if it is not present
+    // so the deserialization should be successful
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.value, 1);
+    assert_eq!(d_v2.value2, None);
 }
 
 #[test]
@@ -349,4 +370,32 @@ fn check_v1_to_v2_scenario_6_not_using_compatible_versions_with_option_field_wit
     let d_v2 = result.unwrap();
     assert_eq!(d_v2.value, 1);
     assert_eq!(d_v2.value2, Some(3));
+}
+
+#[test]
+fn check_v2_to_v1_scenario_7_not_using_compatible_versions_with_a_mandatory_option_field() {
+    use scenario_7::*;
+    // v2 to v1 for scenario 7 the code will work as `v1` does not require the field value2
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, value2: Some(2) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+}
+
+#[test]
+fn check_v1_to_v2_scenario_7_not_using_compatible_versions_with_a_mandatory_option_field() {
+    use scenario_7::*;
+    // v1 to v2 for scenario 7 the code will fail because the field value2 is mandatory
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { value: 1 };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
 }
