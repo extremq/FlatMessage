@@ -5,7 +5,6 @@ use common::constants;
 use common::hashes;
 use quote::format_ident;
 use quote::quote;
-use syn::parse_str;
 use super::ConstAssertions;
 use syn::{DataStruct, DeriveInput};
 use super::data_type::DataType;
@@ -94,7 +93,7 @@ mod gencode {
             }
         }
     }
-    pub(super) fn unsafe_init_field_strict(dt: &DataType, inner_var: &syn::Ident, invalid_field_offset: proc_macro2::TokenStream, fail_to_deserialize: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    pub(super) fn unsafe_init_field_strict(dt: &DataType, inner_var: &syn::Ident, invalid_field_offset: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
         let serde_trait = dt.serde_trait();
         let ty =  dt.ty.clone();
         if dt.option {
@@ -152,6 +151,33 @@ mod gencode {
             }
         }
     }    
+
+    pub(super) fn unsafe_init_field_fallback(dt: &DataType, inner_var: &syn::Ident, invalid_field_offset: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+        let serde_trait = dt.serde_trait();
+        let ty =  dt.ty.clone();
+        if dt.option {
+            // field is Option<T>
+            quote! {
+                let #inner_var = if offset<8 || offset >= hash_table_offset {
+                    if offset == 0 {
+                        None
+                    } else {
+                        return #invalid_field_offset;
+                    }
+                } else {
+                    Some ( unsafe { flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset) })
+                };
+            }            
+        } else {
+            // field is T
+            quote! {
+                if offset<8 || offset >= hash_table_offset {
+                    return #invalid_field_offset;
+                }
+                let #inner_var: #ty = unsafe { flat_message::#serde_trait:: (data_buffer, offset) };
+            }
+        }
+    }   
 }
 
 pub(crate) struct StructInfo<'a> {
@@ -536,179 +562,12 @@ impl<'a> StructInfo<'a> {
         }
     }
 
-    fn generate_search_non_mandatory_field(&self, field_name_hash: u32, default_value: proc_macro2::TokenStream, create_field: proc_macro2::TokenStream)-> proc_macro2::TokenStream {
-        quote! {
-            loop { 
-                unsafe {
-                    if ptr_it == p_end {
-                        break #default_value;
-                    }
-                    if *ptr_it >= #field_name_hash {
-                        if *ptr_it == #field_name_hash {
-                            let offset = ptr::read_unaligned(p_ofs) as usize;
-                            // move to next
-                            p_ofs = p_ofs.add(1); 
-                            ptr_it = ptr_it.add(1);  
-                            break { #create_field };                          
-                        } else {
-                            break #default_value;
-                        }
-                    }
-                    p_ofs = p_ofs.add(1); 
-                    ptr_it = ptr_it.add(1);   
-                } 
-            };           
-        }        
-    }
-    fn generate_field_deserialize_code_required_field(
-        &self,
-        serde_trait: &syn::Ident,
-        inner_var: &syn::Ident,
-        ty: &syn::Type,
-        field_name_hash: u32,
-        unchecked_code: bool,
-        option: bool,
-        return_err: bool,
-    ) -> proc_macro2::TokenStream {
-        let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
-        let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
-        let field_is_missing = if return_err { quote! { Err(flat_message::Error::FieldIsMissing(#field_name_hash)) }  } else { quote! { None } };
-        let unsafe_init = quote! {
-            // fallback for cases where we have a serialized option
-            if offset==0 {
-                return #invalid_field_offset;
-            }            
-            let #inner_var: #ty = unsafe { flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset) };
-        };
-        let unsafe_init_option = quote! {
-            let #inner_var = if offset == 0 {
-                None
-            } else {
-                Some (flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset))
-            };
-        };
-        let safe_init = quote! {
-            if offset<8 || offset >= hash_table_offset {
-                return #invalid_field_offset;
-            }
-            let Some(#inner_var): Option<#ty> = flat_message::#serde_trait::from_buffer(data_buffer, offset) else {
-                return #fail_to_deserialize;
-            };
-        };
-        let safe_init_option = quote! {
-            let #inner_var = if offset<8 || offset >= hash_table_offset {
-                if offset == 0 {
-                    None
-                } else {
-                    return #invalid_field_offset;
-                }
-            } else {
-                // the type is alread an Option
-                let tmp: #ty =  flat_message::#serde_trait::from_buffer(data_buffer, offset);
-                if tmp.is_none() {
-                    return #fail_to_deserialize;
-                };
-                tmp
-            };
-        };        
-        let checks_and_init = if unchecked_code {
-            if option {
-                quote! { #unsafe_init_option }
-            } else {
-                quote! { #unsafe_init }
-            }
-        } else {
-            if option {
-                quote! { #safe_init_option }
-            } else {
-                quote! { #safe_init }
-            }
-        };
-        gencode::search_mandatory_field(field_name_hash, field_is_missing, checks_and_init)
-    }
-    fn generate_field_deserialize_code_optional_field(
-        &self,
-        serde_trait: &syn::Ident,
-        inner_var: &syn::Ident,
-        ty: &syn::Type,
-        field_name_hash: u32,
-        unchecked_code: bool,
-        option: bool,
-        return_err: bool,
-        default_value: Option<String>,
-    ) -> proc_macro2::TokenStream {
-        let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
-
-        let unsafe_init = quote! {
-            // fallback for cases where we have a serialized option
-            if offset==0 {
-                return #invalid_field_offset;
-            }            
-            unsafe { flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset) }
-        };
-        let unsafe_init_option = quote! {
-            if offset == 0 {
-                None
-            } else {
-                Some (flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset))
-            }
-        };
-        let safe_init = quote! {
-            if offset<8 || offset >= hash_table_offset {
-                return #invalid_field_offset;
-            }
-            flat_message::#serde_trait::from_buffer(data_buffer, offset).unwrap_or_default()
-        };
-        let safe_init_option = quote! {
-            if offset<8 || offset >= hash_table_offset {
-                if offset == 0 {
-                    None
-                } else {
-                    return #invalid_field_offset;
-                }
-            } else {
-                Some(flat_message::#serde_trait::from_buffer(data_buffer, offset).unwrap_or_default())
-            }
-        };        
-        let checks_and_init = if unchecked_code {
-            if option {
-                quote! { #unsafe_init_option }
-            } else {
-                quote! { #unsafe_init }
-            }
-        } else {
-            if option {
-                quote! { #safe_init_option }
-            } else {
-                quote! { #safe_init }
-            }
-        };
-        let default_value = if let Some(default_value) = default_value {
-            let default_value_parsed : proc_macro2::TokenStream = parse_str(&default_value).unwrap();
-            if option {
-                quote! { Some(#default_value_parsed) } 
-            } else {
-                quote! { #default_value_parsed }
-            }
-        } else {
-            if option { quote! { None } }
-            else { quote! { #ty::default() } }
-        };
-
-
-        let search_field = self.generate_search_non_mandatory_field(field_name_hash, default_value, checks_and_init);
-        quote! {
-            let #inner_var = #search_field;
-        }
-    }
-
-
     fn generate_mandatory_strict_field_deserialize_code(&self, dt: &DataType, inner_var: &syn::Ident, field_name_hash: u32, unchecked_code: bool, return_err: bool) -> proc_macro2::TokenStream {
         let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
         let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
         let field_is_missing = if return_err { quote! { Err(flat_message::Error::FieldIsMissing(#field_name_hash)) }  } else { quote! { None } };
         let init_code = if unchecked_code { 
-            gencode::unsafe_init_field_strict(dt, inner_var, invalid_field_offset, fail_to_deserialize)
+            gencode::unsafe_init_field_strict(dt, inner_var, invalid_field_offset)
         } else {
             gencode::safe_init_field_strict(dt, inner_var, invalid_field_offset, fail_to_deserialize)
         };
@@ -720,12 +579,37 @@ impl<'a> StructInfo<'a> {
         let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
         let default_value = dt.default_value();
         let init_code = if unchecked_code { 
-            gencode::unsafe_init_field_strict(dt, inner_var, invalid_field_offset, fail_to_deserialize)
+            gencode::unsafe_init_field_strict(dt, inner_var, invalid_field_offset)
         } else {
             gencode::safe_init_field_strict(dt, inner_var, invalid_field_offset, fail_to_deserialize)
         };
         gencode::search_non_mandatory_field(inner_var, field_name_hash, default_value, init_code)        
+    }  
+
+    fn generate_mandatory_fallback_field_deserialize_code(&self, dt: &DataType, inner_var: &syn::Ident, field_name_hash: u32, unchecked_code: bool, return_err: bool) -> proc_macro2::TokenStream {
+        let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
+        let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
+        let field_is_missing = if return_err { quote! { Err(flat_message::Error::FieldIsMissing(#field_name_hash)) }  } else { quote! { None } };
+        let init_code = if unchecked_code { 
+            gencode::unsafe_init_field_fallback(dt, inner_var, invalid_field_offset)
+        } else {
+            gencode::safe_init_field_fallback(dt, inner_var, invalid_field_offset, fail_to_deserialize)
+        };
+        gencode::search_mandatory_field(field_name_hash, field_is_missing, init_code)
     }    
+
+    fn generate_non_mandatory_fallback_field_deserialize_code(&self, dt: &DataType, inner_var: &syn::Ident, field_name_hash: u32, unchecked_code: bool, return_err: bool) -> proc_macro2::TokenStream {
+        let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
+        let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
+        let default_value = dt.default_value();
+        let init_code = if unchecked_code { 
+            gencode::unsafe_init_field_fallback(dt, inner_var, invalid_field_offset)
+        } else {
+            gencode::safe_init_field_fallback(dt, inner_var, invalid_field_offset, fail_to_deserialize)
+        };
+        gencode::search_non_mandatory_field(inner_var, field_name_hash, default_value, init_code)        
+    }     
+
     
     fn generate_fields_deserialize_code(
         &self,
@@ -736,12 +620,8 @@ impl<'a> StructInfo<'a> {
         struct HashAndInnerVar<'a>   {
             hash: u32,
             inner_var: syn::Ident,
-            serde_trait: syn::Ident,
-            ty: syn::Type,
-            option: bool,
             mandatory: bool,
             strict: bool,   
-            default_value: Option<String>,
             dt: &'a DataType,
         }
         let mut v = Vec::with_capacity(4);
@@ -751,11 +631,7 @@ impl<'a> StructInfo<'a> {
             .map(|field| HashAndInnerVar {
                 hash: field.hash,
                 inner_var: field.inner_var(),
-                serde_trait: field.data_type.serde_trait(),
-                ty: field.data_type.ty.clone(),
-                option: field.data_type.option,
                 mandatory: field.data_type.mandatory,
-                default_value: field.data_type.default_value.clone(),
                 strict: !field.data_type.use_default_if_deserialize_fails,
                 dt: &field.data_type,
             })
@@ -793,30 +669,24 @@ impl<'a> StructInfo<'a> {
                         return_err
                     ));
                 }
-                _ => {        
-                    if obj.mandatory {
-                        v.push(self.generate_field_deserialize_code_required_field(
-                            &obj.serde_trait,
-                            &obj.inner_var,
-                            &obj.ty,
-                            obj.hash,
-                            unchecked_code,
-                            obj.option,
-                            return_err
-                        ));
-                    } else {
-                        v.push(self.generate_field_deserialize_code_optional_field(
-                            &obj.serde_trait,
-                            &obj.inner_var,
-                            &obj.ty,
-                            obj.hash,
-                            unchecked_code,
-                            obj.option,
-                            return_err,
-                            obj.default_value
-                        ));
-                    }
-                }
+                (true, false) => {
+                    v.push(self.generate_mandatory_fallback_field_deserialize_code(
+                        obj.dt,
+                        &obj.inner_var,
+                        obj.hash,
+                        unchecked_code,
+                        return_err
+                    ));
+                }      
+                (false, false) => {
+                    v.push(self.generate_non_mandatory_fallback_field_deserialize_code(
+                        obj.dt,
+                        &obj.inner_var,
+                        obj.hash,
+                        unchecked_code,
+                        return_err
+                    ));
+                }                             
             }
         }
         v
