@@ -147,7 +147,7 @@ mod gencode {
                 if offset<8 || offset >= hash_table_offset {
                     return #invalid_field_offset;
                 }
-                let Some(#inner_var): Option<#ty> = flat_message::#serde_trait::from_buffer(data_buffer, offset).unwrap_or_else(|| { #default_value });
+                let #inner_var: #ty = flat_message::#serde_trait::from_buffer(data_buffer, offset).unwrap_or_else(|| { #default_value });
             }
         }
     }    
@@ -174,7 +174,7 @@ mod gencode {
                 if offset<8 || offset >= hash_table_offset {
                     return #invalid_field_offset;
                 }
-                let #inner_var: #ty = unsafe { flat_message::#serde_trait:: (data_buffer, offset) };
+                let #inner_var: #ty = unsafe { flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset) };
             }
         }
     }   
@@ -588,24 +588,23 @@ impl<'a> StructInfo<'a> {
 
     fn generate_mandatory_fallback_field_deserialize_code(&self, dt: &DataType, inner_var: &syn::Ident, field_name_hash: u32, unchecked_code: bool, return_err: bool) -> proc_macro2::TokenStream {
         let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
-        let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
         let field_is_missing = if return_err { quote! { Err(flat_message::Error::FieldIsMissing(#field_name_hash)) }  } else { quote! { None } };
+        let default_value = dt.default_value();
         let init_code = if unchecked_code { 
             gencode::unsafe_init_field_fallback(dt, inner_var, invalid_field_offset)
         } else {
-            gencode::safe_init_field_fallback(dt, inner_var, invalid_field_offset, fail_to_deserialize)
+            gencode::safe_init_field_fallback(dt, inner_var, invalid_field_offset, default_value)
         };
         gencode::search_mandatory_field(field_name_hash, field_is_missing, init_code)
     }    
 
     fn generate_non_mandatory_fallback_field_deserialize_code(&self, dt: &DataType, inner_var: &syn::Ident, field_name_hash: u32, unchecked_code: bool, return_err: bool) -> proc_macro2::TokenStream {
         let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
-        let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
         let default_value = dt.default_value();
         let init_code = if unchecked_code { 
             gencode::unsafe_init_field_fallback(dt, inner_var, invalid_field_offset)
         } else {
-            gencode::safe_init_field_fallback(dt, inner_var, invalid_field_offset, fail_to_deserialize)
+            gencode::safe_init_field_fallback(dt, inner_var, invalid_field_offset, default_value.clone())
         };
         gencode::search_non_mandatory_field(inner_var, field_name_hash, default_value, init_code)        
     }     

@@ -190,6 +190,47 @@ mod scenario_1_enum {
     } 
 }
 
+mod scenario_3_enum {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 10,
+            Blue = 100,
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = enum, validate = fallback)]
+            pub color: Color,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
+        #[repr(u8)]
+        pub enum Color {
+            Red = 1,
+            Green = 10,
+            Blue = 100,
+            Yellow = 200,
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = enum)]
+            pub color: Color,
+        }
+    } 
+}
+
 mod scenario_2_enum {
     pub mod v1 {
         use flat_message::*;
@@ -569,4 +610,16 @@ fn check_v2_to_v1_scenario_2_enum_with_yellow() {
         matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
         true
     );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_3_enum_with_yellow() {
+    use scenario_3_enum::*;
+    // v2 to v1 for scenario 3_enum the code will not fail becase v1 has the field color with validate = fallback (so if the deserialization fails, the default will be applied)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, color: v2::Color::Yellow };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let d_v1 = v1::TestStruct::deserialize_from(&mut storage).unwrap();
+    assert_eq!(d_v1.value, 1);
+    assert_eq!(d_v1.color, v1::Color::Red); // Red is the default color
 }
