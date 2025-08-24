@@ -324,4 +324,7 @@ fn check_struct_none_repr() {
             0, // offset of config (0 = None)
         ]
     );
+
+    
+    
 }

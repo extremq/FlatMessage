@@ -34,6 +34,33 @@ mod gencode {
             #create_field
         }        
     }
+    pub(super) fn search_non_mandatory_field(inner_var: &syn::Ident,field_name_hash: u32, default_value: proc_macro2::TokenStream, create_field: proc_macro2::TokenStream)-> proc_macro2::TokenStream {
+        quote! {
+            let create_field = loop { 
+                unsafe {
+                    if ptr_it == p_end {
+                        break false;
+                    }
+                    if *ptr_it >= #field_name_hash {
+                        break *ptr_it == #field_name_hash;
+                    }
+                    p_ofs = p_ofs.add(1); 
+                    ptr_it = ptr_it.add(1);   
+                } 
+            };   
+            let #inner_var = if create_field {
+                let offset = unsafe { ptr::read_unaligned(p_ofs) as usize };
+                // move to next
+                unsafe { p_ofs = p_ofs.add(1); }
+                unsafe { ptr_it = ptr_it.add(1); }
+                #create_field;
+                #inner_var
+            } else {
+                // use the default value
+                #default_value
+            };
+        } 
+    }
     pub(super) fn safe_init_field_strict(dt: &DataType, inner_var: &syn::Ident, invalid_field_offset: proc_macro2::TokenStream, fail_to_deserialize: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
         let serde_trait = dt.serde_trait();
         let ty =  dt.ty.clone();
@@ -67,6 +94,32 @@ mod gencode {
             }
         }
     }
+    pub(super) fn unsafe_init_field_strict(dt: &DataType, inner_var: &syn::Ident, invalid_field_offset: proc_macro2::TokenStream, fail_to_deserialize: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+        let serde_trait = dt.serde_trait();
+        let ty =  dt.ty.clone();
+        if dt.option {
+            // field is Option<T>
+            quote! {
+                let #inner_var = if offset<8 || offset >= hash_table_offset {
+                    if offset == 0 {
+                        None
+                    } else {
+                        return #invalid_field_offset;
+                    }
+                } else {
+                    Some ( unsafe { flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset) })
+                };
+            }            
+        } else {
+            // field is T
+            quote! {
+                if offset<8 || offset >= hash_table_offset {
+                    return #invalid_field_offset;
+                }
+                let #inner_var: #ty = unsafe { flat_message::#serde_trait::from_buffer_unchecked(data_buffer, offset) };
+            }
+        }
+    }    
     pub(super) fn safe_init_field_fallback(dt: &DataType, inner_var: &syn::Ident, invalid_field_offset: proc_macro2::TokenStream, default_value: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
         let serde_trait = dt.serde_trait();
         let ty =  dt.ty.clone();
@@ -654,9 +707,25 @@ impl<'a> StructInfo<'a> {
         let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
         let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
         let field_is_missing = if return_err { quote! { Err(flat_message::Error::FieldIsMissing(#field_name_hash)) }  } else { quote! { None } };
-        let init_code = gencode::safe_init_field_strict(dt, inner_var, invalid_field_offset, fail_to_deserialize);
+        let init_code = if unchecked_code { 
+            gencode::unsafe_init_field_strict(dt, inner_var, invalid_field_offset, fail_to_deserialize)
+        } else {
+            gencode::safe_init_field_strict(dt, inner_var, invalid_field_offset, fail_to_deserialize)
+        };
         gencode::search_mandatory_field(field_name_hash, field_is_missing, init_code)
     }
+
+    fn generate_non_mandatory_strict_field_deserialize_code(&self, dt: &DataType, inner_var: &syn::Ident, field_name_hash: u32, unchecked_code: bool, return_err: bool) -> proc_macro2::TokenStream {
+        let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
+        let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
+        let default_value = dt.default_value();
+        let init_code = if unchecked_code { 
+            gencode::unsafe_init_field_strict(dt, inner_var, invalid_field_offset, fail_to_deserialize)
+        } else {
+            gencode::safe_init_field_strict(dt, inner_var, invalid_field_offset, fail_to_deserialize)
+        };
+        gencode::search_non_mandatory_field(inner_var, field_name_hash, default_value, init_code)        
+    }    
     
     fn generate_fields_deserialize_code(
         &self,
@@ -687,7 +756,7 @@ impl<'a> StructInfo<'a> {
                 option: field.data_type.option,
                 mandatory: field.data_type.mandatory,
                 default_value: field.data_type.default_value.clone(),
-                strict: field.data_type.deserialize_fail_fallback,
+                strict: !field.data_type.use_default_if_deserialize_fails,
                 dt: &field.data_type,
             })
             .collect();
@@ -705,36 +774,48 @@ impl<'a> StructInfo<'a> {
             _ => quote! {},
         });
         for obj in hashes {
-            if obj.strict && obj.mandatory {
-                v.push(self.generate_mandatory_strict_field_deserialize_code(
-                    obj.dt,
-                    &obj.inner_var,
-                    obj.hash,
-                    unchecked_code,
-                    return_err
-                ));
-            } else {
-                if obj.mandatory {
-                    v.push(self.generate_field_deserialize_code_required_field(
-                        &obj.serde_trait,
+            match (obj.mandatory, obj.strict) {
+                (true, true) => {
+                    v.push(self.generate_mandatory_strict_field_deserialize_code(
+                        obj.dt,
                         &obj.inner_var,
-                        &obj.ty,
                         obj.hash,
                         unchecked_code,
-                        obj.option,
                         return_err
                     ));
-                } else {
-                    v.push(self.generate_field_deserialize_code_optional_field(
-                        &obj.serde_trait,
+                },
+                (false, true) => {
+                    v.push(self.generate_non_mandatory_strict_field_deserialize_code(
+                        obj.dt,
                         &obj.inner_var,
-                        &obj.ty,
                         obj.hash,
                         unchecked_code,
-                        obj.option,
-                        return_err,
-                        obj.default_value
+                        return_err
                     ));
+                }
+                _ => {        
+                    if obj.mandatory {
+                        v.push(self.generate_field_deserialize_code_required_field(
+                            &obj.serde_trait,
+                            &obj.inner_var,
+                            &obj.ty,
+                            obj.hash,
+                            unchecked_code,
+                            obj.option,
+                            return_err
+                        ));
+                    } else {
+                        v.push(self.generate_field_deserialize_code_optional_field(
+                            &obj.serde_trait,
+                            &obj.inner_var,
+                            &obj.ty,
+                            obj.hash,
+                            unchecked_code,
+                            obj.option,
+                            return_err,
+                            obj.default_value
+                        ));
+                    }
                 }
             }
         }

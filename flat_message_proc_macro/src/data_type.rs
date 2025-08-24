@@ -36,7 +36,7 @@ pub(crate) struct DataType {
     pub(crate) ignore_field: bool,
     pub(crate) option: bool,
     pub(crate) mandatory: bool,
-    pub(crate) deserialize_fail_fallback: bool,
+    pub(crate) use_default_if_deserialize_fails: bool,
     pub(crate) default_value: Option<String>,
 }
 
@@ -93,7 +93,7 @@ impl DataType {
             option,
             mandatory: !option,
             default_value: None,
-            deserialize_fail_fallback: false,
+            use_default_if_deserialize_fails: false,
         }
     }
 
@@ -168,8 +168,8 @@ impl DataType {
         }
         if has_validate {
             match attr.get("validate").unwrap().as_str() {
-                "strict" => self.deserialize_fail_fallback = false,
-                "fallback" => self.deserialize_fail_fallback = true,
+                "strict" => self.use_default_if_deserialize_fails = false,
+                "fallback" => self.use_default_if_deserialize_fails = true,
                 _ => return Err(format!("Invalid value for the 'validate' attribute: '{}' in field: '{}'. The possible values are: 'strict' or 'fallback'.",attr.get("validate").unwrap(), field_nane)),
             }
         }
