@@ -5,7 +5,8 @@ use crate::attribute_parser;
 use super::utils;
 use common::data_format::DataFormat;
 use proc_macro::TokenStream;
-use quote::ToTokens;
+use quote::{quote, ToTokens};
+use syn::parse_str;
 use syn::Attribute;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -35,6 +36,7 @@ pub(crate) struct DataType {
     pub(crate) ignore_field: bool,
     pub(crate) option: bool,
     pub(crate) mandatory: bool,
+    pub(crate) deserialize_fail_fallback: bool,
     pub(crate) default_value: Option<String>,
 }
 
@@ -91,6 +93,7 @@ impl DataType {
             option,
             mandatory: !option,
             default_value: None,
+            deserialize_fail_fallback: false,
         }
     }
 
@@ -110,12 +113,16 @@ impl DataType {
             let mut attr = attribute_parser::parse(tokens);
             // println!("Field name: {}", field_name);
             // println!("Attr: {:?}", attr);
-            self.update_attributes(&mut attr, field_name)?; 
-            self.update_default_value(&mut attr, field_name)?;       
+            self.update_attributes(&mut attr, field_name)?;
+            self.update_default_value(&mut attr, field_name)?;
         }
         Ok(())
     }
-    fn update_default_value(&mut self, attr: &mut HashMap<String, String>, field_name: &str)-> Result<(), String> {
+    fn update_default_value(
+        &mut self,
+        attr: &mut HashMap<String, String>,
+        field_name: &str,
+    ) -> Result<(), String> {
         if let Some(value) = attr.remove("default") {
             self.default_value = Some(value);
         }
@@ -148,6 +155,7 @@ impl DataType {
         let has_kind = attr.contains_key("kind");
         let has_align = attr.contains_key("align");
         let has_mandatory = attr.contains_key("mandatory");
+        let has_validate = attr.contains_key("validate");
         let ignore_field = if attr.contains_key("ignore") {
             utils::to_bool(attr.get("ignore").unwrap()).unwrap_or(false)
         } else if attr.contains_key("skip") {
@@ -157,6 +165,13 @@ impl DataType {
         };
         if has_mandatory {
             self.mandatory = utils::to_bool(attr.get("mandatory").unwrap()).unwrap_or(true);
+        }
+        if has_validate {
+            match attr.get("validate").unwrap().as_str() {
+                "strict" => self.deserialize_fail_fallback = false,
+                "fallback" => self.deserialize_fail_fallback = true,
+                _ => return Err(format!("Invalid value for the 'validate' attribute: '{}' in field: '{}'. The possible values are: 'strict' or 'fallback'.",attr.get("validate").unwrap(), field_nane)),
+            }
         }
         if ignore_field {
             self.ignore_field = true;
@@ -230,13 +245,21 @@ impl DataType {
             if has_align {
                 return Err(format!("If we provided the 'align' attribute you need to also provide the attribute 'kind' (for field: '{}')",field_nane));
             }
-            if has_mandatory {
+            if has_mandatory || has_validate {
                 return Ok(());
             }
             // check for other errors
             // possible parameters
-            static KEYS: &[&'static str] =
-                &["kind", "repr", "align", "ignore", "skip", "mandatory", "default"];
+            static KEYS: &[&'static str] = &[
+                "kind",
+                "repr",
+                "align",
+                "ignore",
+                "skip",
+                "mandatory",
+                "default",
+                "validate",
+            ];
             for key in KEYS {
                 if attr.contains_key(*key) {
                     continue;
@@ -264,5 +287,24 @@ impl DataType {
             }
             FieldType::Slice | FieldType::Vector => self.data_format.alignament() as usize,
         }
+    }
+
+    pub(crate) fn default_value(&self) -> proc_macro2::TokenStream {
+        let default_tokens = if let Some(default_value) = &self.default_value {
+            let default_value_parsed: proc_macro2::TokenStream = parse_str(&default_value).unwrap();
+            if self.option {
+                quote! { Some(#default_value_parsed) }
+            } else {
+                quote! { #default_value_parsed }
+            }
+        } else {
+            if self.option {
+                quote! { None }
+            } else {
+                let ty = self.ty.clone();
+                quote! { #ty::default() }
+            }
+        };
+        default_tokens
     }
 }

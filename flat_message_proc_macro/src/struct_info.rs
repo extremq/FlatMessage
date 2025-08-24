@@ -388,6 +388,50 @@ impl<'a> StructInfo<'a> {
                 let p_end = unsafe { ptr_it.add(header.fields_count as usize) };
         }
     }
+    fn generate_search_mandatory_field(&self, field_name_hash: u32, field_is_missing: proc_macro2::TokenStream, create_field: proc_macro2::TokenStream)-> proc_macro2::TokenStream {
+        quote! { 
+            unsafe { 
+                loop {
+                    if ptr_it == p_end {
+                        return #field_is_missing;
+                    }
+                    if *ptr_it == #field_name_hash {
+                        ptr_it = ptr_it.add(1);  
+                        break;
+                    }
+                    p_ofs = p_ofs.add(1); 
+                    ptr_it = ptr_it.add(1);                
+                }           
+            }
+            let offset = unsafe { ptr::read_unaligned(p_ofs) as usize};
+            unsafe { p_ofs = p_ofs.add(1); }
+            #create_field
+        }        
+    }
+    fn generate_search_non_mandatory_field(&self, field_name_hash: u32, default_value: proc_macro2::TokenStream, create_field: proc_macro2::TokenStream)-> proc_macro2::TokenStream {
+        quote! {
+            loop { 
+                unsafe {
+                    if ptr_it == p_end {
+                        break #default_value;
+                    }
+                    if *ptr_it >= #field_name_hash {
+                        if *ptr_it == #field_name_hash {
+                            let offset = ptr::read_unaligned(p_ofs) as usize;
+                            // move to next
+                            p_ofs = p_ofs.add(1); 
+                            ptr_it = ptr_it.add(1);  
+                            break { #create_field };                          
+                        } else {
+                            break #default_value;
+                        }
+                    }
+                    p_ofs = p_ofs.add(1); 
+                    ptr_it = ptr_it.add(1);   
+                } 
+            };           
+        }        
+    }
     fn generate_field_deserialize_code_required_field(
         &self,
         serde_trait: &syn::Ident,
@@ -452,34 +496,7 @@ impl<'a> StructInfo<'a> {
                 quote! { #safe_init }
             }
         };
-        quote! { 
-            unsafe { 
-                loop {
-                    if ptr_it == p_end {
-                        return #field_is_missing;
-                    }
-                    if *ptr_it == #field_name_hash {
-                        ptr_it = ptr_it.add(1);  
-                        break;
-                    }
-                    p_ofs = p_ofs.add(1); 
-                    ptr_it = ptr_it.add(1);                
-                }           
-            }
-            // loop {
-            //     if let Some(value) = it.next() {
-            //         if *value == #field_name_hash {
-            //             break;
-            //         }
-            //     } else {
-            //         return Err(flat_message::Error::FieldIsMissing(#field_name_hash));
-            //     }
-            //     unsafe { p_ofs = p_ofs.add(1); }
-            // };
-            let offset = unsafe { ptr::read_unaligned(p_ofs) as usize};
-            unsafe { p_ofs = p_ofs.add(1); }
-            #checks_and_init
-        }
+        self.generate_search_mandatory_field(field_name_hash, field_is_missing, checks_and_init)
     }
     fn generate_field_deserialize_code_optional_field(
         &self,
@@ -549,46 +566,11 @@ impl<'a> StructInfo<'a> {
             if option { quote! { None } }
             else { quote! { #ty::default() } }
         };
-        quote! {
-            let #inner_var = loop { 
-                unsafe {
-                    if ptr_it == p_end {
-                        break #default_value;
-                    }
-                    if *ptr_it >= #field_name_hash {
-                        if *ptr_it == #field_name_hash {
-                            let offset = ptr::read_unaligned(p_ofs) as usize;
-                            // move to next
-                            p_ofs = p_ofs.add(1); 
-                            ptr_it = ptr_it.add(1);  
-                            break { #checks_and_init };                          
-                        } else {
-                            break #default_value;
-                        }
-                    }
-                    p_ofs = p_ofs.add(1); 
-                    ptr_it = ptr_it.add(1);   
-                } 
-            };
 
-            // let #inner_var = loop {
-            //     let it_clone = it.clone();
-            //     if let Some(value) = it.next() {
-            //         if *value >= #field_name_hash {
-            //             if *value == #field_name_hash {
-            //                 let offset = unsafe { ptr::read_unaligned(p_ofs) as usize};
-            //                 unsafe { p_ofs = p_ofs.add(1); }
-            //                 break { #checks_and_init };  
-            //             } else {
-            //                 it = it_clone;
-            //                 break #ty::default();
-            //             }                      
-            //         }
-            //     } else {
-            //         break #ty::default();
-            //     }
-            //     unsafe { p_ofs = p_ofs.add(1); }
-            // };            
+
+        let search_field = self.generate_search_non_mandatory_field(field_name_hash, default_value, checks_and_init);
+        quote! {
+            let #inner_var = #search_field;
         }
     }
 
