@@ -534,7 +534,7 @@ fn check_option_none() {
     #[derive(FlatMessage, Debug, Eq, PartialEq)]
     #[flat_message_options(store_name = false)]
     struct Test {
-        #[flat_message_item(kind = flags, repr = u32, mandatory = true)]
+        #[flat_message_item(kind = flags, repr = u32, mandatory = true, validate = strict)]
         flags: Option<Flags>,
     }
     let t = Test { flags: None };
@@ -565,7 +565,7 @@ fn check_option_some() {
     #[derive(FlatMessage, Debug, Eq, PartialEq)]
     #[flat_message_options(store_name = false)]
     struct Test {
-        #[flat_message_item(kind = flags, repr = u32)]
+        #[flat_message_item(kind = flags, repr = u32, validate = strict)]
         flags: Option<Flags>,
     }
     let t = Test { flags: Some(Flags::A | Flags::B) };

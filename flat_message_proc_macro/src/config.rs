@@ -13,7 +13,7 @@ pub(crate) struct Config {
     pub(crate) compatible_versions: Option<VersionValidatorParser>,
     pub(crate) validate_checksum: ValidateChecksum,
     pub(crate) optimized_unchecked_code: bool,
-    pub(crate) use_default_if_deserialize_fails: bool,
+    pub(crate) use_default_if_deserialize_fails: Option<bool>,
 }
 
 impl Config {
@@ -25,7 +25,7 @@ impl Config {
         let mut compatible_versions = None;
         let mut validate_checksum = ValidateChecksum::Auto;
         let mut optimized_unchecked_code = true;
-        let mut use_default_if_deserialize_fails = false;
+        let mut use_default_if_deserialize_fails = None;
         //println!("--Parsing attributes: '{}'", args.to_string());
         let attrs = attribute_parser::parse(args);
         for (attr_name, attr_value) in attrs.iter() {
@@ -45,8 +45,8 @@ impl Config {
                 "optimized_unchecked_code" => optimized_unchecked_code = utils::to_bool(&attr_value).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value, attr_name).as_str()),
                 "validate" => {
                     match attr_value.as_str() {
-                        "strict" => use_default_if_deserialize_fails = false,
-                        "fallback" => use_default_if_deserialize_fails = true,
+                        "strict" => use_default_if_deserialize_fails = Some(false),
+                        "fallback" => use_default_if_deserialize_fails = Some(true),
                         _ => panic!("Invalid value for attribute 'validate': {}. Allowed values are 'strict' or 'fallback' !", attr_value),
                     }
                 }
@@ -83,7 +83,7 @@ impl Default for Config {
             compatible_versions: None,
             validate_checksum: ValidateChecksum::Auto,
             optimized_unchecked_code: true,
-            use_default_if_deserialize_fails: false,
+            use_default_if_deserialize_fails: None,
         }
     }
 }

@@ -206,7 +206,7 @@ mod scenario_2_enum {
         #[flat_message_options(store_name = false)]
         pub struct TestStruct {
             pub value: u8,
-            #[flat_message_item(repr = u8, kind = enum, mandatory = true)]
+            #[flat_message_item(repr = u8, kind = enum, validate = strict)]
             pub color: Option<Color>,
         }
     } 
@@ -273,6 +273,133 @@ mod scenario_3_enum {
     } 
 }
 
+mod scenario_4_enum {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 10,
+            Blue = 100,
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = enum)]
+            pub color: Option<Color>,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 10,
+            Blue = 100,
+            Yellow = 200,
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = true)]
+            pub color: Option<Color>,
+        }
+    } 
+}
+
+
+mod scenario_1_flags {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B)]
+        pub struct Flags(u8);
+        impl Flags {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = flags)]
+            pub flags: Flags,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Flags(u8);
+        impl Flags {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = flags)]
+            pub flags: Flags,
+        }
+    } 
+}
+
+
+mod scenario_3_flags {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B)]
+        pub struct Flags(u8);
+        impl Flags {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = flags, validate = fallback)]
+            pub flags: Flags,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Flags(u8);
+        impl Flags {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = flags)]
+            pub flags: Flags,
+        }
+    } 
+}
 
 #[test]
 fn check_serde_version_compatibility_check() {
@@ -601,7 +728,7 @@ fn check_v2_to_v1_scenario_2_enum_without_yellow() {
 fn check_v2_to_v1_scenario_2_enum_with_yellow() {
     use scenario_2_enum::*;
     // v2 to v1 for scenario 2_enum the code will fail becase there is no variant `Yellow` in `v1::Color`
-    // color is Option<Color> and it is maarked as mandatory and it is not present in v1
+    // color is Option<Color> and it has validate = true
     let mut storage = Storage::default();
     let d_v2 = v2::TestStruct { value: 1, color: Some(v2::Color::Yellow) };
     d_v2.serialize_to(&mut storage, Config::default()).unwrap();
@@ -623,4 +750,59 @@ fn check_v2_to_v1_scenario_3_enum_with_yellow() {
     let d_v1 = v1::TestStruct::deserialize_from(&mut storage).unwrap();
     assert_eq!(d_v1.value, 1);
     assert_eq!(d_v1.color, v1::Color::Red); // Red is the default color
+}
+
+#[test]
+fn check_v2_to_v1_scenario_4_enum_with_yellow() {
+    use scenario_4_enum::*;
+    // v2 to v1 for scenario 4_enum the code will not fail becase even if v1 does not have the field Yellow, by default for all Option validate is set to fallback and as such it will be defaulted to None
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, color: Some(v2::Color::Yellow) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let d_v1 = v1::TestStruct::deserialize_from(&mut storage).unwrap();
+    assert_eq!(d_v1.value, 1);
+    assert_eq!(d_v1.color, None); // None is the default for Option<T>
+}
+
+#[test]
+fn check_v2_to_v1_scenario_1_flags_without_c() {
+    use scenario_1_flags::*;
+    // v2 to v1 for scenario 1 flags - will work because A and B flags are also present in v1 (and as such there is no compatibility issue)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, flags: v2::Flags::A | v2::Flags::B };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+    assert_eq!(d_v1.flags, v1::Flags::A | v1::Flags::B);
+}
+
+#[test]
+fn check_v2_to_v1_scenario_1_flags_with_c() {
+    use scenario_1_flags::*;
+    // v2 to v1 for scenario 1 flags - will fail because v2 is set with C and C is not recognized in v1
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, flags: v2::Flags::C };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_3_flags_with_c() {
+    use scenario_3_flags::*;
+    // v2 to v1 for scenario 3 flags - will work - there is no flag C in v1::Flags, however the validate is set to fallback and as such the default value (in this case no flags) will be set
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, flags: v2::Flags::C  | v2::Flags::B };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+    assert!(d_v1.flags.is_empty()); // default value for flags
 }

@@ -322,7 +322,7 @@ impl TryFrom<syn::DeriveInput> for Variant {
                     }
                     let ty = fields.unnamed[0].ty.clone();
                     let ty_str = quote! {#ty}.to_string();
-                    let mut dt = DataType::new(ty, ty_str, false);
+                    let mut dt = DataType::new(ty, ty_str, None);
                     for attr in v.attrs.iter() {
                         dt.parse_attr(attr, &name_str)?;
                     }

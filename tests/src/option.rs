@@ -289,7 +289,7 @@ fn check_struct_none() {
     #[derive(Debug, FlatMessage, Eq, PartialEq)]
     #[flat_message_options(store_name: false)]
     struct Request {
-        #[flat_message_item(align = 4, kind = struct)]
+        #[flat_message_item(align = 4, kind = struct, validate = strict)]
         config: Option<Configuration>,
     }
     let t = Request { config: None };
@@ -310,7 +310,7 @@ fn check_struct_none_repr() {
     #[derive(Debug, FlatMessage, Eq, PartialEq, Default)]
     #[flat_message_options(store_name: false)]
     struct Request {
-        #[flat_message_item(align = 4, kind = struct)]
+        #[flat_message_item(align = 4, kind = struct, validate: strict)]
         config: Option<Configuration>,
     }
     let t = Request { config: None };

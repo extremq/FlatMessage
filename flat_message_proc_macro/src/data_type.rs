@@ -54,7 +54,7 @@ impl DataType {
             proc_macro2::Span::call_site(),
         )
     }
-    pub(crate) fn new(ty: syn::Type, mut def: String, use_default_if_deserialize_fails: bool) -> Self {
+    pub(crate) fn new(ty: syn::Type, mut def: String, use_default_if_deserialize_fails: Option<bool>) -> Self {
         utils::type_name_formatter(&mut def);
         let mut option = false;
         if def.starts_with("Option<") && def.ends_with(">") {
@@ -93,7 +93,7 @@ impl DataType {
             option,
             mandatory: !option,
             default_value: None,
-            use_default_if_deserialize_fails,
+            use_default_if_deserialize_fails: use_default_if_deserialize_fails.unwrap_or(option),
         }
     }
 

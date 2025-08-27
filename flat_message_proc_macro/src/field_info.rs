@@ -11,7 +11,7 @@ pub(crate) struct FieldInfo {
     pub(crate) data_type: DataType,
 }
 impl FieldInfo {
-    pub(crate) fn new(field: &Field, use_default_if_deserialize_fails: bool) -> Result<Self, String> {
+    pub(crate) fn new(field: &Field, use_default_if_deserialize_fails: Option<bool>) -> Result<Self, String> {
         if field.ident.is_none() {
             return Err(format!(
                 "Field without any name is not supported => '{}' !",

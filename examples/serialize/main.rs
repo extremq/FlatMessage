@@ -1,9 +1,10 @@
 use flat_message::*;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, FlatMessageEnum)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, FlatMessageEnum, Default)]
 #[sealed]
 #[repr(i8)]
 enum Color {
+    #[default]
     Red = -1,
     Green = 2,
     Blue = 3,

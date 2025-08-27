@@ -135,7 +135,7 @@ mod gencode {
                     // the type is alread an Option
                     let tmp: #ty =  flat_message::#serde_trait::from_buffer(data_buffer, offset);
                     if tmp.is_none() {
-                        Some(#default_value)
+                        #default_value
                     } else {
                         tmp
                     }
