@@ -190,47 +190,6 @@ mod scenario_1_enum {
     } 
 }
 
-mod scenario_3_enum {
-    pub mod v1 {
-        use flat_message::*;
-        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
-        #[repr(u8)]
-        pub enum Color {
-            #[default]
-            Red = 1,
-            Green = 10,
-            Blue = 100,
-        }
-    
-        #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(store_name = false)]
-        pub struct TestStruct {
-            pub value: u8,
-            #[flat_message_item(repr = u8, kind = enum, validate = fallback)]
-            pub color: Color,
-        }
-    } 
-    pub mod v2 {
-        use flat_message::*;
-        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
-        #[repr(u8)]
-        pub enum Color {
-            Red = 1,
-            Green = 10,
-            Blue = 100,
-            Yellow = 200,
-        }
-    
-        #[derive(Debug, PartialEq, Eq, FlatMessage)]
-        #[flat_message_options(store_name = false)]
-        pub struct TestStruct {
-            pub value: u8,
-            #[flat_message_item(repr = u8, kind = enum)]
-            pub color: Color,
-        }
-    } 
-}
-
 mod scenario_2_enum {
     pub mod v1 {
         use flat_message::*;
@@ -272,6 +231,48 @@ mod scenario_2_enum {
         }
     } 
 }
+
+mod scenario_3_enum {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 10,
+            Blue = 100,
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = enum, validate = fallback)]
+            pub color: Color,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug)]
+        #[repr(u8)]
+        pub enum Color {
+            Red = 1,
+            Green = 10,
+            Blue = 100,
+            Yellow = 200,
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = enum)]
+            pub color: Color,
+        }
+    } 
+}
+
 
 #[test]
 fn check_serde_version_compatibility_check() {

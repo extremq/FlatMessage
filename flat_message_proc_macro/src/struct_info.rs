@@ -1127,7 +1127,7 @@ impl<'a> StructInfo<'a> {
             let mut timestamp = None;
 
             for field in fields.named.iter() {
-                let field = FieldInfo::try_from(field)?;
+                let field = FieldInfo::new(field,config.use_default_if_deserialize_fails)?;
                 if field.data_type.unique_id {
                     if unique_id.is_some() {
                         return Err(format!("Structure {} has more than one field with UniqueID data format (for field {}) !", input.ident, field.name));
