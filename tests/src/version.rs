@@ -358,6 +358,47 @@ mod scenario_1_flags {
     } 
 }
 
+mod scenario_2_flags {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B)]
+        pub struct Flags(u8);
+        impl Flags {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = flags)]
+            pub flags: Option<Flags>,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Flags(u8);
+        impl Flags {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = flags)]
+            pub flags: Option<Flags>,
+        }
+    } 
+}
 
 mod scenario_3_flags {
     pub mod v1 {
@@ -397,6 +438,48 @@ mod scenario_3_flags {
             pub value: u8,
             #[flat_message_item(repr = u8, kind = flags)]
             pub flags: Flags,
+        }
+    } 
+}
+
+mod scenario_4_flags {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B)]
+        pub struct Flags(u8);
+        impl Flags {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = flags, validate = strict)]
+            pub flags: Option<Flags>,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Flags(u8);
+        impl Flags {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(repr = u8, kind = flags)]
+            pub flags: Option<Flags>,
         }
     } 
 }
@@ -794,6 +877,20 @@ fn check_v2_to_v1_scenario_1_flags_with_c() {
 }
 
 #[test]
+fn check_v2_to_v1_scenario_2_flags_with_c() {
+    use scenario_2_flags::*;
+    // v2 to v1 for scenario 2 flags - will work - there is no flag C in v1::Flags, however using Option<T> without any specific validate attributes implies that validate = fallback and as such the field will be converted to None (the default for Option<T>)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, flags: Some(v2::Flags::C  | v2::Flags::B) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+    assert!(d_v1.flags.is_none()); // default value for Option<T>
+}
+
+#[test]
 fn check_v2_to_v1_scenario_3_flags_with_c() {
     use scenario_3_flags::*;
     // v2 to v1 for scenario 3 flags - will work - there is no flag C in v1::Flags, however the validate is set to fallback and as such the default value (in this case no flags) will be set
@@ -805,4 +902,19 @@ fn check_v2_to_v1_scenario_3_flags_with_c() {
     let d_v1 = result.unwrap();
     assert_eq!(d_v1.value, 1);
     assert!(d_v1.flags.is_empty()); // default value for flags
+}
+
+#[test]
+fn check_v2_to_v1_scenario_4_flags_with_c() {
+    use scenario_4_flags::*;
+    // v2 to v1 for scenario 4 flags - will fail becase the color field has validate = strict attribute and as such the flag C can not be converted to an valid flag combination in an older version
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, flags: Some(v2::Flags::C  | v2::Flags::B) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
 }
