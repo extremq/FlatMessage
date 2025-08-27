@@ -21,6 +21,7 @@
 - [Serialization Compatibility](chapter-3/compatibility.md)
   - [Versioning](chapter-3/versioning.md)
   - [Mandatory Fields](chapter-3/mandatory_fields.md)
+  - [Field value validation](chapter-3/field_value_validation.md)
 <!--   - [Sealed vs Non-Sealed](chapter-3/sealed_vs_non_sealed.md)
    - [Builder API](chapter-2/builder_api.md)
   - [FlatMessage Buffer](chapter-2/flat_message_buffer.md) -->
