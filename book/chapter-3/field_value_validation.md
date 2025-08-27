@@ -156,7 +156,73 @@ assert_eq!(d_v1.value, 1);
 assert!(d_v1.flags.is_empty()); // Fallback to default (empty flags)
 ```
 
-### 3. Graceful Schema Evolution
+### 3. Variant Evolution with Backward Compatibility
+
+Variants (also known as tagged unions or sum types) can evolve by adding new variants. Using `validate = fallback` allows older code to handle newer variant types gracefully by falling back to a default variant:
+
+```rust
+// Version 1
+#[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+pub enum DataVariant {
+    Byte(u8),
+    String(String),
+}
+
+impl Default for DataVariant {
+    fn default() -> Self {
+        DataVariant::Byte(0)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, FlatMessage)]
+#[flat_message_options(store_name = false)]
+pub struct TestStruct {
+    pub value: u8,
+    #[flat_message_item(kind = variant, align = 1, validate = fallback)]
+    pub data: DataVariant,
+}
+```
+
+```rust
+// Version 2 - adds DWord variant
+#[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+pub enum DataVariant {
+    Byte(u8),
+    String(String),
+    DWord(u32),  // New variant
+}
+
+#[derive(Debug, PartialEq, Eq, FlatMessage)]
+#[flat_message_options(store_name = false)]
+pub struct TestStruct {
+    pub value: u8,
+    #[flat_message_item(kind = variant, align = 1)]
+    pub data: DataVariant,
+}
+```
+
+When v1 code tries to deserialize data containing the new `DWord` variant, it will fallback to the default variant instead of failing:
+
+```rust
+// v2 serializes data with DWord variant (unknown to v1)
+let d_v2 = v2::TestStruct { 
+    value: 1, 
+    data: v2::DataVariant::DWord(12345) 
+};
+d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+
+// v1 deserializes successfully with fallback to default
+let d_v1 = v1::TestStruct::deserialize_from(&storage).unwrap();
+assert_eq!(d_v1.value, 1);
+assert_eq!(d_v1.data, v1::DataVariant::Byte(0)); // Fallback to default variant
+```
+
+**Important Notes for Variants:**
+- The variant type must implement the `Default` trait for fallback validation to work
+- Unlike enums, variants cannot use the `#[default]` attribute on individual variants due to their complex data structure
+- The `Default` implementation should return a sensible default variant with appropriate default values for its contained data
+
+### 4. Graceful Schema Evolution
 
 Fallback validation enables smooth transitions when field types change or become incompatible:
 
@@ -193,7 +259,7 @@ When `validate = fallback` is specified:
 
 ### When to Use Fallback Validation
 - Optional or non-critical fields
-- Enum/Flags fields that may evolve over time
+- Enum/Flags/Variant fields that may evolve over time
 - During data migration periods
 - When maintaining backward compatibility is important
 

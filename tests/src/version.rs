@@ -484,6 +484,156 @@ mod scenario_4_flags {
     } 
 }
 
+mod scenario_1_variant {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+        pub enum MyVariant {
+            Byte(u8),
+            String(String),
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(kind = variant, align = 1)]
+            pub variant: MyVariant,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+        pub enum MyVariant {
+            Byte(u8),
+            String(String),
+            DWord(u32),
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(kind = variant, align = 1)]
+            pub variant: MyVariant,
+        }
+    } 
+}
+
+mod scenario_2_variant {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+        pub enum MyVariant {
+            Byte(u8),
+            String(String),
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(kind = variant, align = 1)]
+            pub variant: Option<MyVariant>,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+        pub enum MyVariant {
+            Byte(u8),
+            String(String),
+            DWord(u32),
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(kind = variant, align = 1)]
+            pub variant: Option<MyVariant>,
+        }
+    } 
+}
+
+mod scenario_3_variant {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+        pub enum MyVariant {
+            Byte(u8),
+            String(String),
+        }
+
+        impl Default for MyVariant {
+            fn default() -> Self {
+                MyVariant::Byte(0)
+            }
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(kind = variant, align = 1, validate = fallback)]
+            pub variant: MyVariant,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+        pub enum MyVariant {
+            Byte(u8),
+            String(String),
+            DWord(u32),
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(kind = variant, align = 1)]
+            pub variant: MyVariant,
+        }
+    } 
+}
+
+mod scenario_4_variant {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+        pub enum MyVariant {
+            Byte(u8),
+            String(String),
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(kind = variant, align = 1, validate = strict)]
+            pub variant: Option<MyVariant>,
+        }
+    } 
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(FlatMessageVariant, Debug, PartialEq, Eq)]
+        pub enum MyVariant {
+            Byte(u8),
+            String(String),
+            DWord(u32),
+        }
+    
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        #[flat_message_options(store_name = false)]
+        pub struct TestStruct {
+            pub value: u8,
+            #[flat_message_item(kind = variant, align = 1)]
+            pub variant: Option<MyVariant>,
+        }
+    } 
+}
+
 #[test]
 fn check_serde_version_compatibility_check() {
     use scenario_1::{v1, v2, v3};
@@ -910,6 +1060,79 @@ fn check_v2_to_v1_scenario_4_flags_with_c() {
     // v2 to v1 for scenario 4 flags - will fail becase the color field has validate = strict attribute and as such the flag C can not be converted to an valid flag combination in an older version
     let mut storage = Storage::default();
     let d_v2 = v2::TestStruct { value: 1, flags: Some(v2::Flags::C  | v2::Flags::B) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_1_variant_without_new_variant() {
+    use scenario_1_variant::*;
+    // v2 to v1 for scenario 1 variant - will work because Byte and String variants are also present in v1 (and as such there is no compatibility issue)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, variant: v2::MyVariant::Byte(42) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+    assert_eq!(d_v1.variant, v1::MyVariant::Byte(42));
+}
+
+#[test]
+fn check_v2_to_v1_scenario_1_variant_with_new_variant() {
+    use scenario_1_variant::*;
+    // v2 to v1 for scenario 1 variant - will fail because v2 is set with DWord variant and DWord is not recognized in v1
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, variant: v2::MyVariant::DWord(12345) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_2_variant_with_new_variant() {
+    use scenario_2_variant::*;
+    // v2 to v1 for scenario 2 variant - will work - there is no DWord variant in v1::MyVariant, however using Option<T> without any specific validate attributes implies that validate = fallback and as such the field will be converted to None (the default for Option<T>)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, variant: Some(v2::MyVariant::DWord(12345)) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+    assert!(d_v1.variant.is_none()); // default value for Option<T>
+}
+
+#[test]
+fn check_v2_to_v1_scenario_3_variant_with_new_variant() {
+    use scenario_3_variant::*;
+    // v2 to v1 for scenario 3 variant - will work - there is no DWord variant in v1::MyVariant, however the validate is set to fallback and as such the default value will be set
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, variant: v2::MyVariant::DWord(12345) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.value, 1);
+    // For variants with fallback, the default Byte variant should be used with default value
+    assert_eq!(d_v1.variant, v1::MyVariant::Byte(0)); // 0 is the default for u8
+}
+
+#[test]
+fn check_v2_to_v1_scenario_4_variant_with_new_variant() {
+    use scenario_4_variant::*;
+    // v2 to v1 for scenario 4 variant - will fail because the variant field has validate = strict attribute and as such the DWord variant can not be converted to a valid variant in an older version
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 1, variant: Some(v2::MyVariant::DWord(12345)) };
     d_v2.serialize_to(&mut storage, Config::default()).unwrap();
     let result = v1::TestStruct::deserialize_from(&mut storage);
     assert!(result.is_err());
