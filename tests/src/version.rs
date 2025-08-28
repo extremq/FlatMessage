@@ -634,6 +634,1181 @@ mod scenario_4_variant {
     } 
 }
 
+// Scenarios for testing type changes and compatibility breaking
+mod scenario_1_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub value: u8, // Small integer type
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub value: u16, // Changed from u8 to u16 - breaking compatibility
+        }
+    }
+}
+
+mod scenario_2_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub text: String, // String type
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub text: u32, // Changed from String to u32 - breaking compatibility
+        }
+    }
+}
+
+mod scenario_3_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(mandatory = true, validate = strict)]
+            pub value: u8, // mandatory = true, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(mandatory = true, validate = strict)]
+            pub value: u16, // Changed from u8 to u16, mandatory = true, validate = strict
+        }
+    }
+}
+
+mod scenario_4_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(mandatory = true, validate = fallback, default = 42)]
+            pub value: u8, // mandatory = true, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(mandatory = true, validate = fallback, default = 42)]
+            pub value: u16, // Changed from u8 to u16, mandatory = true, validate = fallback
+        }
+    }
+}
+
+mod scenario_5_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(mandatory = false, validate = strict)]
+            pub value: u8, // mandatory = false, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(mandatory = false, validate = strict)]
+            pub value: u16, // Changed from u8 to u16, mandatory = false, validate = strict
+        }
+    }
+}
+
+mod scenario_6_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(mandatory = false, validate = fallback, default = 42)]
+            pub value: u8, // mandatory = false, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(mandatory = false, validate = fallback, default = 42)]
+            pub value: u16, // Changed from u8 to u16, mandatory = false, validate = fallback
+        }
+    }
+}
+
+mod scenario_7_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 2,
+            Blue = 3,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum)]
+            pub col: Color, // Same field name, enum type Color (default: mandatory=true, validate=strict)
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Nuances {
+            #[default]
+            Light = 1,
+            Medium = 2,
+            Dark = 3,
+            VeryDark = 4,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum)]
+            pub col: Nuances, // Same field name, enum type Nuances
+        }
+    }
+}
+
+mod scenario_8_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 2,
+            Blue = 3,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = true, validate = strict)]
+            pub col: Color, // mandatory = true, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Nuances {
+            #[default]
+            Light = 1,
+            Medium = 2,
+            Dark = 3,
+            VeryDark = 4,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = true, validate = strict)]
+            pub col: Nuances, // Same field name, enum type Nuances
+        }
+    }
+}
+
+mod scenario_9_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 2,
+            Blue = 3,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = true, validate = fallback)]
+            pub col: Color, // mandatory = true, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Nuances {
+            #[default]
+            Light = 1,
+            Medium = 2,
+            Dark = 3,
+            VeryDark = 4,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = true, validate = fallback)]
+            pub col: Nuances, // Same field name, enum type Nuances
+        }
+    }
+}
+
+mod scenario_10_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 2,
+            Blue = 3,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = false, validate = strict)]
+            pub col: Color, // mandatory = false, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Nuances {
+            #[default]
+            Light = 1,
+            Medium = 2,
+            Dark = 3,
+            VeryDark = 4,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = false, validate = strict)]
+            pub col: Nuances, // Same field name, enum type Nuances
+        }
+    }
+}
+
+mod scenario_11_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 2,
+            Blue = 3,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = false, validate = fallback)]
+            pub col: Color, // mandatory = false, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Nuances {
+            #[default]
+            Light = 1,
+            Medium = 2,
+            Dark = 3,
+            VeryDark = 4,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = false, validate = fallback)]
+            pub col: Nuances, // Same field name, enum type Nuances
+        }
+    }
+}
+
+// Scenarios for testing enum type changes with different representations (u8 vs u16)
+// In these cases, mandatory attribute is relevant while validate is irrelevant
+mod scenario_12_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 2,
+            Blue = 3,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = true, validate = strict)]
+            pub col: Color, // u8 representation, mandatory = true, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u16)]
+        pub enum Nuances {
+            #[default]
+            Light = 1,
+            Medium = 2,
+            Dark = 3,
+            VeryDark = 4,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = enum, mandatory = true, validate = strict)]
+            pub col: Nuances, // u16 representation, same field name
+        }
+    }
+}
+
+mod scenario_13_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 2,
+            Blue = 3,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = true, validate = fallback)]
+            pub col: Color, // u8 representation, mandatory = true, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u16)]
+        pub enum Nuances {
+            #[default]
+            Light = 1,
+            Medium = 2,
+            Dark = 3,
+            VeryDark = 4,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = enum, mandatory = true, validate = fallback)]
+            pub col: Nuances, // u16 representation, same field name
+        }
+    }
+}
+
+mod scenario_14_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 2,
+            Blue = 3,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = false, validate = strict)]
+            pub col: Color, // u8 representation, mandatory = false, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u16)]
+        pub enum Nuances {
+            #[default]
+            Light = 1,
+            Medium = 2,
+            Dark = 3,
+            VeryDark = 4,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = enum, mandatory = false, validate = strict)]
+            pub col: Nuances, // u16 representation, same field name
+        }
+    }
+}
+
+mod scenario_15_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u8)]
+        pub enum Color {
+            #[default]
+            Red = 1,
+            Green = 2,
+            Blue = 3,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = enum, mandatory = false, validate = fallback)]
+            pub col: Color, // u8 representation, mandatory = false, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageEnum, PartialEq, Eq, Debug, Default)]
+        #[repr(u16)]
+        pub enum Nuances {
+            #[default]
+            Light = 1,
+            Medium = 2,
+            Dark = 3,
+            VeryDark = 4,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = enum, mandatory = false, validate = fallback)]
+            pub col: Nuances, // u16 representation, same field name
+        }
+    }
+}
+
+// Scenarios for testing flag type changes with same representation (u8 vs u8)
+// In these cases, validate attribute is relevant while mandatory is irrelevant
+mod scenario_16_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Permissions(u8);
+        impl Permissions {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags)]
+            pub flags: Permissions, // u8 representation (default: mandatory=true, validate=strict)
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(READ,WRITE,EXECUTE)]
+        pub struct Rights(u8);
+        impl Rights {
+            add_flag!(READ = 1);
+            add_flag!(WRITE = 2);
+            add_flag!(EXECUTE = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags)]
+            pub flags: Rights, // Same field name, different flags type
+        }
+    }
+}
+
+mod scenario_17_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Permissions(u8);
+        impl Permissions {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = true, validate = strict)]
+            pub flags: Permissions, // mandatory = true, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(READ,WRITE,EXECUTE)]
+        pub struct Rights(u8);
+        impl Rights {
+            add_flag!(READ = 1);
+            add_flag!(WRITE = 2);
+            add_flag!(EXECUTE = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = true, validate = strict)]
+            pub flags: Rights, // Same field name, different flags type
+        }
+    }
+}
+
+mod scenario_18_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Permissions(u8);
+        impl Permissions {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = true, validate = fallback)]
+            pub flags: Permissions, // mandatory = true, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(READ,WRITE,EXECUTE)]
+        pub struct Rights(u8);
+        impl Rights {
+            add_flag!(READ = 1);
+            add_flag!(WRITE = 2);
+            add_flag!(EXECUTE = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = true, validate = fallback)]
+            pub flags: Rights, // Same field name, different flags type
+        }
+    }
+}
+
+mod scenario_19_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Permissions(u8);
+        impl Permissions {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = false, validate = strict)]
+            pub flags: Permissions, // mandatory = false, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(READ,WRITE,EXECUTE)]
+        pub struct Rights(u8);
+        impl Rights {
+            add_flag!(READ = 1);
+            add_flag!(WRITE = 2);
+            add_flag!(EXECUTE = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = false, validate = strict)]
+            pub flags: Rights, // Same field name, different flags type
+        }
+    }
+}
+
+mod scenario_20_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Permissions(u8);
+        impl Permissions {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = false, validate = fallback)]
+            pub flags: Permissions, // mandatory = false, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(READ,WRITE,EXECUTE)]
+        pub struct Rights(u8);
+        impl Rights {
+            add_flag!(READ = 1);
+            add_flag!(WRITE = 2);
+            add_flag!(EXECUTE = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = false, validate = fallback)]
+            pub flags: Rights, // Same field name, different flags type
+        }
+    }
+}
+
+// Scenarios for testing flag type changes with different representations (u8 vs u16)
+// In these cases, mandatory attribute is relevant while validate is irrelevant
+mod scenario_21_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Permissions(u8);
+        impl Permissions {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = true, validate = strict)]
+            pub flags: Permissions, // u8 representation, mandatory = true, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(READ,WRITE,EXECUTE)]
+        pub struct Rights(u16);
+        impl Rights {
+            add_flag!(READ = 1);
+            add_flag!(WRITE = 2);
+            add_flag!(EXECUTE = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = flags, mandatory = true, validate = strict)]
+            pub flags: Rights, // u16 representation, same field name
+        }
+    }
+}
+
+mod scenario_22_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Permissions(u8);
+        impl Permissions {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = true, validate = fallback)]
+            pub flags: Permissions, // u8 representation, mandatory = true, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(READ,WRITE,EXECUTE)]
+        pub struct Rights(u16);
+        impl Rights {
+            add_flag!(READ = 1);
+            add_flag!(WRITE = 2);
+            add_flag!(EXECUTE = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = flags, mandatory = true, validate = fallback)]
+            pub flags: Rights, // u16 representation, same field name
+        }
+    }
+}
+
+mod scenario_23_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Permissions(u8);
+        impl Permissions {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = false, validate = strict)]
+            pub flags: Permissions, // u8 representation, mandatory = false, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(READ,WRITE,EXECUTE)]
+        pub struct Rights(u16);
+        impl Rights {
+            add_flag!(READ = 1);
+            add_flag!(WRITE = 2);
+            add_flag!(EXECUTE = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = flags, mandatory = false, validate = strict)]
+            pub flags: Rights, // u16 representation, same field name
+        }
+    }
+}
+
+mod scenario_24_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(A,B,C)]
+        pub struct Permissions(u8);
+        impl Permissions {
+            add_flag!(A = 1);
+            add_flag!(B = 2);
+            add_flag!(C = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = flags, mandatory = false, validate = fallback)]
+            pub flags: Permissions, // u8 representation, mandatory = false, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Copy, Clone, FlatMessageFlags, PartialEq, Eq, Debug, Default)]
+        #[repr(transparent)]
+        #[flags(READ,WRITE,EXECUTE)]
+        pub struct Rights(u16);
+        impl Rights {
+            add_flag!(READ = 1);
+            add_flag!(WRITE = 2);
+            add_flag!(EXECUTE = 4);
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = flags, mandatory = false, validate = fallback)]
+            pub flags: Rights, // u16 representation, same field name
+        }
+    }
+}
+
+// Scenarios for testing variant type changes with same representation (u8 vs u8)
+// In these cases, validate attribute is relevant while mandatory is irrelevant
+mod scenario_25_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Status {
+            Active(u8),
+            Pending(String),
+            #[default] Cancelled,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1)]
+            pub state: Status, // u8 representation (default: mandatory=true, validate=strict)
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Mode {
+            Running(u8),
+            Waiting(String),
+            #[default] Stopped,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1)]
+            pub state: Mode, // Same field name, different variant type
+        }
+    }
+}
+
+mod scenario_26_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Status {
+            Active(u8),
+            Pending(String),
+            #[default] Cancelled,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = true, validate = strict)]
+            pub state: Status, // mandatory = true, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Mode {
+            Running(u8),
+            Waiting(String),
+            #[default] Stopped,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = true, validate = strict)]
+            pub state: Mode, // Same field name, different variant type
+        }
+    }
+}
+
+mod scenario_27_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Status {
+            Active(u8),
+            Pending(String),
+            #[default] Cancelled,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = true, validate = fallback)]
+            pub state: Status, // mandatory = true, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Mode {
+            Running(u8),
+            Waiting(String),
+            #[default] Stopped,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = true, validate = fallback)]
+            pub state: Mode, // Same field name, different variant type
+        }
+    }
+}
+
+mod scenario_28_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Status {
+            Active(u8),
+            Pending(String),
+            #[default] Cancelled,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = false, validate = strict)]
+            pub state: Status, // mandatory = false, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Mode {
+            Running(u8),
+            Waiting(String),
+            #[default] Stopped,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = false, validate = strict)]
+            pub state: Mode, // Same field name, different variant type
+        }
+    }
+}
+
+mod scenario_29_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Status {
+            Active(u8),
+            Pending(String),
+            #[default] Cancelled,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = false, validate = fallback)]
+            pub state: Status, // mandatory = false, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Mode {
+            Running(u8),
+            Waiting(String),
+            #[default] Stopped,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = false, validate = fallback)]
+            pub state: Mode, // Same field name, different variant type
+        }
+    }
+}
+
+// Scenarios for testing variant type changes with different representations (u8 vs u16)
+// In these cases, mandatory attribute is relevant while validate is irrelevant
+mod scenario_30_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Status {
+            Active(u8),
+            Pending(String),
+            #[default] Cancelled,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = true, validate = strict)]
+            pub state: Status, // u8 representation, mandatory = true, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Mode {
+            Running(Vec<u16>),
+            Waiting(String),
+            #[default] Stopped,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = variant, align = 2, mandatory = true, validate = strict)]
+            pub state: Mode, // u16 representation, same field name
+        }
+    }
+}
+
+mod scenario_31_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Status {
+            Active(u8),
+            Pending(String),
+            #[default] Cancelled,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = true, validate = fallback)]
+            pub state: Status, // u8 representation, mandatory = true, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Mode {
+            Running(Vec<u16>),
+            Waiting(String),
+            #[default] Stopped,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = variant, align = 2, mandatory = true, validate = fallback)]
+            pub state: Mode, // u16 representation, same field name
+        }
+    }
+}
+
+mod scenario_32_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Status {
+            Active(u8),
+            Pending(String),
+            #[default] Cancelled,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = false, validate = strict)]
+            pub state: Status, // u8 representation, mandatory = false, validate = strict
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Mode {
+            Running(Vec<u16>),
+            Waiting(String),
+            #[default] Stopped,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = variant, align = 2, mandatory = false, validate = strict)]
+            pub state: Mode, // u16 representation, same field name
+        }
+    }
+}
+
+mod scenario_33_change_type {
+    pub mod v1 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Status {
+            Active(u8),
+            Pending(String),
+            #[default] Cancelled,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u8, kind = variant, align = 1, mandatory = false, validate = fallback)]
+            pub state: Status, // u8 representation, mandatory = false, validate = fallback
+        }
+    }
+    pub mod v2 {
+        use flat_message::*;
+        #[derive(Debug, PartialEq, Eq, Default, FlatMessageVariant)]
+        pub enum Mode {
+            Running(Vec<u16>),
+            Waiting(String),
+            #[default] Stopped,
+        }
+
+        #[derive(Debug, PartialEq, Eq, FlatMessage)]
+        pub struct TestStruct {
+            pub id: u8,
+            #[flat_message_item(repr = u16, kind = variant, align = 2, mandatory = false, validate = fallback)]
+            pub state: Mode, // u16 representation, same field name
+        }
+    }
+}
+
+
+
 #[test]
 fn check_serde_version_compatibility_check() {
     use scenario_1::{v1, v2, v3};
@@ -1140,4 +2315,783 @@ fn check_v2_to_v1_scenario_4_variant_with_new_variant() {
         matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
         true
     );
+}
+
+// Test methods for type change scenarios
+#[test]
+fn check_v1_to_v2_scenario_1_change_type() {
+    use scenario_1_change_type::*;
+    // v1 to v2 for scenario 1 - Changing field type from u8 to u16 breaks compatibility
+    // FlatMessage identifies fields by type-specific hashes, so changing types causes FieldIsMissing error
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { value: 255 }; // Max u8 value
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    
+    // Type changes cause the field to be treated as missing because the field identifier includes type info
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_1_change_type() {
+    use scenario_1_change_type::*;
+    // v2 to v1 for scenario 1 - Type change from u16 to u8 breaks compatibility
+    // FlatMessage identifies fields by type-specific hashes, so changing types causes FieldIsMissing error
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { value: 300 }; // Value that doesn't fit in u8
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_2_change_type() {
+    use scenario_2_change_type::*;
+    // v1 to v2 for scenario 2 - Type change from String to u32 breaks compatibility
+    // FlatMessage identifies fields by type-specific hashes, so changing types causes FieldIsMissing error
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { text: "Hello, World!".to_string() };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_2_change_type() {
+    use scenario_2_change_type::*;
+    // v2 to v1 for scenario 2 - Type change from u32 to String breaks compatibility
+    // FlatMessage identifies fields by type-specific hashes, so changing types causes FieldIsMissing error
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { text: 42 };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_3_change_type() {
+    use scenario_3_change_type::*;
+    // v1 to v2 for scenario 3 - mandatory = true, validate = strict
+    // Since the field is mandatory and validation is strict, should fail when type changes
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, value: 255 };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_3_change_type() {
+    use scenario_3_change_type::*;
+    // v2 to v1 for scenario 3 - mandatory = true, validate = strict
+    // Since the field is mandatory and validation is strict, should fail when type changes
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, value: 300 };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_4_change_type() {
+    use scenario_4_change_type::*;
+    // v1 to v2 for scenario 4 - mandatory = true, validate = fallback
+    // Since the field is mandatory, it MUST be present with the same name and type
+    // When type changes, the field is effectively missing, so it should fail regardless of validate = fallback
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, value: 255 };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    // Should fail because mandatory field with correct type is missing
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_4_change_type() {
+    use scenario_4_change_type::*;
+    // v2 to v1 for scenario 4 - mandatory = true, validate = fallback
+    // Since the field is mandatory, it MUST be present with the same name and type
+    // When type changes, the field is effectively missing, so it should fail regardless of validate = fallback
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, value: 300 };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    // Should fail because mandatory field with correct type is missing
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_5_change_type() {
+    use scenario_5_change_type::*;
+    // v1 to v2 for scenario 5 - mandatory = false, validate = strict
+    // Since mandatory = false, when the field with correct type is missing due to type change,
+    // the default value for the type will be used (validate setting doesn't matter for missing fields)
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, value: 100 };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    // Should succeed with default value since mandatory = false
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert_eq!(d_v2.value, 0); // Default value for u16 (since no explicit default specified)
+}
+
+#[test]
+fn check_v2_to_v1_scenario_5_change_type() {
+    use scenario_5_change_type::*;
+    // v2 to v1 for scenario 5 - mandatory = false, validate = strict
+    // Since mandatory = false, when the field with correct type is missing due to type change,
+    // the default value for the type will be used (validate setting doesn't matter for missing fields)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, value: 500 };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    // Should succeed with default value since mandatory = false
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert_eq!(d_v1.value, 0); // Default value for u8 (since no explicit default specified)
+}
+
+#[test]
+fn check_v1_to_v2_scenario_6_change_type() {
+    use scenario_6_change_type::*;
+    // v1 to v2 for scenario 6 - mandatory = false, validate = fallback
+    // Since the field is not mandatory and validation is fallback, should use default value when type changes
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, value: 255 };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    // Should succeed with fallback to default value (42)
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert_eq!(d_v2.value, 42); // Falls back to default due to type mismatch
+}
+
+#[test]
+fn check_v2_to_v1_scenario_6_change_type() {
+    use scenario_6_change_type::*;
+    // v2 to v1 for scenario 6 - mandatory = false, validate = fallback
+    // Since the field is not mandatory and validation is fallback, should use default value when type changes
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, value: 300 };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    // Should succeed with fallback to default value (42)
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert_eq!(d_v1.value, 42); // Falls back to default due to type mismatch
+}
+
+#[test]
+fn check_v1_to_v2_scenario_7_change_type() {
+    use scenario_7_change_type::*;
+    // v1 to v2 for scenario 7 - Enum type change from Color to Nuances
+    // Since both enums use same representation (u8) and same field name (col), the field is found
+    // However, enum type validation fails because Color != Nuances (default: validate = strict)
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, col: v1::Color::Green };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_7_change_type() {
+    use scenario_7_change_type::*;
+    // v2 to v1 for scenario 7 - Enum type change from Nuances to Color
+    // Since both enums use same representation (u8) and same field name (col), the field is found
+    // However, enum type validation fails because Nuances != Color (default: validate = strict)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, col: v2::Nuances::Medium };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_7_change_type_with_compatible_values() {
+    use scenario_7_change_type::*;
+    // v1 to v2 for scenario 7 - Test with values that would be compatible (Red=1, Light=1)
+    // Field is found due to same name and representation, but enum type validation fails
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, col: v1::Color::Red }; // Red = 1
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    // Should fail due to enum type mismatch despite compatible underlying values
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_8_change_type() {
+    use scenario_8_change_type::*;
+    // v1 to v2 for scenario 8 - Enum type change with mandatory = true, validate = strict
+    // Field is found (same name, same representation), but enum type validation fails with strict validation
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, col: v1::Color::Green };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_8_change_type() {
+    use scenario_8_change_type::*;
+    // v2 to v1 for scenario 8 - Enum type change with mandatory = true, validate = strict
+    // Field is found (same name, same representation), but enum type validation fails with strict validation
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, col: v2::Nuances::Medium };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_9_change_type() {
+    use scenario_9_change_type::*;
+    // v1 to v2 for scenario 9 - Enum type change with mandatory = true, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default enum value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, col: v1::Color::Blue };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert_eq!(d_v2.col, v2::Nuances::Light); // Falls back to default enum value
+}
+
+#[test]
+fn check_v2_to_v1_scenario_9_change_type() {
+    use scenario_9_change_type::*;
+    // v2 to v1 for scenario 9 - Enum type change with mandatory = true, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default enum value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, col: v2::Nuances::VeryDark };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert_eq!(d_v1.col, v1::Color::Red); // Falls back to default enum value
+}
+
+#[test]
+fn check_v1_to_v2_scenario_10_change_type() {
+    use scenario_10_change_type::*;
+    // v1 to v2 for scenario 10 - Enum type change with mandatory = false, validate = strict
+    // Field is found (same name, same representation), but enum type validation fails with strict validation
+    // Since validation is strict, should fail regardless of mandatory setting
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, col: v1::Color::Green };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_10_change_type() {
+    use scenario_10_change_type::*;
+    // v2 to v1 for scenario 10 - Enum type change with mandatory = false, validate = strict
+    // Field is found (same name, same representation), but enum type validation fails with strict validation
+    // Since validation is strict, should fail regardless of mandatory setting
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, col: v2::Nuances::Dark };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_11_change_type() {
+    use scenario_11_change_type::*;
+    // v1 to v2 for scenario 11 - Enum type change with mandatory = false, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default enum value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, col: v1::Color::Blue };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert_eq!(d_v2.col, v2::Nuances::Light); // Falls back to default enum value
+}
+
+#[test]
+fn check_v2_to_v1_scenario_11_change_type() {
+    use scenario_11_change_type::*;
+    // v2 to v1 for scenario 11 - Enum type change with mandatory = false, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default enum value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, col: v2::Nuances::VeryDark };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert_eq!(d_v1.col, v1::Color::Red); // Falls back to default enum value
+}
+
+// Test methods for enum type changes with different representations (u8 vs u16)
+#[test]
+fn check_v1_to_v2_scenario_12_change_type() {
+    use scenario_12_change_type::*;
+    // v1 to v2 for scenario 12 - Enum representation change from u8 to u16 with mandatory = true, validate = strict
+    // Different representations (u8 vs u16) mean the field is not found, so mandatory = true causes failure
+    // validate setting is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, col: v1::Color::Green };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_12_change_type() {
+    use scenario_12_change_type::*;
+    // v2 to v1 for scenario 12 - Enum representation change from u16 to u8 with mandatory = true, validate = strict
+    // Different representations (u16 vs u8) mean the field is not found, so mandatory = true causes failure
+    // validate setting is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, col: v2::Nuances::Medium };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_13_change_type() {
+    use scenario_13_change_type::*;
+    // v1 to v2 for scenario 13 - Enum representation change from u8 to u16 with mandatory = true, validate = fallback
+    // Different representations mean the field is not found, so mandatory = true causes failure
+    // validate = fallback is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, col: v1::Color::Blue };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_13_change_type() {
+    use scenario_13_change_type::*;
+    // v2 to v1 for scenario 13 - Enum representation change from u16 to u8 with mandatory = true, validate = fallback
+    // Different representations mean the field is not found, so mandatory = true causes failure
+    // validate = fallback is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, col: v2::Nuances::VeryDark };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FieldIsMissing(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_14_change_type() {
+    use scenario_14_change_type::*;
+    // v1 to v2 for scenario 14 - Enum representation change from u8 to u16 with mandatory = false, validate = strict
+    // Different representations mean the field is not found, but mandatory = false allows default value
+    // validate = strict is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, col: v1::Color::Green };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert_eq!(d_v2.col, v2::Nuances::Light); // Default enum value since mandatory = false
+}
+
+#[test]
+fn check_v2_to_v1_scenario_14_change_type() {
+    use scenario_14_change_type::*;
+    // v2 to v1 for scenario 14 - Enum representation change from u16 to u8 with mandatory = false, validate = strict
+    // Different representations mean the field is not found, but mandatory = false allows default value
+    // validate = strict is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, col: v2::Nuances::Dark };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert_eq!(d_v1.col, v1::Color::Red); // Default enum value since mandatory = false
+}
+
+#[test]
+fn check_v1_to_v2_scenario_15_change_type() {
+    use scenario_15_change_type::*;
+    // v1 to v2 for scenario 15 - Enum representation change from u8 to u16 with mandatory = false, validate = fallback
+    // Different representations mean the field is not found, but mandatory = false allows default value
+    // validate = fallback is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, col: v1::Color::Blue };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert_eq!(d_v2.col, v2::Nuances::Light); // Default enum value since mandatory = false
+}
+
+#[test]
+fn check_v2_to_v1_scenario_15_change_type() {
+    use scenario_15_change_type::*;
+    // v2 to v1 for scenario 15 - Enum representation change from u16 to u8 with mandatory = false, validate = fallback
+    // Different representations mean the field is not found, but mandatory = false allows default value
+    // validate = fallback is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, col: v2::Nuances::VeryDark };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert_eq!(d_v1.col, v1::Color::Red); // Default enum value since mandatory = false
+}
+
+// Test methods for flag type changes with same representation (u8 vs u8)
+#[test]
+fn check_v1_to_v2_scenario_16_change_type() {
+    use scenario_16_change_type::*;
+    // v1 to v2 for scenario 16 - Flag type change from Permissions to Rights
+    // Since both flags use same representation (u8) and same field name (flags), the field is found
+    // However, flag type validation fails because Permissions != Rights (default: validate = strict)
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, flags: v1::Permissions::A | v1::Permissions::B };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_16_change_type() {
+    use scenario_16_change_type::*;
+    // v2 to v1 for scenario 16 - Flag type change from Rights to Permissions
+    // Since both flags use same representation (u8) and same field name (flags), the field is found
+    // However, flag type validation fails because Rights != Permissions (default: validate = strict)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, flags: v2::Rights::READ | v2::Rights::WRITE };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_18_change_type() {
+    use scenario_18_change_type::*;
+    // v1 to v2 for scenario 18 - Flag type change with mandatory = true, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default flag value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, flags: v1::Permissions::B | v1::Permissions::C };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert!(d_v2.flags.is_empty()); // Falls back to default (empty) flag value
+}
+
+#[test]
+fn check_v2_to_v1_scenario_18_change_type() {
+    use scenario_18_change_type::*;
+    // v2 to v1 for scenario 18 - Flag type change with mandatory = true, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default flag value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, flags: v2::Rights::WRITE | v2::Rights::EXECUTE };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert!(d_v1.flags.is_empty()); // Falls back to default (empty) flag value
+}
+
+#[test]
+fn check_v1_to_v2_scenario_20_change_type() {
+    use scenario_20_change_type::*;
+    // v1 to v2 for scenario 20 - Flag type change with mandatory = false, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default flag value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, flags: v1::Permissions::B | v1::Permissions::C };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert!(d_v2.flags.is_empty()); // Falls back to default (empty) flag value
+}
+
+#[test]
+fn check_v2_to_v1_scenario_20_change_type() {
+    use scenario_20_change_type::*;
+    // v2 to v1 for scenario 20 - Flag type change with mandatory = false, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default flag value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, flags: v2::Rights::WRITE | v2::Rights::EXECUTE };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert!(d_v1.flags.is_empty()); // Falls back to default (empty) flag value
+}
+
+// Test methods for flag type changes with different representations (u8 vs u16)
+#[test]
+fn check_v1_to_v2_scenario_23_change_type() {
+    use scenario_23_change_type::*;
+    // v1 to v2 for scenario 23 - Flag representation change from u8 to u16 with mandatory = false, validate = strict
+    // Different representations mean the field is not found, but mandatory = false allows default value
+    // validate = strict is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, flags: v1::Permissions::B | v1::Permissions::C };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert!(d_v2.flags.is_empty()); // Default (empty) flag value since mandatory = false
+}
+
+#[test]
+fn check_v2_to_v1_scenario_24_change_type() {
+    use scenario_24_change_type::*;
+    // v2 to v1 for scenario 24 - Flag representation change from u16 to u8 with mandatory = false, validate = fallback
+    // Different representations mean the field is not found, but mandatory = false allows default value
+    // validate = fallback is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, flags: v2::Rights::READ | v2::Rights::WRITE };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert!(d_v1.flags.is_empty()); // Default (empty) flag value since mandatory = false
+}
+
+// Test methods for variant type changes with same representation (u8 vs u8)
+#[test]
+fn check_v1_to_v2_scenario_25_change_type() {
+    use scenario_25_change_type::*;
+    // v1 to v2 for scenario 25 - Variant type change from Status to Mode
+    // Since both variants use same representation (u8) and same field name (state), the field is found
+    // However, variant type validation fails because Status != Mode (default: validate = strict)
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, state: v1::Status::Active(42) };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v2_to_v1_scenario_25_change_type() {
+    use scenario_25_change_type::*;
+    // v2 to v1 for scenario 25 - Variant type change from Mode to Status
+    // Since both variants use same representation (u8) and same field name (state), the field is found
+    // However, variant type validation fails because Mode != Status (default: validate = strict)
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, state: v2::Mode::Running(42) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_err());
+    assert_eq!(
+        matches!(result.err(), Some(flat_message::Error::FailToDeserialize(_))),
+        true
+    );
+}
+
+#[test]
+fn check_v1_to_v2_scenario_27_change_type() {
+    use scenario_27_change_type::*;
+    // v1 to v2 for scenario 27 - Variant type change with mandatory = true, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default variant value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, state: v1::Status::Pending("test".to_string()) };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert_eq!(d_v2.state, v2::Mode::Stopped); // Falls back to default variant value
+}
+
+#[test]
+fn check_v2_to_v1_scenario_27_change_type() {
+    use scenario_27_change_type::*;
+    // v2 to v1 for scenario 27 - Variant type change with mandatory = true, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default variant value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, state: v2::Mode::Waiting("test".to_string()) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert_eq!(d_v1.state, v1::Status::Cancelled); // Falls back to default variant value
+}
+
+#[test]
+fn check_v1_to_v2_scenario_29_change_type() {
+    use scenario_29_change_type::*;
+    // v1 to v2 for scenario 29 - Variant type change with mandatory = false, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default variant value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, state: v1::Status::Cancelled };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert_eq!(d_v2.state, v2::Mode::Stopped); // Falls back to default variant value
+}
+
+#[test]
+fn check_v2_to_v1_scenario_29_change_type() {
+    use scenario_29_change_type::*;
+    // v2 to v1 for scenario 29 - Variant type change with mandatory = false, validate = fallback
+    // Field is found (same name, same representation), validation fails but fallback is allowed
+    // Should succeed with default variant value since validate = fallback
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, state: v2::Mode::Stopped };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert_eq!(d_v1.state, v1::Status::Cancelled); // Falls back to default variant value
+}
+
+// Test methods for variant type changes with different representations (u8 vs u16)
+#[test]
+fn check_v1_to_v2_scenario_32_change_type() {
+    use scenario_32_change_type::*;
+    // v1 to v2 for scenario 32 - Variant representation change from u8 to u16 with mandatory = false, validate = strict
+    // Different representations mean the field is not found, but mandatory = false allows default value
+    // validate = strict is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v1 = v1::TestStruct { id: 1, state: v1::Status::Active(42) };
+    d_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v2::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v2 = result.unwrap();
+    assert_eq!(d_v2.id, 1);
+    assert_eq!(d_v2.state, v2::Mode::Stopped); // Default variant value since mandatory = false
+}
+
+#[test]
+fn check_v2_to_v1_scenario_33_change_type() {
+    use scenario_33_change_type::*;
+    // v2 to v1 for scenario 33 - Variant representation change from u16 to u8 with mandatory = false, validate = fallback
+    // Different representations mean the field is not found, but mandatory = false allows default value
+    // validate = fallback is irrelevant since field identification fails
+    let mut storage = Storage::default();
+    let d_v2 = v2::TestStruct { id: 1, state: v2::Mode::Running(vec![1, 2, 3]) };
+    d_v2.serialize_to(&mut storage, Config::default()).unwrap();
+    let result = v1::TestStruct::deserialize_from(&mut storage);
+    assert!(result.is_ok());
+    let d_v1 = result.unwrap();
+    assert_eq!(d_v1.id, 1);
+    assert_eq!(d_v1.state, v1::Status::Cancelled); // Default variant value since mandatory = false
 }
