@@ -130,7 +130,7 @@ struct TestTimes {
 impl TestTimes {
     fn to_string(&self) -> String {
         format!(
-            "{:.2} [{:.2} - {:.2}]",
+            "{:>6.2} [{:>6.2} - {:>6.2}]",
             self.median.as_secs_f64() * 1000.0,
             self.min.as_secs_f64() * 1000.0,
             self.max.as_secs_f64() * 1000.0
@@ -354,9 +354,9 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
     b!(Postcard, x, se_test_postcard, de_test_postcard, true);
 }
 
-fn print_results_ascii_table(r: &[[&dyn Display; 8]], colums: &[(&str, Align)]) {
+fn print_results_ascii_table(r: &[[&dyn Display; 7]], colums: &[(&str, Align)]) {
     let mut ascii_table: AsciiTable = AsciiTable::default();
-    ascii_table.set_max_width(150);
+    ascii_table.set_max_width(200);
 
     for (i, (name, align)) in colums.iter().enumerate() {
         ascii_table.column(i).set_header(*name).set_align(*align);
@@ -365,7 +365,7 @@ fn print_results_ascii_table(r: &[[&dyn Display; 8]], colums: &[(&str, Align)]) 
     ascii_table.print(r);
 }
 
-fn print_results_markdown(r: &[[&dyn Display; 8]], colums: &[(&str, Align)]) {
+fn print_results_markdown(r: &[[&dyn Display; 7]], colums: &[(&str, Align)]) {
     let output = &mut String::with_capacity(4096);
 
     for i in colums {
@@ -410,17 +410,16 @@ fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos
         ("schema", Align::Center),
         ("name", Align::Left),
         ("size (b)", Align::Right),
-        ("min size (b)", Align::Right),
         ("se time (ms)", Align::Right),
         ("de time (ms)", Align::Right),
         ("se + de time (ms)", Align::Right),
     ];
 
-    let mut r: Vec<[&dyn Display; 8]> = Vec::new();
+    let mut r: Vec<[&dyn Display; 7]> = Vec::new();
     let mut last = None;
 
-    let dashes: [&dyn Display; 8] = [
-        &"---", &"---", &"---", &"---", &"---", &"---", &"---", &"---",
+    let dashes: [&dyn Display; 7] = [
+        &"---", &"---", &"---", &"---", &"---", &"---", &"---",
     ];
 
     let one_algo = if all_algos { false } else { algos.len() == 1 };
@@ -438,7 +437,6 @@ fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos
             ch,
             i.name.display(),
             &i.size,
-            &i.min_size,
             &i.time_se_ms,
             &i.time_de_ms,
             &i.time_se_de_ms,
