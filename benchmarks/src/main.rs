@@ -4,6 +4,7 @@ mod structures;
 use crate::get_size_min::GetSize;
 use ascii_table::{Align, AsciiTable};
 use clap::Parser;
+use clap::Subcommand;
 use flat_message::{FlatMessage, FlatMessageOwned, Storage};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -20,7 +21,7 @@ use std::{
 struct TestData {
     vec: Vec<u8>,
     storage: Storage,
-    iterations: u32,
+    times: u32,
 }
 
 // ----------------------------------------------------------------------------
@@ -121,6 +122,22 @@ fn de_test_postcard<S: DeserializeOwned>(data: &TestData) -> S {
 
 // ----------------------------------------------------------------------------
 
+struct TestTimes {
+    min: Duration,
+    max: Duration,
+    median: Duration,
+}
+impl TestTimes {
+    fn to_string(&self) -> String {
+        format!(
+            "{:.2} [{:.2} - {:.2}]",
+            self.median.as_secs_f64() * 1000.0,
+            self.min.as_secs_f64() * 1000.0,
+            self.max.as_secs_f64() * 1000.0
+        )
+    }
+}
+
 struct Result {
     name: AlgoKind,
     top_test_name: TestKind,
@@ -128,13 +145,31 @@ struct Result {
     needs_schema: bool,
     min_size: String,
     //
-    time_se: Duration,
-    time_de: Duration,
-    time_se_de: Duration,
+    times_se: Vec<Duration>,
+    times_de: Vec<Duration>,
+    times_se_de: Vec<Duration>,
     //
     time_se_ms: String,
     time_de_ms: String,
     time_se_de_ms: String,
+    //
+    compare_key: u128,
+}
+
+fn compute_test_times(times: &mut Vec<Duration>) -> TestTimes {
+    // sort the times (it is assume that at least one time is present)
+    times.sort();
+    let min = times[0];
+    let max = times[times.len() - 1];
+    // for odd number of times, the median is the middle one
+    // for even number of times, the median is the average of the two middle ones
+    let middle = times.len() / 2;
+    let median = if times.len() % 2 == 0 {
+        (times[middle] + times[middle - 1]) / 2
+    } else {
+        times[middle]
+    };
+    TestTimes { min, max, median }
 }
 
 fn se_bench<T, FS: Fn(&T, &mut TestData) + Clone>(
@@ -143,7 +178,7 @@ fn se_bench<T, FS: Fn(&T, &mut TestData) + Clone>(
     data: &mut TestData,
 ) -> Duration {
     let start = Instant::now();
-    for _ in 0..data.iterations {
+    for _ in 0..data.times {
         data.vec.clear();
         data.storage.clear();
         black_box(serialize(x, data));
@@ -155,7 +190,7 @@ fn se_bench<T, FS: Fn(&T, &mut TestData) + Clone>(
 
 fn de_bench<T, FD: Fn(&TestData) -> T>(deserialize: FD, data: &TestData) -> Duration {
     let start = Instant::now();
-    for _ in 0..data.iterations {
+    for _ in 0..data.times {
         black_box(deserialize(black_box(data)));
     }
     start.elapsed()
@@ -168,7 +203,7 @@ fn se_de_bench<T, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T + Cl
     data: &mut TestData,
 ) -> Duration {
     let start = Instant::now();
-    for _ in 0..data.iterations {
+    for _ in 0..data.times {
         data.vec.clear();
         data.storage.clear();
         black_box(serialize(x, data));
@@ -196,27 +231,38 @@ fn bench<T: GetSize, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T +
     let mut data = TestData {
         vec: Vec::default(),
         storage: Storage::default(),
-        iterations,
+        times: iterations,
     };
     let time_se = se_bench(x, serialize.clone(), &mut data);
     let time_de = de_bench(deserialize.clone(), &data);
     let time_se_de = se_de_bench(x, serialize, deserialize, &mut data);
 
-    results.push(Result {
-        name: test_name,
-        top_test_name,
-        size: data.vec.len().max(data.storage.len()),
-        min_size: x.get_heap_size().to_string(),
-        needs_schema,
-        //
-        time_se,
-        time_de,
-        time_se_de,
-        //
-        time_se_ms: fmt_time_ms(time_se),
-        time_de_ms: fmt_time_ms(time_de),
-        time_se_de_ms: fmt_time_ms(time_se_de),
-    });
+    // check if the test has been performed before
+    // if yes -> atunci updatam direct / altfel creem
+    let index = results
+        .iter()
+        .position(|x| x.name == test_name && x.top_test_name == top_test_name);
+
+    if let Some(index) = index {
+        results[index].times_se.push(time_se);
+        results[index].times_de.push(time_de);
+        results[index].times_se_de.push(time_se_de);
+    } else {
+        results.push(Result {
+            name: test_name,
+            top_test_name,
+            size: data.vec.len().max(data.storage.len()),
+            min_size: x.get_heap_size().to_string(),
+            needs_schema,
+            times_se: vec![time_se],
+            times_de: vec![time_de],
+            times_se_de: vec![time_se_de],
+            time_se_ms: String::new(),
+            time_de_ms: String::new(),
+            time_se_de_ms: String::new(),
+            compare_key: 0,
+        });
+    }
 }
 
 // Little hack to redirect the deserialize_from to deserialize_from_unchecked
@@ -342,10 +388,21 @@ fn print_results_markdown(r: &[[&dyn Display; 8]], colums: &[(&str, Align)]) {
 }
 
 fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos: bool) {
+    // compute the times
+    for result in results.iter_mut() {
+        let a = compute_test_times(&mut result.times_se);
+        let b = compute_test_times(&mut result.times_de);
+        let c = compute_test_times(&mut result.times_se_de);
+        result.time_se_ms = a.to_string();
+        result.time_de_ms = b.to_string();
+        result.time_se_de_ms = c.to_string();
+        result.compare_key = c.median.as_nanos();
+    }
+
     results.sort_by(|x, y| {
         x.top_test_name
             .cmp(&y.top_test_name)
-            .then(x.time_se_de.cmp(&y.time_se_de))
+            .then(x.compare_key.cmp(&y.compare_key))
     });
 
     let colums = [
@@ -388,27 +445,27 @@ fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos
         ]);
     }
 
-    let avg_size = results.iter().map(|x| x.size).sum::<usize>() / results.len();
-    let avg_se_time = results.iter().map(|x| x.time_se).sum::<Duration>() / results.len() as u32;
-    let avg_de_time = results.iter().map(|x| x.time_de).sum::<Duration>() / results.len() as u32;
-    let avg_se_de_time =
-        results.iter().map(|x| x.time_se_de).sum::<Duration>() / results.len() as u32;
+    // let avg_size = results.iter().map(|x| x.size).sum::<usize>() / results.len();
+    // let avg_se_time = results.iter().map(|x| x.time_se).sum::<Duration>() / results.len() as u32;
+    // let avg_de_time = results.iter().map(|x| x.time_de).sum::<Duration>() / results.len() as u32;
+    // let avg_se_de_time =
+    //     results.iter().map(|x| x.time_se_de).sum::<Duration>() / results.len() as u32;
 
-    let avg_se_time = fmt_time_ms(avg_se_time);
-    let avg_de_time = fmt_time_ms(avg_de_time);
-    let avg_se_de_time = fmt_time_ms(avg_se_de_time);
+    // let avg_se_time = fmt_time_ms(avg_se_time);
+    // let avg_de_time = fmt_time_ms(avg_de_time);
+    // let avg_se_de_time = fmt_time_ms(avg_se_de_time);
 
     r.push(dashes);
-    r.push([
-        &"average",
-        &"",
-        &"",
-        &avg_size,
-        &"",
-        &avg_se_time,
-        &avg_de_time,
-        &avg_se_de_time,
-    ]);
+    // r.push([
+    //     &"average",
+    //     &"",
+    //     &"",
+    //     &avg_size,
+    //     &"",
+    //     &avg_se_time,
+    //     &avg_de_time,
+    //     &avg_se_de_time,
+    // ]);
 
     print_results_ascii_table(&r, &colums);
     print_results_markdown(&r, &colums);
@@ -513,98 +570,125 @@ where
     }
 }
 
-#[derive(clap::Parser)]
-struct Args {
-    #[arg(long, short, default_value_t = 1_000_000)]
-    iterations: u32,
-    #[arg(long, short, default_value = "all")]
-    tests: String,
-    #[arg(long, short, default_value = "all")]
-    algos: String,
-    #[arg(long, short, default_value_t = false)]
-    names: bool,
+#[derive(Subcommand, Debug, Default)]
+#[command(subcommand_precedence_over_arg = true)]
+enum Commands {
+    Run,
+    #[default]
+    Help,
+    ListAlgos,
+    ListTests,
 }
 
-fn main() {
-    let args = Args::parse();
+#[derive(clap::Parser)]
+#[command(name = "benchmarks", disable_help_flag = true, disable_help_subcommand = true)]
+struct Args {
+    #[command(subcommand)]
+    command: Commands,
+    #[arg(long, default_value_t = 1_000_000, global = true)]
+    times: u32,
+    #[arg(long, default_value = "all", global = true)]
+    tests: String,
+    #[arg(long, default_value = "all", global = true)]
+    algos: String,
+    #[arg(long, default_value_t = false, global = true)]
+    names: bool,
+    #[arg(long, default_value_t = 10, global = true)]
+    iterations: u32,
+}
 
-    let test_names = TestKind::all().join(", ");
-    let algos_names = AlgoKind::all().join(", ");
-    if args.names {
-        println!("available tests: {}", test_names);
-        println!("available algos: {}", algos_names);
-        return;
-    }
-
+fn run_tests(args: Args) {
     let (all_tests, tests) = split_tests::<TestKind>(&args.tests);
     let (all_algos, algos) = split_tests(&args.algos);
-
-    println!("iterations: {}", args.iterations);
 
     let results = &mut Vec::new();
     macro_rules! run {
         ($name:expr, $x:expr) => {
             if all_tests || tests.contains(&$name) {
-                do_one($name, $x, results, &algos, all_algos, args.iterations);
+                do_one($name, $x, results, &algos, all_algos, args.times);
             }
         };
     }
 
     use TestKind::*;
-    {
-        let process_small = structures::process_create::generate_flat();
-        run!(ProcessCreate, &process_small);
-    }
-    {
-        let s = structures::long_strings::generate(100);
-        run!(LongStrings, &s);
-    }
-    {
-        let s = structures::point::generate();
-        run!(Point, &s);
-    }
-    {
-        let s = structures::one_bool::generate();
-        run!(OneBool, &s);
-    }
-    {
-        let s = structures::multiple_fields::generate();
-        run!(MultipleFields, &s);
-    }
-    {
-        let s = structures::multiple_integers::generate();
-        run!(MultipleIntegers, &s);
-    }
-    {
-        let s = structures::vectors::generate();
-        run!(Vectors, &s);
-    }
-    {
-        let s = structures::large_vectors::generate();
-        run!(LargeVectors, &s);
-    }
-    {
-        let s = structures::enum_fields::generate();
-        run!(EnumFields, &s);
-    }
-    {
-        let s = structures::enum_lists::generate();
-        run!(EnumLists, &s);
-    }
-    {
-        let s = structures::small_enum_lists::generate();
-        run!(SmallEnumLists, &s);
-    }
-    {
-        let s = structures::multiple_bools::generate();
-        run!(MultipleBools, &s);
-    }
-    {
-        let s = structures::string_lists::generate();
-        run!(StringLists, &s);
+    use std::io::{self, Write};
+    for i in 0..args.iterations {
+        print!("Running iteration {}/{}", i + 1, args.iterations);
+        io::stdout().flush().unwrap();
+        let start = Instant::now();
+        {
+            let process_small = structures::process_create::generate_flat();
+            run!(ProcessCreate, &process_small);
+        }
+        {
+            let s = structures::long_strings::generate(100);
+            run!(LongStrings, &s);
+        }
+        {
+            let s = structures::point::generate();
+            run!(Point, &s);
+        }
+        {
+            let s = structures::one_bool::generate();
+            run!(OneBool, &s);
+        }
+        {
+            let s = structures::multiple_fields::generate();
+            run!(MultipleFields, &s);
+        }
+        {
+            let s = structures::multiple_integers::generate();
+            run!(MultipleIntegers, &s);
+        }
+        {
+            let s = structures::vectors::generate();
+            run!(Vectors, &s);
+        }
+        {
+            let s = structures::large_vectors::generate();
+            run!(LargeVectors, &s);
+        }
+        {
+            let s = structures::enum_fields::generate();
+            run!(EnumFields, &s);
+        }
+        {
+            let s = structures::enum_lists::generate();
+            run!(EnumLists, &s);
+        }
+        {
+            let s = structures::small_enum_lists::generate();
+            run!(SmallEnumLists, &s);
+        }
+        {
+            let s = structures::multiple_bools::generate();
+            run!(MultipleBools, &s);
+        }
+        {
+            let s = structures::string_lists::generate();
+            run!(StringLists, &s);
+        }
+        println!(" done in {:.2}ms", start.elapsed().as_secs_f64() * 1000.0);
     }
 
     print_results(results, &algos, all_algos);
+}
+fn main() {
+    let args = Args::parse();
+    match args.command {
+        Commands::Run => {
+            run_tests(args);
+        }
+        Commands::Help => {
+            println!("usage: {} <command>", env!("CARGO_BIN_NAME"));
+        }
+        Commands::ListAlgos => {
+            println!("available algos: {}", AlgoKind::all().join(", "));
+        }
+        Commands::ListTests => {
+            println!("available tests: {}", TestKind::all().join(", "));
+        }
+    }
 }
 
 fn s(mut x: String) -> String {
