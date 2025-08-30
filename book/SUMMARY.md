@@ -17,6 +17,7 @@
     - [Flags](chapter-2/supported_data_types/flags.md)
     - [Fixed Size Buffer](chapter-2/supported_data_types/fixed_size_buffer.md)
     - [Structures](chapter-2/supported_data_types/structs.md)
+    - [Packed Structures](chapter-2/supported_data_types/packed_structs.md)
     - [Variants](chapter-2/supported_data_types/variants.md)
 - [Serialization Compatibility](chapter-3/compatibility.md)
   - [Versioning](chapter-3/versioning.md)
