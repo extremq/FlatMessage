@@ -68,7 +68,7 @@ impl<'a> PackedStruct<'a> {
             if field.data_type.data_format.requires_padding() {
                 let alignament = field.data_type.serialization_alignment();
                 v.push(quote! {
-                    pos += (#alignament - 1) & !(#alignament - 1);
+                    pos = (pos + #alignament - 1) & !(#alignament - 1);
                 });
             }
         }        
@@ -102,7 +102,7 @@ impl<'a> PackedStruct<'a> {
             if field.data_type.data_format.requires_padding() {
                 let alignament = field.data_type.serialization_alignment();
                 v.push(quote! {
-                    pos += (#alignament - 1) & !(#alignament - 1);
+                    pos = (pos + #alignament - 1) & !(#alignament - 1);
                 });
             }
         }        
