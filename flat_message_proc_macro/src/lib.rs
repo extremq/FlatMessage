@@ -3,7 +3,6 @@ mod config;
 mod data_type;
 mod enum_info;
 mod variant;
-mod pod;
 mod const_assetions;
 mod enum_memory_representation;
 mod field_info;
@@ -13,11 +12,13 @@ mod validate_checksum;
 mod version_validator_parser;
 mod mem_alignament;
 mod flags;
+mod packed_struct;
 
 use config::Config;
 use quote::quote;
 use std::str::FromStr;
 use struct_info::StructInfo;
+use packed_struct::PackedStruct;
 use syn::{parse_macro_input, DeriveInput};
 use const_assetions::ConstAssertions;
 
@@ -70,21 +71,6 @@ fn extract_attribute_inner_tokens(attr: &Attribute) -> Option<TokenStream> {
     return Some(tokens2.into());
 }
 
-#[proc_macro_derive(FlatMessagePOD)]
-pub fn flat_message_pod(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as syn::DeriveInput);
-    let pod = match pod::POD::try_from(input) {
-        Ok(pod) => pod,
-        Err(e) => {
-            return quote::quote! {
-                compile_error!(#e);
-            }
-            .into();
-        }
-    };
-    pod.generate_code().into()
-}
-
 #[proc_macro_derive(FlatMessageEnum, attributes(sealed))]
 pub fn flat_message_enum(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);
@@ -129,6 +115,25 @@ pub fn flat_message_structs(input: TokenStream) -> TokenStream {
     } else {
         quote! {
             compile_error!("You need to use the FlatMessageStruct derive macro on a struct!");
+        }
+        .into()
+    }
+}
+
+#[proc_macro_derive(FlatMessagePacked, attributes(flat_message_item))]
+pub fn flat_message_packed(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as syn::DeriveInput);
+    if let syn::Data::Struct(s) = &input.data {
+        match PackedStruct::new(&input, s) {
+            Ok(si) => si.generate_code(),
+            Err(e) => quote! {
+                compile_error!(#e);
+            }
+            .into(),
+        }
+    } else {
+        quote! {
+            compile_error!("You need to use the FlatMessagePacked derive macro on a struct!");
         }
         .into()
     }

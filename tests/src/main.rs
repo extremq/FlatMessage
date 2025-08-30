@@ -19,7 +19,7 @@ mod option;
 #[cfg(test)]
 mod fix_arrays;
 #[cfg(test)]
-mod pod;
+mod packed;
 #[cfg(test)]
 mod flags;
 #[cfg(test)]
