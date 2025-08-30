@@ -1,36 +1,29 @@
 use flat_message::*;
+use crate::*;
 
 #[test]
-fn check_packed_struct() {
+fn check_packed_no_alignament_required() {
     #[derive(Debug, PartialEq, Eq, FlatMessagePacked)]
     struct Point {
-        value: u32,
         x: i32,
         y: u32,
-        d: Vec<u32>,
-        name: String,
+        label: String,
     }
 
-    // #[derive(Debug, PartialEq, Eq, FlatMessage)]
-    // struct Test<'a> {
-    //     #[flat_message_item(kind = pod, align = 4)]
-    //     point: Point,
-    //     x: &'a str,
-    // }
-    // let test_struct = Test {
-    //     point: Point {
-    //         value: 200,
-    //         x: 10,
-    //         y: 20,
-    //     },
-    //     x: "Hello",
-    // };
-    // let mut storage = Storage::default();
-    // test_struct
-    //     .serialize_to(&mut storage, Config::default())
-    //     .unwrap();
-    // let test_struct2 = Test::deserialize_from(&storage).unwrap();
-    // assert_eq!(test_struct, test_struct2);
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    struct Test {
+        #[flat_message_item(kind = packed, align = 1)]
+        point: Point,
+        x: String,
+    }
+    validate_correct_serde(Test {
+        point: Point {
+            x: 10,
+            y: 20,
+            label: "Test".to_string(),
+        },
+        x: "Hello".to_string(),
+    });
 }
 
 // // #[test]
@@ -75,7 +68,7 @@ fn check_packed_struct() {
 // //             0, 0, // padding
 // //             29, 108, 174, 24, // hash over the x parameter
 // //             14, 80, 12, 253, // hash over the point parameter
-// //             8, // offset of point 
+// //             8, // offset of point
 // //             24, // offset of x paramter
 // //         ]
 // //     );

@@ -54,7 +54,11 @@ impl DataType {
             proc_macro2::Span::call_site(),
         )
     }
-    pub(crate) fn new(ty: syn::Type, mut def: String, use_default_if_deserialize_fails: Option<bool>) -> Self {
+    pub(crate) fn new(
+        ty: syn::Type,
+        mut def: String,
+        use_default_if_deserialize_fails: Option<bool>,
+    ) -> Self {
         utils::type_name_formatter(&mut def);
         let mut option = false;
         if def.starts_with("Option<") && def.ends_with(">") {
@@ -233,8 +237,23 @@ impl DataType {
                     };
                     return Ok(());
                 }
+                if kind == "packed" {
+                    if !has_align {
+                        return Err(format!("If we provided the 'kind' attribute with the value 'packed' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
+                    }
+                    let align = attr.get("align").unwrap();
+                    self.data_format = match align.as_str() {
+                        "1" => DataFormat::PackedStruct8,
+                        "2" => DataFormat::PackedStruct16,
+                        "4" => DataFormat::PackedStruct32,
+                        "8" => DataFormat::PackedStruct64,
+                        "16" => DataFormat::PackedStruct128,
+                        _ => return Err(format!("Invalid alignment for a packed struct: '{}' in field: '{}'. The possible alignments for a packed struct are: 1, 2, 4, 8 and 16.",align, field_nane)),
+                    };
+                    return Ok(());
+                }
                 return Err(format!(
-                    "Invalid kind: '{}' in field: '{}'. The possible kinds are: 'enum', 'flags', 'struct' or 'variant'.",
+                    "Invalid kind: '{}' in field: '{}'. The possible kinds are: 'enum', 'flags', 'struct', 'variant' or 'packed'.",
                     kind, field_nane
                 ));
             }

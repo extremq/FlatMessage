@@ -45,28 +45,55 @@ pub enum DataFormat {
     Variant32,
     Variant64,
     Variant128,
-    POD8,
-    POD16,
-    POD32,
-    POD64,
-    POD128,
+    PackedStruct8,
+    PackedStruct16,
+    PackedStruct32,
+    PackedStruct64,
+    PackedStruct128,
     // Rezerved
-    // Hash8,
-    // Hash16,
-    // Hash32,
-    // Hash64,
     // Path,
     // DateTime -> maybe from chronno
 }
 impl DataFormat {
-    pub fn is_object_container(&self) -> bool {
-        matches!(self, DataFormat::Struct4 | DataFormat::Struct8 | DataFormat::Struct16 | DataFormat::Variant8 | DataFormat::Variant16 | DataFormat::Variant32 | DataFormat::Variant64 | DataFormat::Variant128)
+    pub const fn is_object_container(&self) -> bool {
+        matches!(
+            self,
+            DataFormat::Struct4
+                | DataFormat::Struct8
+                | DataFormat::Struct16
+                | DataFormat::Variant8
+                | DataFormat::Variant16
+                | DataFormat::Variant32
+                | DataFormat::Variant64
+                | DataFormat::Variant128
+                | DataFormat::PackedStruct8
+                | DataFormat::PackedStruct16
+                | DataFormat::PackedStruct32
+                | DataFormat::PackedStruct64
+                | DataFormat::PackedStruct128
+        )
     }
     pub fn is_variant(&self) -> bool {
-        matches!(self, DataFormat::Variant8 | DataFormat::Variant16 | DataFormat::Variant32 | DataFormat::Variant64 | DataFormat::Variant128)
+        matches!(
+            self,
+            DataFormat::Variant8
+                | DataFormat::Variant16
+                | DataFormat::Variant32
+                | DataFormat::Variant64
+                | DataFormat::Variant128
+        )
+    }
+    pub fn is_packed_struct(&self) -> bool {
+        matches!(
+            self,
+            DataFormat::PackedStruct8 | DataFormat::PackedStruct16 | DataFormat::PackedStruct32 | DataFormat::PackedStruct64 | DataFormat::PackedStruct128
+        )
     }
     pub fn is_struct(&self) -> bool {
-        matches!(self, DataFormat::Struct4 | DataFormat::Struct8 | DataFormat::Struct16)
+        matches!(
+            self,
+            DataFormat::Struct4 | DataFormat::Struct8 | DataFormat::Struct16
+        )
     }
     pub fn is_enum(&self) -> bool {
         match self {
@@ -81,16 +108,7 @@ impl DataFormat {
             _ => false,
         }
     }
-    pub fn is_pod(&self) -> bool {
-        match self {
-            DataFormat::POD8
-            | DataFormat::POD16
-            | DataFormat::POD32
-            | DataFormat::POD64
-            | DataFormat::POD128 => true,
-            _ => false,
-        }
-    }
+
     pub fn is_flags(&self) -> bool {
         match self {
             DataFormat::Flags8
@@ -100,7 +118,10 @@ impl DataFormat {
             | DataFormat::Flags128 => true,
             _ => false,
         }
-    }    
+    }
+    pub const fn requires_padding(&self) -> bool {
+        (self.alignament() > 1) && (self.is_object_container())
+    }
     pub const fn alignament(&self) -> u8 {
         match self {
             DataFormat::U8 => 1,
@@ -134,11 +155,11 @@ impl DataFormat {
             DataFormat::Flags32 => 4,
             DataFormat::Flags64 => 8,
             DataFormat::Flags128 => 16,
-            DataFormat::POD8 => 1,
-            DataFormat::POD16 => 2,
-            DataFormat::POD32 => 4,
-            DataFormat::POD64 => 8,
-            DataFormat::POD128 => 16,
+            DataFormat::PackedStruct8 => 1,
+            DataFormat::PackedStruct16 => 2,
+            DataFormat::PackedStruct32 => 4,
+            DataFormat::PackedStruct64 => 8,
+            DataFormat::PackedStruct128 => 16,
             DataFormat::Struct4 => 4,
             DataFormat::Struct8 => 8,
             DataFormat::Struct16 => 16,
@@ -185,11 +206,11 @@ impl Display for DataFormat {
             DataFormat::Flags32 => write!(f, "Flags32"),
             DataFormat::Flags64 => write!(f, "Flags64"),
             DataFormat::Flags128 => write!(f, "Flags128"),
-            DataFormat::POD8 => write!(f, "POD8"),
-            DataFormat::POD16 => write!(f, "POD16"),
-            DataFormat::POD32 => write!(f, "POD32"),
-            DataFormat::POD64 => write!(f, "POD64"),
-            DataFormat::POD128 => write!(f, "POD128"),
+            DataFormat::PackedStruct8 => write!(f, "PackedStruct8"),
+            DataFormat::PackedStruct16 => write!(f, "PackedStruct16"),
+            DataFormat::PackedStruct32 => write!(f, "PackedStruct32"),
+            DataFormat::PackedStruct64 => write!(f, "PackedStruct64"),
+            DataFormat::PackedStruct128 => write!(f, "PackedStruct128"),
             DataFormat::Struct4 => write!(f, "Struct4"),
             DataFormat::Struct8 => write!(f, "Struct8"),
             DataFormat::Struct16 => write!(f, "Struct16"),
@@ -259,11 +280,11 @@ impl From<&str> for DataFormat {
             "variant_64" => DataFormat::Variant64,
             "variant_128" => DataFormat::Variant128,
             // copy struct
-            "pod_1" => DataFormat::POD8,
-            "pod_2" => DataFormat::POD16,
-            "pod_4" => DataFormat::POD32,
-            "pod_8" => DataFormat::POD64,
-            "pod_16" => DataFormat::POD128,
+            "packed_struct_1" => DataFormat::PackedStruct8,
+            "packed_struct_2" => DataFormat::PackedStruct16,
+            "packed_struct_4" => DataFormat::PackedStruct32,
+            "packed_struct_8" => DataFormat::PackedStruct64,
+            "packed_struct_16" => DataFormat::PackedStruct128,
             // the rest are considered generic objects
             _ => DataFormat::Unknwon,
         }

@@ -748,6 +748,9 @@ impl<'a> StructInfo<'a> {
             if field.data_type.data_format.is_variant() {
                 v.push(ConstAssertions::for_variant(self.name.clone(), &field.name, &field.data_type));
             }
+            if field.data_type.data_format.is_packed_struct() {
+                v.push(ConstAssertions::for_packed_struct(self.name.clone(), &field.name, &field.data_type));
+            }
         }
         v
     }

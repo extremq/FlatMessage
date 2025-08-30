@@ -1,27 +1,26 @@
 mod attribute_parser;
 mod config;
+mod const_assetions;
 mod data_type;
 mod enum_info;
-mod variant;
-mod const_assetions;
 mod enum_memory_representation;
 mod field_info;
+mod flags;
+mod mem_alignament;
+mod packed_struct;
 mod struct_info;
 mod utils;
 mod validate_checksum;
+mod variant;
 mod version_validator_parser;
-mod mem_alignament;
-mod flags;
-mod packed_struct;
 
 use config::Config;
+use const_assetions::ConstAssertions;
+use packed_struct::PackedStruct;
 use quote::quote;
 use std::str::FromStr;
 use struct_info::StructInfo;
-use packed_struct::PackedStruct;
 use syn::{parse_macro_input, DeriveInput};
-use const_assetions::ConstAssertions;
-
 
 extern crate proc_macro;
 
@@ -86,7 +85,7 @@ pub fn flat_message_enum(input: TokenStream) -> TokenStream {
     ei.generate_code().into()
 }
 
-#[proc_macro_derive(FlatMessageFlags, attributes(sealed,flags))]
+#[proc_macro_derive(FlatMessageFlags, attributes(sealed, flags))]
 pub fn flat_message_flags(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);
     let flags = match flags::Flags::try_from(input) {
@@ -125,7 +124,7 @@ pub fn flat_message_packed(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);
     if let syn::Data::Struct(s) = &input.data {
         match PackedStruct::new(&input, s) {
-            Ok(si) => si.generate_code(),
+            Ok(si) => si.generate_code().into(),
             Err(e) => quote! {
                 compile_error!(#e);
             }
@@ -139,7 +138,7 @@ pub fn flat_message_packed(input: TokenStream) -> TokenStream {
     }
 }
 
-#[proc_macro_derive(FlatMessageVariant, attributes(sealed,flat_message_item))]
+#[proc_macro_derive(FlatMessageVariant, attributes(sealed, flat_message_item))]
 pub fn flat_message_variant(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);
     let variant = match variant::Variant::try_from(input) {
@@ -153,7 +152,6 @@ pub fn flat_message_variant(input: TokenStream) -> TokenStream {
     };
     variant.generate_code().into()
 }
-
 
 #[proc_macro]
 pub fn name(input: TokenStream) -> TokenStream {
@@ -181,5 +179,6 @@ pub fn add_flag(input: TokenStream) -> TokenStream {
     let const_name = name.clone();
     quote! {
         pub const #const_name: Self = Self(#value);
-    }.into()   
+    }
+    .into()
 }
