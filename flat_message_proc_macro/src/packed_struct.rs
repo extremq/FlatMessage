@@ -56,7 +56,14 @@ impl<'a> PackedStruct<'a> {
         let initial_field_padding = self.initial_field_padding();
         let ctor_code = self.create_object_ctor();
         let mut v = Vec::new();
+        let mut first_field = true;
         for (index,field) in self.fields.iter().enumerate() {
+            if field.data_type.data_format.requires_padding() && !first_field {
+                let alignament = field.data_type.serialization_alignment();
+                v.push(quote! {
+                    pos = (pos + #alignament - 1) & !(#alignament - 1);
+                });
+            }
             let serde_trait = field.data_type.serde_trait();
             let inner_var = format_ident!("__internal__{index}_{}__", field.name);
             v.push(quote! {
@@ -65,12 +72,7 @@ impl<'a> PackedStruct<'a> {
                 };
                 pos += ::flat_message::#serde_trait::size(&#inner_var);
             });
-            if field.data_type.data_format.requires_padding() {
-                let alignament = field.data_type.serialization_alignment();
-                v.push(quote! {
-                    pos = (pos + #alignament - 1) & !(#alignament - 1);
-                });
-            }
+            first_field = false;
         }        
         quote! {
             fn from_buffer(buf: &[u8], pos: usize) -> Option<Self> {
@@ -92,19 +94,21 @@ impl<'a> PackedStruct<'a> {
         let initial_field_padding = self.initial_field_padding();
         let ctor_code = self.create_object_ctor();
         let mut v = Vec::new();
+        let mut first_field = true;
         for (index,field) in self.fields.iter().enumerate() {
+            if field.data_type.data_format.requires_padding() && !first_field {
+                let alignament = field.data_type.serialization_alignment();
+                v.push(quote! {
+                    pos = (pos + #alignament - 1) & !(#alignament - 1);
+                });
+            }            
             let serde_trait = field.data_type.serde_trait();
             let inner_var = format_ident!("__internal__{index}_{}__", field.name);
             v.push(quote! {
                 let #inner_var = unsafe {flat_message::#serde_trait::from_buffer_unchecked(buf,pos) };
                 pos += ::flat_message::#serde_trait::size(&#inner_var);
             });
-            if field.data_type.data_format.requires_padding() {
-                let alignament = field.data_type.serialization_alignment();
-                v.push(quote! {
-                    pos = (pos + #alignament - 1) & !(#alignament - 1);
-                });
-            }
+            first_field = false;
         }        
         quote! {
             unsafe fn from_buffer_unchecked(buf: &[u8], pos: usize) -> Self {
@@ -118,18 +122,20 @@ impl<'a> PackedStruct<'a> {
         let structure_hash = self.hash;
         let mut v = Vec::new();
         let initial_field_padding = self.initial_field_padding();
+        let mut first_field = true;
         for field in &self.fields {
-            let serde_trait = field.data_type.serde_trait();
-            let name = field.name_ident();
-            v.push(quote! {
-                pos = ::flat_message::#serde_trait::write(&obj.#name,p,pos);
-            });
-            if field.data_type.data_format.requires_padding() {
+            if field.data_type.data_format.requires_padding() && !first_field {
                 let alignament = field.data_type.serialization_alignment();
                 v.push(quote! {
                     pos = (pos + #alignament - 1) & !(#alignament - 1);
                 });
-            }
+            }            
+            let serde_trait = field.data_type.serde_trait();
+            let name = field.name_ident();            
+            v.push(quote! {
+                pos = ::flat_message::#serde_trait::write(&obj.#name,p,pos);
+            });
+            first_field = false;
         }
         quote! {
             unsafe fn write(obj: &Self, p: *mut u8, pos: usize) -> usize {
@@ -143,18 +149,20 @@ impl<'a> PackedStruct<'a> {
     fn generate_serde_size(&self) -> TokenStream {
         let mut v = Vec::new();
         let initial_field_padding = self.initial_field_padding();
+        let mut first_field = true;
         for field in &self.fields {
+            if field.data_type.data_format.requires_padding() && !first_field {
+                let alignament = field.data_type.serialization_alignment();
+                v.push(quote! {
+                    size = (size + #alignament - 1) & !(#alignament - 1);
+                });
+            }
             let name = field.name_ident();
             let serde_trait = field.data_type.serde_trait();
             v.push(quote! {
                 size +=::flat_message::#serde_trait::size(&obj.#name);
             });
-            if field.data_type.data_format.requires_padding() {
-                let alignament = field.data_type.serialization_alignment();
-                v.push(quote! {
-                    size = (size + #alignament - 1) & !(#alignament - 1);
-                });
-            }            
+            first_field = false;
         }
         quote! {
             fn size(obj: &Self) -> usize {

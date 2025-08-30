@@ -6,7 +6,6 @@ mod enum_info;
 mod enum_memory_representation;
 mod field_info;
 mod flags;
-mod mem_alignament;
 mod packed_struct;
 mod struct_info;
 mod utils;

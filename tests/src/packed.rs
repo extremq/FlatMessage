@@ -174,15 +174,16 @@ fn check_packed_4_bytes_alignament_required_repr() {
             3, 0, 0, 0, // 3 elements in d2::data
             4, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, // d2::data[0] = 4, d2::data[1] = 5, d2::data[2] = 6
             2, // d2::idx = 2
-            0, 0, 0, // padding
 
             10, // Point::x = 10
             20, // Point::y = 20
-            5, 72, 101, 108, 108, 111,// Test::x = "Hello"             
+            5, 72, 101, 108, 108, 111,// Test::x = "Hello"   
+            0, 0, 0, // padding
+          
             42, 108, 174, 24, // hash for point parameter
             14, 80, 12, 253, // hash for x parameter
             8, // offset of point
-            62, // offset of x parameter
+            59, // offset of x parameter
         ]
     );
 }
