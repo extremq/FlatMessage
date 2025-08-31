@@ -26,14 +26,16 @@
   - [Sealed vs Non-Sealed](chapter-3/sealed_vs_non_sealed.md)
   - [Changing Type](chapter-3/changing_type.md)
   - [Nested Structures](chapter-3/nested_structs.md)
-<!--   - [Builder API](chapter-2/builder_api.md)
-  - [FlatMessage Buffer](chapter-2/flat_message_buffer.md) -->
-<!-- - [Advanced Features](chapter-3/versioning.md)
+ - [Advanced Features](chapter-4/advanced_features.md)
+  - [Type Interchangeability](chapter-4/type_interchangeability.md)
+  - [Default values]()
+  - [Ignored fields]()
+  - [Checksums and Validation](chapter-4/checksums_and_validation.md)
+
+<!--
   - [Versioning](chapter-3/versioning.md)
-  - [Type Interchangeability](chapter-3/type_interchangeability.md)
   - [Metadata and Introspection](chapter-3/metadata_and_introspection.md)
   - [Sealed vs Non-Sealed Enums](chapter-3/sealed_vs_non_sealed_enums.md)
-  - [Checksums and Validation](chapter-3/checksums_and_validation.md)
   - [Field Attributes](chapter-3/field_attributes.md)
 - [Practical Usage](chapter-4/performance_optimization.md)
   - [Performance Optimization](chapter-4/performance_optimization.md)
