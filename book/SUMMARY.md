@@ -26,7 +26,7 @@
   - [Sealed vs Non-Sealed](chapter-3/sealed_vs_non_sealed.md)
   - [Changing Type](chapter-3/changing_type.md)
   - [Nested Structures](chapter-3/nested_structs.md)
- - [Advanced Features](chapter-4/advanced_features.md)
+- [Advanced Features](chapter-4/advanced_features.md)
   - [Type Interchangeability](chapter-4/type_interchangeability.md)
   - [Default values]()
   - [Ignored fields]()
