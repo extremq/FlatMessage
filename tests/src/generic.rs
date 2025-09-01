@@ -700,7 +700,6 @@ fn check_task_example() {
         tags: Vec<String>,
     }
 
-
     let task = Task {
         title: "Learn FlatMessage".to_string(),
         description: Some("Read the documentation".to_string()),
@@ -847,7 +846,6 @@ fn check_mandatory_field() {
     assert_eq!(data_v1.d, "Hello".to_string());
 }
 
-
 #[test]
 fn check_without_mandatory_field() {
     #[derive(FlatMessage)]
@@ -899,7 +897,9 @@ fn check_mandatory_string_reference_field() {
     }
     let mut storage = Storage::default();
     let data_v1 = MyDataV1 { a: 1 };
-    data_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    data_v1
+        .serialize_to(&mut storage, Config::default())
+        .unwrap();
     let data_v2 = MyDataV2::deserialize_from(&storage).unwrap();
     assert_eq!(data_v2.a, 1);
     assert_eq!(data_v2.b, "");
@@ -921,7 +921,9 @@ fn check_mandatory_default_value_for_string_reference_field() {
     }
     let mut storage = Storage::default();
     let data_v1 = MyDataV1 { a: 1 };
-    data_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    data_v1
+        .serialize_to(&mut storage, Config::default())
+        .unwrap();
     let data_v2 = MyDataV2::deserialize_from(&storage).unwrap();
     assert_eq!(data_v2.a, 1);
     assert_eq!(data_v2.b, "Hello");
@@ -943,10 +945,12 @@ fn check_mandatory_default_value_for_a_vector() {
     }
     let mut storage = Storage::default();
     let data_v1 = MyDataV1 { a: 1 };
-    data_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    data_v1
+        .serialize_to(&mut storage, Config::default())
+        .unwrap();
     let data_v2 = MyDataV2::deserialize_from(&storage).unwrap();
     assert_eq!(data_v2.a, 1);
-    assert_eq!(data_v2.b, vec![1,2,3]);
+    assert_eq!(data_v2.b, vec![1, 2, 3]);
 }
 
 #[test]
@@ -966,8 +970,99 @@ fn check_mandatory_default_value_for_a_u32() {
     }
     let mut storage = Storage::default();
     let data_v1 = MyDataV1 { a: 1 };
-    data_v1.serialize_to(&mut storage, Config::default()).unwrap();
+    data_v1
+        .serialize_to(&mut storage, Config::default())
+        .unwrap();
     let data_v2 = MyDataV2::deserialize_from(&storage).unwrap();
     assert_eq!(data_v2.a, 1);
     assert_eq!(data_v2.b, DEFAULT_VALUE);
+}
+
+#[test]
+fn check_vec_to_slice_interchangeability() {
+    use flat_message::*;
+
+    #[derive(FlatMessage)]
+    struct DataWriter {
+        numbers: Vec<u32>,
+        names: Vec<String>,
+    }
+    #[derive(FlatMessage)]
+    struct DataReader<'a> {
+        numbers: &'a [u32],
+        names: Vec<&'a str>,
+    }
+    let writer_data = DataWriter {
+        numbers: vec![1, 2, 3, 4, 5],
+        names: vec!["Alice".to_string(), "Bob".to_string()],
+    };
+    let mut storage = Storage::default();
+    writer_data
+        .serialize_to(&mut storage, Config::default())
+        .unwrap();
+    let reader_data = DataReader::deserialize_from(&storage).unwrap();
+
+    assert_eq!(reader_data.numbers, &[1, 2, 3, 4, 5]);
+    assert_eq!(reader_data.names, &["Alice", "Bob"]);
+}
+
+#[test]
+fn check_option_to_non_option_interchangeability() {
+    #[derive(FlatMessage)]
+    struct OptionalData {
+        required_field: u32,
+        optional_field: Option<String>,
+        optional_number: Option<i64>,
+    }
+
+    #[derive(FlatMessage)]
+    struct RequiredData {
+        required_field: u32,
+        optional_field: String, // Must exist in data
+        optional_number: i64,   // Must exist in data
+    }
+
+    let opt_data = OptionalData {
+        required_field: 42,
+        optional_field: Some("Hello".to_string()),
+        optional_number: Some(123),
+    };
+
+    let mut storage = Storage::default();
+    opt_data
+        .serialize_to(&mut storage, Config::default())
+        .unwrap();
+
+    let req_data = RequiredData::deserialize_from(&storage).unwrap();
+    assert_eq!(req_data.optional_field, "Hello");
+    assert_eq!(req_data.optional_number, 123);
+}
+
+#[test]
+fn check_string_to_non_string_interchangeability() {
+    #[derive(FlatMessage)]
+    struct StringWriter {
+        owned_text: String,
+        optional_text: Option<String>,
+    }
+
+    #[derive(FlatMessage)]
+    struct StringReader<'a> {
+        owned_text: &'a str,    // String -> &str (zero-copy)
+        optional_text: &'a str, // Option<String> -> &str (if Some)
+    }
+
+    let writer = StringWriter {
+        owned_text: "Hello World".to_string(),
+        optional_text: Some("Optional text".to_string()),
+    };
+
+    let mut storage = Storage::default();
+    writer
+        .serialize_to(&mut storage, Config::default())
+        .unwrap();
+
+    let reader = StringReader::deserialize_from(&storage).unwrap();
+    assert_eq!(reader.owned_text, "Hello World");
+    assert_eq!(reader.optional_text, "Optional text");
 }
