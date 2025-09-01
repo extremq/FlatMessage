@@ -675,3 +675,32 @@ fn check_u128_repr() {
         ]
     );
 }
+
+#[test]
+fn check_serde_128_bits_alignament() {
+    #[derive(Debug, PartialEq, Eq, FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct TestStruct {
+        b6: Vec<u128>,
+        b4: Vec<u64>,
+        b5: Vec<u32>,
+        name: String,
+    }
+    let mut v = Storage::default();
+    let s = TestStruct {
+        b6: [1, 2, 3].to_vec(),
+        b4: [10, 20].to_vec(),
+        b5: [40, 41, 42, 43].to_vec(),
+        name: "Hello".to_string(),
+    };
+    s.serialize_to(&mut v, Config::default()).unwrap();
+    let expected = &[
+        70, 76, 77, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 10,
+        0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 40, 0, 0, 0, 41, 0, 0, 0, 42, 0,
+        0, 0, 43, 0, 0, 0, 5, 72, 101, 108, 108, 111, 0, 0, 131, 30, 44, 136, 132, 32, 44, 137,
+        133, 35, 44, 139, 14, 189, 57, 141, 104, 80, 16, 124,
+    ];
+    assert_eq!(v.as_slice(), expected);
+}
