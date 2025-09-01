@@ -240,66 +240,8 @@ use std::fmt::Debug;
 //     assert_eq!(si.name(), Some(name!("TestStruct")));
 // }
 
-// #[test]
-// fn check_structure_information_with_match() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false)]
-//     struct TestStruct {
-//         a: u64,
-//     }
-//     let a = TestStruct { a: 12 };
 
-//     let mut output = Storage::default();
-//     a.serialize_to(&mut output, Config::default()).unwrap();
-//     let si = StructureInformation::try_from(&output).unwrap();
-//     assert_eq!(si.timestamp(), None);
-//     assert_eq!(si.unique_id(), None);
-//     assert_eq!(si.version(), None);
-//     if let Some(name) = si.name() {
-//         match name {
-//             name!("TestStruct") => {}
-//             name!("TestStruct2") => panic!("Invalid name"),
-//             _ => panic!("Invalid name"),
-//         }
-//     }
-// }
 
-// #[test]
-// fn check_serde_name_validation() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false, validate_name = true)]
-//     struct TestStruct1 {
-//         value: u64,
-//     }
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false)]
-//     struct TestStruct2 {
-//         value: u64,
-//     }
-//     let a_1 = TestStruct1 { value: 12 };
-//     let a_2 = TestStruct2 { value: 24 };
-
-//     let mut output_1 = Storage::default();
-//     let mut output_2 = Storage::default();
-//     a_1.serialize_to(&mut output_1, Config::default()).unwrap();
-//     a_2.serialize_to(&mut output_2, Config::default()).unwrap();
-
-//     // from TestStruct1 to TestStruct1
-//     let b = TestStruct1::deserialize_from(&output_1).unwrap();
-//     assert_eq!(a_1.value, b.value);
-
-//     // from TestStruct1 to TestStruct2 (no validation name required -> should be possible)
-//     let b = TestStruct2::deserialize_from(&output_1).unwrap();
-//     assert_eq!(a_1.value, b.value);
-
-//     // from TestStruct2 to TestStruct1 (validation name required -> should not be possible)
-//     let b = TestStruct1::deserialize_from(&output_2);
-//     assert_eq!(b.is_err(), true);
-
-//     // from TestStruct2 to TestStruct2
-//     let b = TestStruct2::deserialize_from(&output_2).unwrap();
-//     assert_eq!(a_2.value, b.value);
-// }
 
 // #[test]
 // fn check_clone() {
