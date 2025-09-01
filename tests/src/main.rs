@@ -28,6 +28,8 @@ mod structs;
 mod variant;
 #[cfg(test)]
 mod version_with_structs;
+#[cfg(test)]
+mod checksum_validation;
 
 #[cfg(test)]
 pub(crate) use flat_message::{Config, FlatMessage, Storage};

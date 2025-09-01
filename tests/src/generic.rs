@@ -177,125 +177,7 @@ use std::fmt::Debug;
 // //     assert_eq!(a.metadata().unique_id(), b.metadata().unique_id());
 // // }
 
-// // #[test]
-// // fn check_serde_into_smaller_struct() {
-// //     #[derive(Debug, PartialEq, FlatMessage)]
-// //     struct TestStruct<'a> {
-// //         name: String,
-// //         surname: &'a str,
-// //         math: u8,
-// //         engligh: u8,
-// //         passed: bool,
-// //         average: f64,
-// //     }
 
-// //     #[derive(Debug, PartialEq, FlatMessage)]
-// //     #[flat_message_options(metadata = false)]
-// //     struct TestSmallerStruct {
-// //         name: String,
-// //         math: u8,
-// //         engligh: u8,
-// //         average: f64,
-// //     }
-
-// //     let mut a = TestStruct {
-// //         name: "John".to_string(),
-// //         surname: "Doe",
-// //         math: 100,
-// //         engligh: 90,
-// //         passed: true,
-// //         average: 95.0,
-// //     };
-// //     a.update_metada(MetaDataBuilder::new()
-// //         .timestamp(123456)
-// //         .unique_id(654321)
-// //         .build());
-// //     let mut output = Storage::default();
-// //     a.serialize_to(&mut output, Config::default()).unwrap();
-// //     let b = TestSmallerStruct::deserialize_from(&output).unwrap();
-// //     assert_eq!(a.name, b.name);
-// //     assert_eq!(a.math, b.math);
-// //     assert_eq!(a.engligh, b.engligh);
-// //     assert_eq!(a.average, b.average);
-// // }
-
-// // #[test]
-// // fn check_serde_into_different_struct() {
-// //     #[derive(Debug, PartialEq, FlatMessage)]
-// //     struct TestStruct<'a> {
-// //         name: String,
-// //         surname: &'a str,
-// //         math: u8,
-// //         engligh: u8,
-// //         passed: bool,
-// //         average: f64,
-// //     }
-
-// //     #[derive(Debug, PartialEq, FlatMessage)]
-// //     #[flat_message_options(metadata = false)]
-// //     struct TestSmallerStruct {
-// //         a: u8,
-// //         b: u16,
-// //         math: u16,
-// //     }
-
-// //     let mut a = TestStruct {
-// //         name: "John".to_string(),
-// //         surname: "Doe",
-// //         math: 100,
-// //         engligh: 90,
-// //         passed: true,
-// //         average: 95.0,
-// //     };
-// //     a.update_metada(MetaDataBuilder::new()
-// //         .timestamp(123456)
-// //         .unique_id(654321)
-// //         .build());
-// //     let mut output = Storage::default();
-// //     a.serialize_to(&mut output, Config::default()).unwrap();
-// //     let b = TestSmallerStruct::deserialize_from(&output);
-// //     assert_eq!(b.is_err(), true);
-// // }
-
-// // #[test]
-// // fn check_serde_into_different_type() {
-// //     #[derive(Debug, PartialEq, FlatMessage)]
-// //     struct TestStruct<'a> {
-// //         name: String,
-// //         surname: &'a str,
-// //         math: u8,
-// //         engligh: u8,
-// //         passed: bool,
-// //         average: f64,
-// //     }
-
-// //     #[derive(Debug, PartialEq, FlatMessage)]
-// //     struct TestStruct2<'a> {
-// //         name: String,
-// //         surname: &'a str,
-// //         math: u8,
-// //         engligh: u16, // english is not the same type
-// //         passed: bool,
-// //         average: f64,
-// //     }
-
-// //     let mut a = TestStruct {
-// //         name: "John".to_string(),
-// //         surname: "Doe",
-// //         math: 100,
-// //         engligh: 90,
-// //         passed: true,
-// //         average: 95.0,
-// //     };
-// //     a.update_metada(MetaDataBuilder::new()
-// //         .timestamp(123456)
-// //         .unique_id(654321)
-// //         .build());
-// //     let mut output = Storage::default();
-// //     a.serialize_to(&mut output, Config::default()).unwrap();
-// //     let b = TestStruct2::deserialize_from(&output);
-// //     assert_eq!(b.is_err(), true);
-// // }
 
 // #[test]
 // fn check_serde_full_unchecked() {
@@ -442,194 +324,7 @@ use std::fmt::Debug;
 //     assert_eq!(v1, v3);
 // }
 
-// #[test]
-// fn check_serialization_checksum() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(checksum = true, store_name = false, metadata = false)]
-//     struct TestStruct1 {
-//         value: u32,
-//     }
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct2 {
-//         value: u32,
-//     }
-//     let v1 = TestStruct1 { value: 123456 };
-//     let v2 = TestStruct2 { value: 123456 };
-//     let mut storage = Storage::default();
-//     v1.serialize_to(&mut storage, Config::default()).unwrap();
-//     let expected_output = vec![
-//         71, 84, 72, 1, 1, 0, 0, 4, 64, 226, 1, 0, 3, 211, 94, 66, 8, 149, 163, 180, 132,
-//     ];
-//     assert_eq!(storage.as_slice(), expected_output);
-//     let len_v1 = storage.len();
-//     v2.serialize_to(&mut storage, Config::default()).unwrap();
-//     let expected_output = vec![71, 84, 72, 1, 1, 0, 0, 0, 64, 226, 1, 0, 3, 211, 94, 66, 8];
-//     assert_eq!(storage.as_slice(), expected_output);
-//     let len_v2 = storage.len();
-//     // TestStruct1 has 4 bytes more than TestStruct2 (for the checksum)
-//     assert_eq!(len_v1, len_v2 + 4);
-// }
 
-// #[test]
-// fn check_serde_with_checksum() {
-//     #[derive(Debug, PartialEq, FlatMessage)]
-//     #[flat_message_options(checksum = true, store_name = false, metadata = false)]
-//     struct TestStruct<'a> {
-//         value: u32,
-//         b: bool,
-//         name: String,
-//         surname: &'a str,
-//         age: i32,
-//     }
-//     let s = TestStruct {
-//         value: 123456,
-//         b: true,
-//         name: "John".to_string(),
-//         surname: "Doe",
-//         age: 30,
-//     };
-//     let mut storage = Storage::default();
-//     s.serialize_to(&mut storage, Config::default()).unwrap();
-//     let ds = TestStruct::deserialize_from(&storage).unwrap();
-//     assert_eq!(s.age, ds.age);
-//     assert_eq!(s.b, ds.b);
-//     assert_eq!(s.value, ds.value);
-//     assert_eq!(s.name, ds.name);
-//     assert_eq!(s.surname, ds.surname);
-// }
-
-// #[test]
-// fn check_deserialization_checksum_always() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(checksum = true, store_name = false, metadata = false, validate_checksum = always)]
-//     struct TestStruct {
-//         value: u32,
-//     }
-//     let buffer = Storage::from_buffer(&[
-//         71, 84, 72, 1, 1, 0, 0, 4, 64, 226, 1, 0, 3, 211, 94, 66, 8, 149, 163, 180, 132,
-//     ]);
-//     let v = TestStruct::deserialize_from(&buffer).unwrap();
-//     assert_eq!(v.value, 123456);
-//     let buffer = Storage::from_buffer(&[
-//         71, 84, 72, 1, 1, 0, 0, 4, 255, 255, 1, 0, 3, 211, 94, 66, 8, 149, 163, 180, 132,
-//     ]);
-//     let v = TestStruct::deserialize_from(&buffer);
-//     match v.err() {
-//         Some(flat_message::Error::InvalidChecksum(_)) => {}
-//         _ => panic!("Invalid error - expected InvalidChecksum"),
-//     }
-// }
-
-// #[test]
-// fn check_deserialization_checksum_auto() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(checksum = true, store_name = false, metadata = false)]
-//     struct TestStruct {
-//         value: u32,
-//     }
-//     // valid checksum
-//     let buffer = Storage::from_buffer(&[
-//         71, 84, 72, 1, 1, 0, 0, 4, 64, 226, 1, 0, 3, 211, 94, 66, 8, 149, 163, 180, 132,
-//     ]);
-//     let v = TestStruct::deserialize_from(&buffer).unwrap();
-//     assert_eq!(v.value, 123456);
-//     // invalid checksum
-//     let buffer = Storage::from_buffer(&[
-//         71, 84, 72, 1, 1, 0, 0, 4, 255, 255, 1, 0, 3, 211, 94, 66, 8, 149, 163, 180, 132,
-//     ]);
-//     let v = TestStruct::deserialize_from(&buffer);
-//     match v.err() {
-//         Some(flat_message::Error::InvalidChecksum(_)) => {}
-//         _ => panic!("Invalid error - expected InvalidChecksum"),
-//     }
-//     // checksum is missing
-//     let buffer =
-//         Storage::from_buffer(&[71, 84, 72, 1, 1, 0, 0, 0, 64, 226, 1, 0, 3, 211, 94, 66, 8]);
-//     let v = TestStruct::deserialize_from(&buffer).unwrap();
-//     assert_eq!(v.value, 123456);
-// }
-
-// #[test]
-// fn check_deserialization_checksum_ignore() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(checksum = true, store_name = false, metadata = false, validate_checksum = ignore)]
-//     struct TestStruct {
-//         value: u32,
-//     }
-//     // valid checksum
-//     let buffer = Storage::from_buffer(&[
-//         71, 84, 72, 1, 1, 0, 0, 4, 64, 226, 1, 0, 3, 211, 94, 66, 8, 149, 163, 180, 132,
-//     ]);
-//     let v = TestStruct::deserialize_from(&buffer).unwrap();
-//     assert_eq!(v.value, 123456);
-//     // invalid checksum (deserialization should still happen)
-//     let buffer = Storage::from_buffer(&[
-//         71, 84, 72, 1, 1, 0, 0, 4, 64, 226, 1, 0, 3, 211, 94, 66, 8, 255, 255, 255, 255,
-//     ]);
-//     let v = TestStruct::deserialize_from(&buffer).unwrap();
-//     assert_eq!(v.value, 123456);
-//     // checksum is missing
-//     let buffer =
-//         Storage::from_buffer(&[71, 84, 72, 1, 1, 0, 0, 0, 64, 226, 1, 0, 3, 211, 94, 66, 8]);
-//     let v = TestStruct::deserialize_from(&buffer).unwrap();
-//     assert_eq!(v.value, 123456);
-// }
-
-// #[test]
-// fn check_deserialization_checksum_unchecked_always() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(checksum = true, store_name = false, metadata = false, validate_checksum = always)]
-//     struct TestStruct {
-//         value: u32,
-//     }
-//     // valid checksum
-//     let buffer = Storage::from_buffer(&[
-//         71, 84, 72, 1, 1, 0, 0, 4, 64, 226, 1, 0, 3, 211, 94, 66, 8, 149, 163, 180, 132,
-//     ]);
-//     let v = unsafe { TestStruct::deserialize_from_unchecked(&buffer).unwrap() };
-//     assert_eq!(v.value, 123456);
-//     // invalid checksum (deserialization should still happen)
-//     let buffer = Storage::from_buffer(&[
-//         71, 84, 72, 1, 1, 0, 0, 4, 64, 226, 1, 0, 3, 211, 94, 66, 8, 255, 255, 255, 255,
-//     ]);
-//     let v = unsafe { TestStruct::deserialize_from_unchecked(&buffer).unwrap() };
-//     assert_eq!(v.value, 123456);
-//     // checksum is missing (deserialization should still happen)
-//     let buffer =
-//         Storage::from_buffer(&[71, 84, 72, 1, 1, 0, 0, 0, 64, 226, 1, 0, 3, 211, 94, 66, 8]);
-//     let v = unsafe { TestStruct::deserialize_from_unchecked(&buffer).unwrap() };
-//     assert_eq!(v.value, 123456);
-// }
-
-// #[test]
-// fn check_serde_128_bits_alignament() {
-//     #[derive(Debug, PartialEq, Eq, FlatMessage)]
-//     #[flat_message_options(metadata = false, store_name = false)]
-//     struct TestStruct {
-//         b6: Vec<u128>,
-//         b4: Vec<u64>,
-//         b5: Vec<u32>,
-//         name: String,
-//     }
-//     let mut v = Storage::default();
-//     let s = TestStruct {
-//         b6: [1, 2, 3].to_vec(),
-//         b4: [10, 20].to_vec(),
-//         b5: [40, 41, 42, 43].to_vec(),
-//         name: "Hello".to_string(),
-//     };
-//     s.serialize_to(&mut v, Config::default()).unwrap();
-//     let expected = &[
-//         71, 84, 72, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-//         0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-//         0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 10,
-//         0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 40, 0, 0, 0, 41, 0, 0, 0, 42, 0,
-//         0, 0, 43, 0, 0, 0, 5, 72, 101, 108, 108, 111, 0, 0, 131, 30, 44, 136, 132, 32, 44, 137,
-//         133, 35, 44, 139, 14, 189, 57, 141, 104, 80, 16, 124,
-//     ];
-//     assert_eq!(v.as_slice(), expected);
-// }
 
 #[test]
 fn check_max_size_for_serialization() {
@@ -1065,4 +760,110 @@ fn check_string_to_non_string_interchangeability() {
     let reader = StringReader::deserialize_from(&storage).unwrap();
     assert_eq!(reader.owned_text, "Hello World");
     assert_eq!(reader.optional_text, "Optional text");
+}
+
+#[test]
+fn check_serde_into_smaller_struct() {
+    #[derive(Debug, PartialEq, FlatMessage)]
+    struct TestStruct<'a> {
+        name: String,
+        surname: &'a str,
+        math: u8,
+        engligh: u8,
+        passed: bool,
+        average: f64,
+    }
+
+    #[derive(Debug, PartialEq, FlatMessage)]
+    struct TestSmallerStruct {
+        name: String,
+        math: u8,
+        engligh: u8,
+        average: f64,
+    }
+
+    let a = TestStruct {
+        name: "John".to_string(),
+        surname: "Doe",
+        math: 100,
+        engligh: 90,
+        passed: true,
+        average: 95.0,
+    };
+    let mut output = Storage::default();
+    a.serialize_to(&mut output, Config::default()).unwrap();
+    let b = TestSmallerStruct::deserialize_from(&output).unwrap();
+    assert_eq!(a.name, b.name);
+    assert_eq!(a.math, b.math);
+    assert_eq!(a.engligh, b.engligh);
+    assert_eq!(a.average, b.average);
+}
+
+#[test]
+fn check_serde_into_different_struct() {
+    #[derive(Debug, PartialEq, FlatMessage)]
+    struct TestStruct<'a> {
+        name: String,
+        surname: &'a str,
+        math: u8,
+        engligh: u8,
+        passed: bool,
+        average: f64,
+    }
+
+    #[derive(Debug, PartialEq, FlatMessage)]
+    struct TestSmallerStruct {
+        a: u8,
+        b: u16,
+        math: u16,
+    }
+
+    let a = TestStruct {
+        name: "John".to_string(),
+        surname: "Doe",
+        math: 100,
+        engligh: 90,
+        passed: true,
+        average: 95.0,
+    };
+    let mut output = Storage::default();
+    a.serialize_to(&mut output, Config::default()).unwrap();
+    let b = TestSmallerStruct::deserialize_from(&output);
+    assert_eq!(b.is_err(), true);
+}
+
+#[test]
+fn check_serde_into_different_type() {
+    #[derive(Debug, PartialEq, FlatMessage)]
+    struct TestStruct<'a> {
+        name: String,
+        surname: &'a str,
+        math: u8,
+        engligh: u8,
+        passed: bool,
+        average: f64,
+    }
+
+    #[derive(Debug, PartialEq, FlatMessage)]
+    struct TestStruct2<'a> {
+        name: String,
+        surname: &'a str,
+        math: u8,
+        engligh: u16, // english is not the same type
+        passed: bool,
+        average: f64,
+    }
+
+    let a = TestStruct {
+        name: "John".to_string(),
+        surname: "Doe",
+        math: 100,
+        engligh: 90,
+        passed: true,
+        average: 95.0,
+    };
+    let mut output = Storage::default();
+    a.serialize_to(&mut output, Config::default()).unwrap();
+    let b = TestStruct2::deserialize_from(&output);
+    assert_eq!(b.is_err(), true);
 }
