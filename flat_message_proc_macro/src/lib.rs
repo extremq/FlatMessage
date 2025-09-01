@@ -12,6 +12,7 @@ mod utils;
 mod validate_checksum;
 mod variant;
 mod version_validator_parser;
+mod serde_definition;
 
 use config::Config;
 use const_assetions::ConstAssertions;

@@ -1045,3 +1045,55 @@ fn chcck_v2_in_v1_new_added_fields() {
         }
     } 
 }
+
+#[test]
+fn check_lifetime() {
+
+    #[derive(FlatMessageStruct)]
+    pub struct VariantA {
+        pub a: u32,
+        pub b: u8,
+    }
+    
+    #[derive(FlatMessageStruct)]
+    pub struct VariantB<'lifetimefortest> {
+        pub a: &'lifetimefortest str,
+        pub b: &'lifetimefortest str,
+    }
+
+    #[derive(FlatMessageVariant)]
+    pub enum Variant<'lifetimefortest> {
+        #[flat_message_item(kind = struct, align = 4)]
+        A(VariantA),
+        #[flat_message_item(kind = struct, align = 4)]
+        B(VariantB<'lifetimefortest>),
+        C,
+        D,
+    }
+
+    
+    #[derive(FlatMessage)]
+    #[flat_message_options(optimized_unchecked_code = false)]
+    pub struct Thing<'lifetimefortest> {
+        pub d: &'lifetimefortest str,
+        #[flat_message_item(kind = variant, align = 4)]
+        pub variant: Variant<'lifetimefortest>,
+    }    
+
+    let t = Thing {
+        d: "Hello",
+        variant: Variant::A(VariantA { a: 1, b: 2 }),
+    };
+    let mut s = Storage::default();
+    t.serialize_to(&mut s, Config::default()).unwrap();
+    let t_deserialized = Thing::deserialize_from(&s).unwrap();
+    assert_eq!(t_deserialized.d, "Hello");
+    match t_deserialized.variant {
+        Variant::A(v) => {
+            assert_eq!(v.a, 1);
+        }
+        _ => {
+            panic!("Expected A variant");
+        }
+    }
+}

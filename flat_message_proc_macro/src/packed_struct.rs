@@ -4,7 +4,7 @@ use common::data_format::DataFormat;
 use quote::{format_ident, quote};
 use std::fmt::Write;
 use proc_macro2::TokenStream;
-
+use crate::serde_definition::SerdeDefinition;
 use syn::{DataStruct, DeriveInput};
 
 pub(crate) struct PackedStruct<'a> {
@@ -13,6 +13,7 @@ pub(crate) struct PackedStruct<'a> {
     fields: Vec<FieldInfo>,
     ignored_fields: Vec<FieldInfo>,
     data_format: DataFormat,
+    generics: syn::Generics,
 }
 
 impl<'a> PackedStruct<'a> {
@@ -51,7 +52,7 @@ impl<'a> PackedStruct<'a> {
     fn generate_const_assertion_functions(&self) -> Vec<proc_macro2::TokenStream> {
         Vec::new()
     }
-    fn generate_serde_from_buffer(&self) -> TokenStream {
+    fn generate_serde_from_buffer(&self, implicit_lifetime: TokenStream) -> TokenStream {
         let structure_hash = self.hash;
         let initial_field_padding = self.initial_field_padding();
         let ctor_code = self.create_object_ctor();
@@ -75,7 +76,7 @@ impl<'a> PackedStruct<'a> {
             first_field = false;
         }        
         quote! {
-            fn from_buffer(buf: &[u8], pos: usize) -> Option<Self> {
+            fn from_buffer(buf: &#implicit_lifetime [u8], pos: usize) -> Option<Self> {
                 if pos + 4 >= buf.len() {
                     return None;
                 }
@@ -90,7 +91,7 @@ impl<'a> PackedStruct<'a> {
             }
         }
     }
-    fn generate_serde_from_buffer_unchecked(&self) -> TokenStream {
+    fn generate_serde_from_buffer_unchecked(&self, implicit_lifetime: TokenStream) -> TokenStream {
         let initial_field_padding = self.initial_field_padding();
         let ctor_code = self.create_object_ctor();
         let mut v = Vec::new();
@@ -111,7 +112,7 @@ impl<'a> PackedStruct<'a> {
             first_field = false;
         }        
         quote! {
-            unsafe fn from_buffer_unchecked(buf: &[u8], pos: usize) -> Self {
+            unsafe fn from_buffer_unchecked(buf: &#implicit_lifetime [u8], pos: usize) -> Self {
                 let mut pos = pos + #initial_field_padding;
                 #(#v)*
                 #ctor_code
@@ -173,17 +174,19 @@ impl<'a> PackedStruct<'a> {
         }
     }    
     pub(crate) fn generate_code(&self) -> TokenStream {
-        let name = &self.name;
+        let serde_definition = SerdeDefinition::new_serde(&self.generics, &self.name);
+        let implicit_lifetime = serde_definition.implicit_lifetime;
+        let definition = serde_definition.definition;
         let df = format_ident!("{}", self.data_format.to_string());
         let size_code = self.generate_serde_size();
-        let from_buffer_code = self.generate_serde_from_buffer();
-        let from_buffer_unchecked_code = self.generate_serde_from_buffer_unchecked();
+        let from_buffer_code = self.generate_serde_from_buffer(implicit_lifetime.clone());
+        let from_buffer_unchecked_code = self.generate_serde_from_buffer_unchecked(implicit_lifetime.clone());
         let write_code = self.generate_serde_write();
         let const_assertions = self.generate_const_assertion_functions();
 
         quote! {
             #(#const_assertions)*
-            unsafe impl<'a> SerDe<'a> for #name {
+            #definition {
                 const DATA_FORMAT: flat_message::DataFormat = flat_message::DataFormat::#df;
 
                 #[inline(always)]
@@ -275,6 +278,7 @@ impl<'a> PackedStruct<'a> {
                 hash: common::hashes::fnv_32(&structure_hash),
                 ignored_fields,
                 data_format,
+                generics: input.generics.clone(),
             })
         } else {
             Err("Can not read fields from the structure !".to_string())

@@ -4,6 +4,7 @@ use common::data_format::DataFormat;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Data, DeriveInput, Fields};
+use crate::serde_definition::SerdeDefinition;
 
 struct VariantItem {
     name: String,
@@ -18,6 +19,7 @@ pub struct Variant {
     variants: Vec<VariantItem>,
     sealed_enum: bool,
     data_format: DataFormat,
+    generics: syn::Generics,
 }
 
 impl Variant {
@@ -148,7 +150,7 @@ impl Variant {
             }
         }
     }
-    fn generate_serde_from_buffer(&self) -> TokenStream {
+    fn generate_serde_from_buffer(&self, implicit_lifetime: TokenStream) -> TokenStream {
         let variant_name_hash = self.compute_hash();
         let mut v = Vec::new();
         for variant in &self.variants {
@@ -185,7 +187,7 @@ impl Variant {
         }
 
         quote! {
-            fn from_buffer(buf: &[u8], pos: usize) -> Option<Self> {
+            fn from_buffer(buf: &#implicit_lifetime [u8], pos: usize) -> Option<Self> {
                 if pos + 8 >= buf.len() {
                     return None;
                 }
@@ -202,7 +204,7 @@ impl Variant {
             }
         }
     }
-    fn generate_serde_from_buffer_unchecked(&self) -> TokenStream {
+    fn generate_serde_from_buffer_unchecked(&self, implicit_lifetime: TokenStream) -> TokenStream {
         let mut v = Vec::new();
         for variant in &self.variants {
             let name = variant.name_ident.clone();
@@ -238,7 +240,7 @@ impl Variant {
         }
 
         quote! {
-            unsafe fn from_buffer_unchecked(buf: &[u8], pos: usize) -> Self {
+            unsafe fn from_buffer_unchecked(buf: &#implicit_lifetime [u8], pos: usize) -> Self {
                 let p = buf.as_ptr();
                 let hash = unsafe { std::ptr::read_unaligned(p.add(pos+4) as *const u32) };
                 match hash {
@@ -249,17 +251,19 @@ impl Variant {
         }
     }
     pub fn generate_code(&self) -> TokenStream {
-        let name = &self.name;
         let df = format_ident!("{}", self.data_format.to_string());
+        let serde_definition = SerdeDefinition::new_serde(&self.generics, &self.name);
+        let implicit_lifetime = serde_definition.implicit_lifetime;
+        let definition = serde_definition.definition;
         let size_code = self.generate_serde_size();
-        let from_buffer_code = self.generate_serde_from_buffer();
-        let from_buffer_unchecked_code = self.generate_serde_from_buffer_unchecked();
+        let from_buffer_code = self.generate_serde_from_buffer(implicit_lifetime.clone());
+        let from_buffer_unchecked_code = self.generate_serde_from_buffer_unchecked(implicit_lifetime.clone());
         let write_code = self.generate_serde_write();
         let const_assertions = self.generate_const_assertion_functions();
 
         quote! {
             #(#const_assertions)*
-            unsafe impl<'a> SerDe<'a> for #name {
+            #definition {
                 const DATA_FORMAT: flat_message::DataFormat = flat_message::DataFormat::#df;
 
                 #[inline(always)]
@@ -378,6 +382,7 @@ impl TryFrom<syn::DeriveInput> for Variant {
         Ok(Self {
             name: input.ident,
             variants,
+            generics: input.generics.clone(),
             sealed_enum,
             data_format,
         })

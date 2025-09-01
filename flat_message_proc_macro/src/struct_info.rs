@@ -8,6 +8,7 @@ use quote::quote;
 use super::ConstAssertions;
 use syn::{DataStruct, DeriveInput};
 use super::data_type::DataType;
+use super::serde_definition::SerdeDefinition;
 
 
 mod gencode {
@@ -1068,13 +1069,10 @@ impl<'a> StructInfo<'a> {
             .into();
         }
         let name_hash = hashes::fnv_32(self.name.to_string().as_str());
-        let name = self.name;
-        let generics = self.generics;
-        let implicit_lifetime = if generics.lifetimes().count() > 0 {
-            quote! { #generics }
-        } else {
-            quote! { <'_>}
-        };
+        let serde_definition = SerdeDefinition::new_serde(&self.generics, &self.name);
+        let implicit_lifetime = serde_definition.implicit_lifetime;
+        let definition = serde_definition.definition;
+
         let serde_write = self.generate_serde_write_method(name_hash);
         let serde_size = self.generate_serde_size_method();
         let const_assertion_functions = self.generate_const_assertion_functions();
@@ -1089,12 +1087,12 @@ impl<'a> StructInfo<'a> {
 
             #(#const_assertion_functions)*
 
-            unsafe impl #generics flat_message::SerDe #implicit_lifetime for #name #generics {
+            #definition {
                 const DATA_FORMAT: DataFormat = #dataformat_value;
-                unsafe fn from_buffer_unchecked(buf: &[u8], pos: usize) -> Self {
+                unsafe fn from_buffer_unchecked(buf: &#implicit_lifetime [u8], pos: usize) -> Self {
                     flat_message::SerDe::from_buffer(buf, pos).unwrap()
                 }
-                fn from_buffer(buf: &[u8], pos: usize) -> Option<Self> {
+                fn from_buffer(buf: &#implicit_lifetime [u8], pos: usize) -> Option<Self> {
                     #header_read
                     match ref_offset_size {
                         RefOffsetSize::U8 => {
