@@ -2,6 +2,61 @@ use crate::*;
 use flat_message::*;
 
 #[test]
+fn simple_check() {
+
+    #[derive(FlatMessage, Debug, PartialEq)]
+    #[flat_message_options(checksum = true)]
+    struct ImportantData {
+        value: u64,
+        message: String,
+    }
+
+    let data = ImportantData {
+        value: 12345,
+        message: "Critical information".to_string(),
+    };
+
+    let mut storage = Storage::default();
+    data.serialize_to(&mut storage, Config::default()).unwrap();
+    let restored = ImportantData::deserialize_from(&storage).unwrap();
+    assert_eq!(data, restored);
+}
+
+#[test]
+fn check_corruption_detection() {
+
+    #[derive(FlatMessage, Debug, PartialEq)]
+    #[flat_message_options(checksum = true)]
+    struct ImportantData {
+        value: u64,
+        message: String,
+    }
+    let original = ImportantData {
+        value: 42,
+        message: "Hello World".to_string(),
+    };
+
+    let mut storage = Storage::default();
+    original.serialize_to(&mut storage, Config::default()).unwrap();
+
+    // Simulate corruption by modifying bytes
+    let mut corrupted_bytes = storage.as_slice().to_vec();
+    corrupted_bytes[10] = 0xFF;  // Corrupt a byte
+    let corrupted_storage = Storage::from_buffer(&corrupted_bytes);
+
+    // Attempt to deserialize corrupted data
+    match ImportantData::deserialize_from(&corrupted_storage) {
+        Err(Error::InvalidChecksum((actual, expected))) => {
+            println!("Corruption detected!");
+            println!("Expected checksum: 0x{:08X}", expected);
+            println!("Actual checksum: 0x{:08X}", actual);
+        }
+        Ok(_) => panic!("Should have detected corruption"),
+        Err(e) => panic!("Other error: {}", e),
+    }
+}
+
+#[test]
 fn check_serialization_checksum() {
     #[derive(Debug, PartialEq, Eq, FlatMessage)]
     #[flat_message_options(checksum = true, store_name = false)]

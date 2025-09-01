@@ -30,7 +30,7 @@
   - [Type Interchangeability](chapter-4/type_interchangeability.md)
   - [Default values]()
   - [Ignored fields]()
-  - [Checksums and Validation](chapter-4/checksums_and_validation.md)
+  - [Checksum Validation](chapter-4/checksum_validation.md)
 
 <!--
   - [Versioning](chapter-3/versioning.md)
