@@ -31,6 +31,7 @@
   - [Default values]()
   - [Ignored fields]()
   - [Checksum Validation](chapter-4/checksum_validation.md)
+  - [Message Name Validation](chapter-4/message_name_validation.md)
 
 <!--
   - [Versioning](chapter-3/versioning.md)
