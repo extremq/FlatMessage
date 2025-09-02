@@ -39,8 +39,9 @@ impl<'a> PackedStruct<'a> {
         // default
         for field in &self.ignored_fields {
             let name = field.name_ident();
+            let default_value = field.data_type.default_value(true);
             v.push(quote! {
-                #name: ::std::default::Default::default(),
+                #name: #default_value,
             });
         }
         quote! {
