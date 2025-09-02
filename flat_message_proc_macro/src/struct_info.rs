@@ -578,7 +578,7 @@ impl<'a> StructInfo<'a> {
     fn generate_non_mandatory_strict_field_deserialize_code(&self, dt: &DataType, inner_var: &syn::Ident, field_name_hash: u32, unchecked_code: bool, return_err: bool) -> proc_macro2::TokenStream {
         let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
         let fail_to_deserialize = if return_err { quote! { Err(flat_message::Error::FailToDeserialize(#field_name_hash)) }  } else { quote! { None } };
-        let default_value = dt.default_value();
+        let default_value = dt.default_value(false);
         let init_code = if unchecked_code { 
             gencode::unsafe_init_field_strict(dt, inner_var, invalid_field_offset)
         } else {
@@ -590,7 +590,7 @@ impl<'a> StructInfo<'a> {
     fn generate_mandatory_fallback_field_deserialize_code(&self, dt: &DataType, inner_var: &syn::Ident, field_name_hash: u32, unchecked_code: bool, return_err: bool) -> proc_macro2::TokenStream {
         let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
         let field_is_missing = if return_err { quote! { Err(flat_message::Error::FieldIsMissing(#field_name_hash)) }  } else { quote! { None } };
-        let default_value = dt.default_value();
+        let default_value = dt.default_value(false);
         let init_code = if unchecked_code { 
             gencode::unsafe_init_field_fallback(dt, inner_var, invalid_field_offset)
         } else {
@@ -601,7 +601,7 @@ impl<'a> StructInfo<'a> {
 
     fn generate_non_mandatory_fallback_field_deserialize_code(&self, dt: &DataType, inner_var: &syn::Ident, field_name_hash: u32, unchecked_code: bool, return_err: bool) -> proc_macro2::TokenStream {
         let invalid_field_offset = if return_err { quote! { Err(flat_message::Error::InvalidFieldOffset((offset as u32, hash_table_offset as u32))) } } else { quote! { None } };
-        let default_value = dt.default_value();
+        let default_value = dt.default_value(false);
         let init_code = if unchecked_code { 
             gencode::unsafe_init_field_fallback(dt, inner_var, invalid_field_offset)
         } else {
@@ -694,8 +694,9 @@ impl<'a> StructInfo<'a> {
     fn generate_default_code_for_ignored_fields(&self) -> Vec<proc_macro2::TokenStream> {
         self.ignored_fields.iter().map(|field| {
             let field_name = field.name_ident();
+            let default_value = field.data_type.default_value(true);
             quote! {
-                #field_name: Default::default(),
+                #field_name: #default_value,
             }
         }).collect()
     }

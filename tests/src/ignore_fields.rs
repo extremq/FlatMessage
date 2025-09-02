@@ -40,3 +40,62 @@ fn check_phanton_data_missing() {
     t2.serialize_to(&mut v2, Config::default()).unwrap();
     assert_eq!(v1.as_slice(), v2.as_slice(),);
 }
+
+#[test]
+fn check_skip_with_default() {
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct Test {
+        x: u8,
+        #[flat_message_item(ignore = true)]
+        y: u32,
+    }
+    let data = Test { x: 1, y: 2 };
+    let mut storage = Storage::default();
+    data.serialize_to(&mut storage, Config::default()).unwrap(); // y is skipped
+    let ds = Test::deserialize_from(&storage).unwrap();
+    assert_eq!(ds.x, 1);
+    assert_eq!(ds.y, 0); // not 2 -> 0 is the default for y
+}
+
+#[test]
+fn check_skip_with_custom_default() {
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct Test {
+        x: u8,
+        #[flat_message_item(ignore = true, default = 10)]
+        y: u32,
+    }
+    let data = Test { x: 1, y: 2 };
+    let mut storage = Storage::default();
+    data.serialize_to(&mut storage, Config::default()).unwrap(); // y is skipped
+    let ds = Test::deserialize_from(&storage).unwrap();
+    assert_eq!(ds.x, 1);
+    assert_eq!(ds.y, 10); // not 2 -> 10 is the custom default for y
+}
+
+
+#[test]
+fn check_skip_repr() {
+    #[derive(FlatMessage)]
+    #[flat_message_options(store_name = false)]
+    struct Test {
+        x: u8,
+        #[flat_message_item(ignore = true)]
+        y: u32,
+    }
+    let data = Test { x: 1, y: 2 };
+    let mut storage = Storage::default();
+    data.serialize_to(&mut storage, Config::default()).unwrap(); // y is skipped
+    assert_eq!(
+        storage.as_slice(),
+        &[
+            70, 76, 77, 1, 1, 0, 0, 0, // header - only one variable
+            1, // value of x
+            0, 0, 0, // padding
+            1, 80, 12, 253, // hash for "x"
+            8    // offset for "x"
+        ]
+    );
+}

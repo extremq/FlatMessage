@@ -308,7 +308,7 @@ impl DataType {
         }
     }
 
-    pub(crate) fn default_value(&self) -> proc_macro2::TokenStream {
+    pub(crate) fn default_value(&self, for_struct_initialization: bool) -> proc_macro2::TokenStream {
         let default_tokens = if let Some(default_value) = &self.default_value {
             let default_value_parsed: proc_macro2::TokenStream = parse_str(&default_value).unwrap();
             if self.option {
@@ -320,8 +320,12 @@ impl DataType {
             if self.option {
                 quote! { None }
             } else {
-                let ty = self.ty.clone();
-                quote! { #ty::default() }
+                if for_struct_initialization {
+                    quote! { ::std::default::Default::default() }
+                } else {
+                    let ty = self.ty.clone();
+                    quote! { #ty::default() }
+                }
             }
         };
         default_tokens
