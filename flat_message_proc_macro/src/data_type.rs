@@ -127,21 +127,46 @@ impl DataType {
         attr: &mut HashMap<String, AttributeValue>,
         _field_name: &str,
     ) -> Result<(), String> {
+        let mut should_process = false;
         if let Some(value) = attr.remove("default") {
             self.default_value = Some(value.as_str().to_string());
+            should_process = value.is_string_representation();
+        } else {
+            // apply some basic defaults for types that don't have them
+            if self.name == "&str" {
+                self.default_value = Some("".to_string());
+                should_process = true;
+            }
         }
-        // some basic checks
-        // 1. we should provide a default value for &str
-        if self.name == "&str" {
-            if self.default_value.is_none() {
-                // empty string
-                self.default_value = Some("\"\"".to_string());
-            } else {
+
+        // for the value - apply the following
+        if should_process {
+            // apply a different logic for string representation
+            // 1. for &str -> we need to enclose it in a raw string
+            if self.name == "&str" {
                 let mut value = self.default_value.take().unwrap();
                 value.insert_str(0, "r#\"");
                 value.push_str("\"#");
                 self.default_value = Some(value);
             }
+            // 2. for String -> we need to enclose it in a String::from(...)
+            if self.name == "String" {
+                let mut value = self.default_value.take().unwrap();
+                value.insert_str(0, "String::from(r#\"");
+                value.push_str("\"#)");
+                self.default_value = Some(value);
+            }
+            // 3. for an Option if its not None or does not starts with Some(...) we need to enclose it in a Some(...)
+            if self.option {
+                let mut value = self.default_value.take().unwrap();
+                if (!value.starts_with("Some(")) && (value != "None") {
+                    value.insert_str(0, "Some(");
+                    value.push_str(")");
+                }
+                self.default_value = Some(value);
+            }
+            // 4. for slices we need to enclose it in a &[...]n 
+            // 5. for vectors we need to enclose it in a Vec::new()
         }
 
         Ok(())
@@ -168,7 +193,8 @@ impl DataType {
             false
         };
         if has_mandatory {
-            self.mandatory = utils::to_bool(attr.get("mandatory").unwrap().as_str()).unwrap_or(true);
+            self.mandatory =
+                utils::to_bool(attr.get("mandatory").unwrap().as_str()).unwrap_or(true);
         }
         if has_validate {
             match attr.get("validate").unwrap().as_str() {
@@ -308,7 +334,10 @@ impl DataType {
         }
     }
 
-    pub(crate) fn default_value(&self, for_struct_initialization: bool) -> proc_macro2::TokenStream {
+    pub(crate) fn default_value(
+        &self,
+        for_struct_initialization: bool,
+    ) -> proc_macro2::TokenStream {
         let default_tokens = if let Some(default_value) = &self.default_value {
             let default_value_parsed: proc_macro2::TokenStream = parse_str(&default_value).unwrap();
             if self.option {
