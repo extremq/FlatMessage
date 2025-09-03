@@ -67,3 +67,92 @@ fn check_u32_custom_default_with_expression() {
     assert_eq!(r.a, 1);
     assert_eq!(r.b, 6); // custom default for u32 set to 6 for this field
 }
+
+#[test]
+fn check_str_default() {
+    #[derive(FlatMessage)]
+    struct Test<'a> {
+        a: u8,
+        #[flat_message_item(skip : true)]
+        b: &'a str,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: "xyz" }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, ""); // default for &str is ""
+}
+
+#[test]
+fn check_str_custom_default() {
+    #[derive(FlatMessage)]
+    struct Test<'a> {
+        a: u8,
+        #[flat_message_item(skip : true, default = "hello")]
+        b: &'a str,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: "xyz" }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, "hello"); // custom default for &str is "hello"
+}
+
+#[test]
+fn check_str_custom_default_with_constant() {
+    const MY_CONST: &str = "hello";
+    #[derive(FlatMessage)]
+    struct Test<'a> {
+        a: u8,
+        #[flat_message_item(skip : true, default = MY_CONST)]
+        b: &'a str,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: "xyz" }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, "hello"); // custom default for &str is "hello"
+}
+
+#[test]
+fn check_str_custom_default_with_constant_using_raw_string() {
+    const MY_CONST: &str = "hello";
+    #[derive(FlatMessage)]
+    struct Test<'a> {
+        a: u8,
+        #[flat_message_item(skip : true, default = r#"MY_CONST"#)]
+        b: &'a str,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: "xyz" }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, "hello"); // custom default for &str is "hello"
+}
+
+#[test]
+fn check_str_custom_default_with_default_value_using_raw_string() {
+    #[derive(FlatMessage)]
+    struct Test<'a> {
+        a: u8,
+        #[flat_message_item(skip : true, default = r#""hello""#)]
+        b: &'a str,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: "xyz" }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, "hello"); // custom default for &str is "hello"
+}
+
+#[test]
+fn check_str_custom_default_with_default_value_from_function() {
+    fn foo() -> &'static str {
+        "hello"
+    }
+    #[derive(FlatMessage)]
+    struct Test<'a> {
+        a: u8,
+        #[flat_message_item(skip : true, default = r#"foo()"#)]
+        b: &'a str,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: "xyz" }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, "hello"); // custom default for &str is "hello"
+}
