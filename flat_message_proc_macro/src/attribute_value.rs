@@ -14,6 +14,9 @@ impl AttributeValue {
     pub(crate) fn is_string_representation(&self) -> bool {
         matches!(self, AttributeValue::String(_))
     }
+    pub(crate) fn is_direct_representation(&self) -> bool {
+        matches!(self, AttributeValue::Direct(_))
+    }    
 }
 impl From<String> for AttributeValue {
     fn from(mut value: String) -> Self {

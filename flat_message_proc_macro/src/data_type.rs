@@ -130,12 +130,16 @@ impl DataType {
         let mut should_process = false;
         if let Some(value) = attr.remove("default") {
             self.default_value = Some(value.as_str().to_string());
-            should_process = value.is_string_representation();
+            // we preprocess the valiue is its is a string reprsentation or if its an option with a direct representation
+            should_process = (value.is_string_representation()) || (self.option && value.is_direct_representation());
         } else {
             // apply some basic defaults for types that don't have them
-            if self.name == "&str" {
-                self.default_value = Some("".to_string());
-                should_process = true;
+            // if the type is option, don't set anything - for option None will always be the daultt value.
+            if !self.option {
+                if self.name == "&str" {
+                    self.default_value = Some("".to_string());
+                    should_process = true;
+                }
             }
         }
 
@@ -165,7 +169,7 @@ impl DataType {
                 }
                 self.default_value = Some(value);
             }
-            // 4. for slices we need to enclose it in a &[...]n 
+            // 4. for slices we need to enclose it in a &[...]n
             // 5. for vectors we need to enclose it in a Vec::new()
         }
 
@@ -340,11 +344,7 @@ impl DataType {
     ) -> proc_macro2::TokenStream {
         let default_tokens = if let Some(default_value) = &self.default_value {
             let default_value_parsed: proc_macro2::TokenStream = parse_str(&default_value).unwrap();
-            if self.option {
-                quote! { Some(#default_value_parsed) }
-            } else {
-                quote! { #default_value_parsed }
-            }
+            quote! { #default_value_parsed }
         } else {
             if self.option {
                 quote! { None }

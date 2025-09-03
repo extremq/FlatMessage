@@ -69,6 +69,36 @@ fn check_u32_custom_default_with_expression() {
 }
 
 #[test]
+fn check_option_u32_default() {
+    #[derive(FlatMessage)]
+    struct Test {
+        a: u8,
+        #[flat_message_item(skip : true)]
+        b: Option<u32>,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: Some(2)}, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, None); // custom default for Option<u32> is None
+}
+
+
+#[test]
+fn check_option_u32_custom_default() {
+    #[derive(FlatMessage)]
+    struct Test {
+        a: u8,
+        #[flat_message_item(skip : true, default = 41)]
+        b: Option<u32>,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: Some(2)}, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, Some(41)); // custom default for Option<u32> is Some(41)
+}
+
+
+#[test]
 fn check_str_default() {
     #[derive(FlatMessage)]
     struct Test<'a> {
@@ -155,4 +185,46 @@ fn check_str_custom_default_with_default_value_from_function() {
     let r = serde!(Test { a: 1, b: "xyz" }, Test, s);
     assert_eq!(r.a, 1);
     assert_eq!(r.b, "hello"); // custom default for &str is "hello"
+}
+
+#[test]
+fn check_option_str_default() {
+    #[derive(FlatMessage)]
+    struct Test<'a> {
+        a: u8,
+        #[flat_message_item(skip : true)]
+        b: Option<&'a str>,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: Some("xyz") }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, None); // custom default for Option<&str> is None
+}
+
+#[test]
+fn check_option_str_custom_default() {
+    #[derive(FlatMessage)]
+    struct Test<'a> {
+        a: u8,
+        #[flat_message_item(skip : true, default = "hello")]
+        b: Option<&'a str>,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: Some("xyz") }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, Some("hello")); // custom default for Option<&str> is Some("hello")
+}
+
+#[test]
+fn check_option_str_custom_default_2() {
+    #[derive(FlatMessage)]
+    struct Test<'a> {
+        a: u8,
+        #[flat_message_item(skip : true, default = hello)]
+        b: Option<&'a str>,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: Some("xyz") }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, Some("hello")); // custom default for Option<&str> is Some("hello")
 }
