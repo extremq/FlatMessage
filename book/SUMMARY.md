@@ -28,7 +28,7 @@
   - [Nested Structures](chapter-3/nested_structs.md)
 - [Advanced Features](chapter-4/advanced_features.md)
   - [Type Interchangeability](chapter-4/type_interchangeability.md)
-  - [Default values]()
+  - [Default values](chapter-4/default_values.md)
   - [Ignoring fields](chapter-4/ignoring_fields.md)
   - [Checksum Validation](chapter-4/checksum_validation.md)
   - [Message Name Validation](chapter-4/message_name_validation.md)
