@@ -1,4 +1,5 @@
 mod attribute_parser;
+mod attribute_value;
 mod config;
 mod const_assetions;
 mod data_type;

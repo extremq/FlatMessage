@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::attribute_parser;
+use crate::{attribute_parser, attribute_value::AttributeValue};
 
 use super::utils;
 use common::data_format::DataFormat;
@@ -124,11 +124,11 @@ impl DataType {
     }
     fn update_default_value(
         &mut self,
-        attr: &mut HashMap<String, String>,
-        field_name: &str,
+        attr: &mut HashMap<String, AttributeValue>,
+        _field_name: &str,
     ) -> Result<(), String> {
         if let Some(value) = attr.remove("default") {
-            self.default_value = Some(value);
+            self.default_value = Some(value.as_str().to_string());
         }
         // some basic checks
         // 1. we should provide a default value for &str
@@ -148,7 +148,7 @@ impl DataType {
     }
     fn update_attributes(
         &mut self,
-        attr: &mut HashMap<String, String>,
+        attr: &mut HashMap<String, AttributeValue>,
         field_nane: &str,
     ) -> Result<(), String> {
         if attr.len() == 0 {
@@ -161,20 +161,20 @@ impl DataType {
         let has_mandatory = attr.contains_key("mandatory");
         let has_validate = attr.contains_key("validate");
         let ignore_field = if attr.contains_key("ignore") {
-            utils::to_bool(attr.get("ignore").unwrap()).unwrap_or(false)
+            utils::to_bool(attr.get("ignore").unwrap().as_str()).unwrap_or(false)
         } else if attr.contains_key("skip") {
-            utils::to_bool(attr.get("skip").unwrap()).unwrap_or(false)
+            utils::to_bool(attr.get("skip").unwrap().as_str()).unwrap_or(false)
         } else {
             false
         };
         if has_mandatory {
-            self.mandatory = utils::to_bool(attr.get("mandatory").unwrap()).unwrap_or(true);
+            self.mandatory = utils::to_bool(attr.get("mandatory").unwrap().as_str()).unwrap_or(true);
         }
         if has_validate {
             match attr.get("validate").unwrap().as_str() {
                 "strict" => self.use_default_if_deserialize_fails = false,
                 "fallback" => self.use_default_if_deserialize_fails = true,
-                _ => return Err(format!("Invalid value for the 'validate' attribute: '{}' in field: '{}'. The possible values are: 'strict' or 'fallback'.",attr.get("validate").unwrap(), field_nane)),
+                _ => return Err(format!("Invalid value for the 'validate' attribute: '{}' in field: '{}'. The possible values are: 'strict' or 'fallback'.",attr.get("validate").unwrap().as_str(), field_nane)),
             }
         }
         if ignore_field {
@@ -182,12 +182,12 @@ impl DataType {
             return Ok(());
         } else {
             if has_kind {
-                let kind = attr.get("kind").unwrap();
+                let kind = attr.get("kind").unwrap().as_str();
                 if kind == "enum" {
                     if !has_repr {
                         return Err(format!("If we provided the 'kind' attribute with the value 'enum' you need to also provide the attribute 'repr' (for field: '{}')",field_nane));
                     }
-                    let repr = attr.get("repr").unwrap();
+                    let repr = attr.get("repr").unwrap().as_str();
                     let new_name = format!("enum_{}", repr);
                     let new_data_format = DataFormat::from(new_name.as_str());
                     if new_data_format.is_enum() == false {
@@ -200,7 +200,7 @@ impl DataType {
                     if !has_repr {
                         return Err(format!("If we provided the 'kind' attribute with the value 'flags' you need to also provide the attribute 'repr' (for field: '{}')",field_nane));
                     }
-                    let repr = attr.get("repr").unwrap();
+                    let repr = attr.get("repr").unwrap().as_str();
                     let new_name = format!("flags_{}", repr);
                     let new_data_format = DataFormat::from(new_name.as_str());
                     if new_data_format.is_flags() == false {
@@ -213,8 +213,8 @@ impl DataType {
                     if !has_align {
                         return Err(format!("If we provided the 'kind' attribute with the value 'struct' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
                     }
-                    let align = attr.get("align").unwrap();
-                    match align.as_str() {
+                    let align = attr.get("align").unwrap().as_str();
+                    match align {
                         "4" => self.data_format = DataFormat::Struct4,
                         "8" => self.data_format = DataFormat::Struct8,
                         "16" => self.data_format = DataFormat::Struct16,
@@ -226,8 +226,8 @@ impl DataType {
                     if !has_align {
                         return Err(format!("If we provided the 'kind' attribute with the value 'variant' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
                     }
-                    let align = attr.get("align").unwrap();
-                    match align.as_str() {
+                    let align = attr.get("align").unwrap().as_str();
+                    match align {
                         "1" => self.data_format = DataFormat::Variant8,
                         "2" => self.data_format = DataFormat::Variant16,
                         "4" => self.data_format = DataFormat::Variant32,
@@ -241,8 +241,8 @@ impl DataType {
                     if !has_align {
                         return Err(format!("If we provided the 'kind' attribute with the value 'packed' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
                     }
-                    let align = attr.get("align").unwrap();
-                    self.data_format = match align.as_str() {
+                    let align = attr.get("align").unwrap().as_str();
+                    self.data_format = match align {
                         "1" => DataFormat::PackedStruct8,
                         "2" => DataFormat::PackedStruct16,
                         "4" => DataFormat::PackedStruct32,

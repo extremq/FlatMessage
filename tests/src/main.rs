@@ -32,7 +32,8 @@ mod version_with_structs;
 mod checksum_validation;
 #[cfg(test)]
 mod name_validation;
-
+#[cfg(test)]
+mod default_values;
 
 #[cfg(test)]
 pub(crate) use flat_message::{Config, FlatMessage, Storage};

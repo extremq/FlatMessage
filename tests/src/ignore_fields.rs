@@ -83,9 +83,9 @@ fn check_skip_repr() {
     struct Test {
         x: u8,
         #[flat_message_item(ignore = true)]
-        y: u32,
+        _y: u32,
     }
-    let data = Test { x: 1, y: 2 };
+    let data = Test { x: 1, _y: 2 };
     let mut storage = Storage::default();
     data.serialize_to(&mut storage, Config::default()).unwrap(); // y is skipped
     assert_eq!(

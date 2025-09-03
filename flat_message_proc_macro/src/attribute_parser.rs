@@ -1,8 +1,11 @@
 use std::collections::HashMap;
-
+use crate::attribute_value::AttributeValue;
 use proc_macro::*;
 
-pub(crate) fn parse(attr: TokenStream) -> HashMap<String, String> {
+
+
+
+pub(crate) fn parse(attr: TokenStream) -> HashMap<String, AttributeValue> {
     let mut m = HashMap::new();
 
     let mut expecting_separator = false;
@@ -19,13 +22,12 @@ pub(crate) fn parse(attr: TokenStream) -> HashMap<String, String> {
                 }
                 if let Some(TokenTree::Punct(punct)) = it.next() {
                     if (punct.as_char() == '=') || (punct.as_char() == ':') {
-                        let mut attr_value = match it.next() {
+                        let attr_value = match it.next() {
                             Some(TokenTree::Ident(ident)) => ident.to_string(),
                             Some(TokenTree::Literal(lit)) => lit.to_string(),
                             _ => panic!("Expecting a value for attribute: '{}'", attr_name),
                         };
-                        crate::utils::strip_string_quotes(&mut attr_value);
-                        m.insert(attr_name, attr_value);
+                        m.insert(attr_name, AttributeValue::from(attr_value));
                         expecting_separator = true;
                     } else {
                         panic!(
