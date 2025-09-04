@@ -88,13 +88,13 @@ fn check_option_u32_custom_default() {
     #[derive(FlatMessage)]
     struct Test {
         a: u8,
-        #[flat_message_item(skip : true, default = 41)]
+        #[flat_message_item(skip : true, default = "41")]
         b: Option<u32>,
     }
     let mut s = Storage::default();
     let r = serde!(Test { a: 1, b: Some(2)}, Test, s);
     assert_eq!(r.a, 1);
-    assert_eq!(r.b, Some(41)); // custom default for Option<u32> is Some(41)
+    assert_eq!(r.b, Some(41)); // custom default for Option<u32> is Some(41) (41 should be provided as a string "41" in order of it to be converted into Some(41))
 }
 
 
@@ -220,7 +220,7 @@ fn check_option_str_custom_default_2() {
     #[derive(FlatMessage)]
     struct Test<'a> {
         a: u8,
-        #[flat_message_item(skip : true, default = hello)]
+        #[flat_message_item(skip : true, default = "hello")]
         b: Option<&'a str>,
     }
     let mut s = Storage::default();

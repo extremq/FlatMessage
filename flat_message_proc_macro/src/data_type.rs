@@ -130,8 +130,8 @@ impl DataType {
         let mut should_process = false;
         if let Some(value) = attr.remove("default") {
             self.default_value = Some(value.as_str().to_string());
-            // we preprocess the valiue is its is a string reprsentation or if its an option with a direct representation
-            should_process = (value.is_string_representation()) || (self.option && value.is_direct_representation());
+            // we preprocess the valiue is its is a string reprsentation
+            should_process = value.is_string_representation();
         } else {
             // apply some basic defaults for types that don't have them
             // if the type is option, don't set anything - for option None will always be the daultt value.

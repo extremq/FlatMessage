@@ -123,7 +123,7 @@ mod scenario_6 {
         #[flat_message_options(version = 2)]
         pub struct TestStruct {
             pub value: u8,
-            #[flat_message_item(mandatory = false, default = 3)]
+            #[flat_message_item(mandatory = false, default = "3")]
             pub value2: Option<u16>, // new optional field added
         }
     }

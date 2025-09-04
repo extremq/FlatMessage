@@ -36,3 +36,5 @@ When using the attribute `default`, you can specify a custom default value for t
 2. A string representation of the value (e.g. `default = "10"` ). In this case the value is parsed and adjusted to fit the actual type of the field.
 3. A raw string representation of the value (e.g. `default = r#"foo(1,2,3)"#`). In this case the value is use exactly as is. This is in particular useul if you want to use exprssior or a call to a functon to initialize the value.
 
+## String representations
+
