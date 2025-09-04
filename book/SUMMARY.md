@@ -32,7 +32,7 @@
   - [Ignoring fields](chapter-4/ignoring_fields.md)
   - [Checksum Validation](chapter-4/checksum_validation.md)
   - [Message Name Validation](chapter-4/message_name_validation.md)
-
+- [Benchmarks & Performance](chapter-5/benchmarks.md)
 <!--
   - [Versioning](chapter-3/versioning.md)
   - [Metadata and Introspection](chapter-3/metadata_and_introspection.md)
@@ -43,6 +43,6 @@
   - [Real-World Patterns](chapter-4/real_world_patterns.md)
   - [Migration Strategies](chapter-4/migration_strategies.md)
   - [Troubleshooting](chapter-4/troubleshooting.md)
-- [Benchmarks & Performance](chapter-5/benchmarks.md)
+
   - [Performance Comparison](chapter-5/performance_comparison.md)
   - [Memory Usage](chapter-5/memory_usage.md) -->

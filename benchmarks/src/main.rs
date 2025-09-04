@@ -5,6 +5,7 @@ use crate::get_size_min::GetSize;
 use ascii_table::{Align, AsciiTable};
 use clap::Parser;
 use clap::Subcommand;
+use clap::ValueEnum;
 use flat_message::{FlatMessage, FlatMessageOwned, Storage};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -387,7 +388,7 @@ fn print_results_markdown(r: &[[&dyn Display; 7]], colums: &[(&str, Align)]) {
     fs::write("bench_table.md", output).unwrap();
 }
 
-fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos: bool) {
+fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos: bool, output: OutputType) {
     // compute the times
     for result in results.iter_mut() {
         let a = compute_test_times(&mut result.times_se);
@@ -443,30 +444,14 @@ fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos
         ]);
     }
 
-    // let avg_size = results.iter().map(|x| x.size).sum::<usize>() / results.len();
-    // let avg_se_time = results.iter().map(|x| x.time_se).sum::<Duration>() / results.len() as u32;
-    // let avg_de_time = results.iter().map(|x| x.time_de).sum::<Duration>() / results.len() as u32;
-    // let avg_se_de_time =
-    //     results.iter().map(|x| x.time_se_de).sum::<Duration>() / results.len() as u32;
-
-    // let avg_se_time = fmt_time_ms(avg_se_time);
-    // let avg_de_time = fmt_time_ms(avg_de_time);
-    // let avg_se_de_time = fmt_time_ms(avg_se_de_time);
-
-    r.push(dashes);
-    // r.push([
-    //     &"average",
-    //     &"",
-    //     &"",
-    //     &avg_size,
-    //     &"",
-    //     &avg_se_time,
-    //     &avg_de_time,
-    //     &avg_se_de_time,
-    // ]);
-
-    print_results_ascii_table(&r, &colums);
-    print_results_markdown(&r, &colums);
+    match output {
+        OutputType::Ascii => {
+            print_results_ascii_table(&r, &colums);
+        }
+        OutputType::Markdown => {
+            print_results_markdown(&r, &colums);
+        }
+    }
 }
 
 fn do_one<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize>(
@@ -578,6 +563,13 @@ enum Commands {
     ListTests,
 }
 
+#[derive(Debug, Default, Copy, Clone, ValueEnum)]
+enum OutputType {
+    #[default]
+    Ascii,
+    Markdown,
+}
+
 #[derive(clap::Parser)]
 #[command(name = "benchmarks", disable_help_flag = true, disable_help_subcommand = true)]
 struct Args {
@@ -593,6 +585,8 @@ struct Args {
     names: bool,
     #[arg(long, default_value_t = 10, global = true)]
     iterations: u32,
+    #[arg(long, value_enum, default_value_t = OutputType::Ascii, global = true)]
+    output: OutputType
 }
 
 fn run_tests(args: Args) {
@@ -669,7 +663,7 @@ fn run_tests(args: Args) {
         println!(" done in {:.2}ms", start.elapsed().as_secs_f64() * 1000.0);
     }
 
-    print_results(results, &algos, all_algos);
+    print_results(results, &algos, all_algos, args.output);
 }
 fn main() {
     let args = Args::parse();
