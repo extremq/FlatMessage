@@ -38,3 +38,35 @@ When using the attribute `default`, you can specify a custom default value for t
 
 ## String representations
 
+When using a string representation: `default = "..."` the following steps are checked:
+1. if the type is `&str` the value of the **default** attribute is kept as it is.
+2. if the type is `String` th value of the **default** attribute is converted into a String
+3. if the type is **NOT** a string the quotes (`"`) are removed and the actual value will be used
+4. if the type is on option ( `Option<T>` ) then:
+    * if the value of the **default** attribute is `None` then the field is set to `None`
+    * if the value of the **default** attribute is `Some(T)` then the field is set to `Some(T)`
+    * otherwise the value of the **default** attribute is converted into a `Some<value>`
+  
+## Examples
+
+| Type                                    | Default value               | Actual value                                                                                                                           |
+| --------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Numeric (**u8**, **u32**, **f32**, etc) | `default = "10"`            | `10`                                                                                                                                   |
+| Numeric (**u8**, **u32**, **f32**, etc) | `default = 123`             | `123`                                                                                                                                  |
+| Numeric (**u8**, **u32**, **f32**, etc) | `default = MY_CONSTANT`     | `MY_CONSTANT` (it is assumed that `MY_CONSTANT` exists in the current scope)                                                           |
+| Numeric (**u8**, **u32**, **f32**, etc) | `default = r#"1+2+3"#`      | `6`                                                                                                                                    |
+| Boolean value (**bool**)                | `default = "true"`          | `true`                                                                                                                                 |
+| Boolean value (**bool**)                | `default = false`           | `false`                                                                                                                                |
+| Boolean value (**bool**)                | `default = r#"foo(a,b,c)"#` | `foo(a,b,c)` (it is assumed that `a`, `b`, `c` and the function `foo` exists in the current scope)                                     |
+| String reference ( **&str** )           | `default = "hello"`         | `"hello"`                                                                                                                              |
+| String ( **String** )                   | `default = "hello"`         | `String::from("hello")`                                                                                                                |
+| String reference ( **&str** )           | `default = MY_CONSTANT`     | `"MY_CONSTANT"` (it is assumed that `MY_CONSTANT` exists in the current scope)                                                         |
+| Option<T>                               | `default = "None"`          | `None`                                                                                                                                 |
+| Option<T>                               | `default = "Some(123)"`     | `Some(123)`                                                                                                                            |
+| Option<T>                               | `default = MY_CONSTANT`     | `MY_CONSTANT` (it is assumed that `MY_CONSTANT` exists in the current scope and it of type `Option<T>`)                                |
+| Option<T>                               | `default = r#"foo(1+2+3)"#` | `foo(1+2+3)` (it is assumed that `foo` exists in the current scope and returns an `Option<T>`)                                         |
+| Option<T>                               | `default = "4"`             | `Some(4)` (the value is automatically converted into a `Some<T>`)                                                                      |
+| Option<&str>                            | `default = "Hello"`         | `Some("Hello")`                                                                                                                        |
+| Option<String>                          | `default = "Hello"`         | `Some(String::from("Hello"))` (first the content of the quotes is converted into a String, then it is converted into a `Some<String>`****) |
+
+**Remark:** If you need to be 100% sure that the value is converted into the correct type, you can use the raw string representation (e.g. `default = r#"Some(1+2+3)"#`).

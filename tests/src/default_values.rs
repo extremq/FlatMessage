@@ -216,15 +216,58 @@ fn check_option_str_custom_default() {
 }
 
 #[test]
-fn check_option_str_custom_default_2() {
+fn check_option_string_custom_default() {
+    #[derive(FlatMessage)]
+    struct Test {
+        a: u8,
+        #[flat_message_item(skip : true, default = "hello")]
+        b: Option<String>,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: Some(String::from("xyz")) }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, Some(String::from("hello"))); // custom default for Option<String> is Some(String::from("hello"))
+}
+
+#[test]
+fn check_option_str_custom_default_with_constant() {
+    const MY_CONST: Option<&'static str> = Some("hello");
     #[derive(FlatMessage)]
     struct Test<'a> {
         a: u8,
-        #[flat_message_item(skip : true, default = "hello")]
+        #[flat_message_item(skip : true, default = MY_CONST)]
         b: Option<&'a str>,
     }
     let mut s = Storage::default();
     let r = serde!(Test { a: 1, b: Some("xyz") }, Test, s);
     assert_eq!(r.a, 1);
     assert_eq!(r.b, Some("hello")); // custom default for Option<&str> is Some("hello")
+}
+
+#[test]
+fn check_vector_default() {
+    #[derive(FlatMessage)]
+    struct Test {
+        a: u8,
+        #[flat_message_item(skip : true)]
+        b: Vec<u8>,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: vec![1, 2, 3] }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, Vec::new()); // custom default for Vec<u8> is Vec::new()
+}
+
+#[test]
+fn check_vector_custom_default() {
+    #[derive(FlatMessage)]
+    struct Test {
+        a: u8,
+        #[flat_message_item(skip : true, default = "vec![10,20,30]")]
+        b: Vec<u8>,
+    }
+    let mut s = Storage::default();
+    let r = serde!(Test { a: 1, b: vec![1, 2, 3] }, Test, s);
+    assert_eq!(r.a, 1);
+    assert_eq!(r.b, vec![10, 20, 30]); // custom default for Vec<u8> is vec![10, 20, 30]
 }
