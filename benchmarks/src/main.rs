@@ -504,9 +504,13 @@ fn print_results(
 
         i.size_repr = if i.min_size > 0 {
             let proc = (i.size * 100 / i.min_size) as i32 - 100;
-            format!("{} [{:>+5}%]", i.size, proc)
+            if proc>999 {
+                format!("{} [>999%]", i.size)
+            } else {
+                format!("{} [{:>+4}%]", i.size, proc)
+            }
         } else {
-            format!("{} [-----%]", i.size)
+            format!("{} [----%]", i.size)
         };
 
         let ch = if i.needs_schema { &'*' } else { &' ' };
