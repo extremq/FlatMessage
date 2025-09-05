@@ -411,6 +411,9 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], fil
     for row in r {
         // name
         write!(output, "| {} ", row[2]).unwrap();
+        if row[1].to_string() == "*" {
+            write!(output, " [schema]").unwrap();
+        }
         // size
         write!(output, "| {} ", row[3]).unwrap();
         // se time
