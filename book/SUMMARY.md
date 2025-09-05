@@ -33,6 +33,9 @@
   - [Checksum Validation](chapter-4/checksum_validation.md)
   - [Message Name Validation](chapter-4/message_name_validation.md)
 - [Benchmarks & Performance](chapter-5/benchmarks.md)
+  - [Performance Results](chapter-5/performance_results.md)
+    - [Multiple Fields](chapter-5/results/multiple_fields.md)
+    - [Point](chapter-5/results/point.md)
 <!--
   - [Versioning](chapter-3/versioning.md)
   - [Metadata and Introspection](chapter-3/metadata_and_introspection.md)
