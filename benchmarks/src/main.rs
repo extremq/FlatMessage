@@ -507,7 +507,7 @@ fn print_results(
 
         i.size_repr = if i.min_size > 0 {
             let proc = (i.size * 100 / i.min_size) as i32 - 100;
-            if proc>999 {
+            if proc > 999 {
                 format!("{} [>999%]", i.size)
             } else {
                 format!("{} [{:>+4}%]", i.size, proc)
@@ -648,6 +648,7 @@ enum Commands {
     Help,
     ListAlgos,
     ListTests,
+    MDBookTests,
 }
 
 #[derive(Debug, Default, Copy, Clone, ValueEnum)]
@@ -683,7 +684,7 @@ struct Args {
     file_name: String,
 }
 
-fn run_tests(args: Args) {
+fn run_tests(args: Args, test_name: &str) {
     let (all_tests, tests) = split_tests::<TestKind>(&args.tests);
     let (all_algos, algos) = split_tests(&args.algos);
 
@@ -696,10 +697,11 @@ fn run_tests(args: Args) {
         };
     }
 
+    println!("Starting execution of test: {}", test_name);
     use std::io::{self, Write};
     use TestKind::*;
     for i in 0..args.iterations {
-        print!("Running iteration {}/{}", i + 1, args.iterations);
+        print!("- Running iteration {:>2}/{}", i + 1, args.iterations);
         io::stdout().flush().unwrap();
         let start = Instant::now();
         {
@@ -759,11 +761,30 @@ fn run_tests(args: Args) {
 
     print_results(results, &algos, all_algos, args.output, &args.file_name);
 }
+
+fn run_one_mdbook_test(test_name: &str, time: u32, iteratons: u32) {
+    let a = Args{
+        tests: test_name.to_string(),
+        algos: "all".to_string(),
+        times: time,
+        iterations: iteratons,
+        output: OutputType::Mdbook,
+        names: false,
+        command: Commands::Run,
+        file_name: format!("mdbook_{}.md", test_name),
+    };
+    run_tests(a, test_name);
+}
+fn run_mdbook_tests() {
+    run_one_mdbook_test("multiple_fields", 1000, 10);
+    run_one_mdbook_test("point", 10000, 10);
+}
+
 fn main() {
     let args = Args::parse();
     match args.command {
         Commands::Run => {
-            run_tests(args);
+            run_tests(args, "*");
         }
         Commands::Help => {
             println!("usage: {} <command>", env!("CARGO_BIN_NAME"));
@@ -774,5 +795,6 @@ fn main() {
         Commands::ListTests => {
             println!("available tests: {}", TestKind::all().join(", "));
         }
+        Commands::MDBookTests => run_mdbook_tests(),
     }
 }
