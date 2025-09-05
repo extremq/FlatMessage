@@ -160,7 +160,8 @@ struct Result {
     top_test_name: TestKind,
     size: usize,
     needs_schema: bool,
-    min_size: String,
+    min_size: usize,
+    size_repr: String,
     //
     times_se: Vec<Duration>,
     times_de: Vec<Duration>,
@@ -231,10 +232,6 @@ fn se_de_bench<T, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T + Cl
     start.elapsed()
 }
 
-fn fmt_time_ms(x: Duration) -> String {
-    format!("{:.2}", x.as_secs_f64() * 1000.0)
-}
-
 fn bench<T: GetSize, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T + Clone>(
     top_test_name: TestKind,
     test_name: AlgoKind,
@@ -269,7 +266,7 @@ fn bench<T: GetSize, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T +
             name: test_name,
             top_test_name,
             size: data.vec.len().max(data.storage.len()),
-            min_size: x.get_heap_size().to_string(),
+            min_size: x.get_heap_size(),
             needs_schema,
             times_se: vec![time_se],
             times_de: vec![time_de],
@@ -277,6 +274,7 @@ fn bench<T: GetSize, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T +
             time_se_ms: String::new(),
             time_de_ms: String::new(),
             time_se_de_ms: String::new(),
+            size_repr: String::new(),
             compare_key: 0,
         });
     }
@@ -404,7 +402,7 @@ fn print_results_markdown(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], fil
     fs::write(file_name, output).unwrap();
 }
 
-fn print_results_mdbook(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], file_name: &str) {
+fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], file_name: &str) {
     let mut output = String::with_capacity(4096);
 
     writeln!(output, "| Method | Size (b) | Serialization Time (ms) | Deserialization Time (ms) | Total Time (ms) |").unwrap();
@@ -423,8 +421,11 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], file_
         write!(output, "| {} ", row[6]).unwrap();
         writeln!(output, "|").unwrap();
     }
-    output = output.replace("[",r#"<span style="font-family:monospace; opacity:0.5; font-size:0.75em">["#);
-    output = output.replace("]",r#"]</span>"#);
+    output = output.replace(
+        "[",
+        r#"<span style="font-family:monospace; opacity:0.5; font-size:0.75em">["#,
+    );
+    output = output.replace("]", r#"]</span>"#);
     let mut mdbook_output = String::with_capacity(output.len());
     let mut inside_sb = false;
     for ch in output.chars() {
@@ -453,7 +454,13 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], file_
     fs::write(file_name, mdbook_output).unwrap();
 }
 
-fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos: bool, output: OutputType, file_name: &str) {
+fn print_results(
+    results: &mut Vec<Result>,
+    algos: &HashSet<AlgoKind>,
+    all_algos: bool,
+    output: OutputType,
+    file_name: &str,
+) {
     // compute the times
     for result in results.iter_mut() {
         let a = compute_test_times(&mut result.times_se);
@@ -484,25 +491,30 @@ fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos
     let mut r: Vec<[&dyn Display; 7]> = Vec::new();
     let mut last = None;
 
-    let dashes: [&dyn Display; 7] = [
-        &"---", &"---", &"---", &"---", &"---", &"---", &"---",
-    ];
+    let dashes: [&dyn Display; 7] = [&"---", &"---", &"---", &"---", &"---", &"---", &"---"];
 
     let one_algo = if all_algos { false } else { algos.len() == 1 };
 
-    for i in results.iter() {
+    for i in results.iter_mut() {
         let current = Some(&i.top_test_name);
         if !last.is_none() && last != current && !one_algo {
             r.push(dashes);
         }
         last = current;
 
+        i.size_repr = if i.min_size > 0 {
+            let proc = (i.size * 100 / i.min_size) as i32 - 100;
+            format!("{} [{:>+5}%]", i.size, proc)
+        } else {
+            format!("{} [-----%]", i.size)
+        };
+
         let ch = if i.needs_schema { &'*' } else { &' ' };
         r.push([
             i.top_test_name.display(),
             ch,
             i.name.display(),
-            &i.size,
+            &i.size_repr,
             &i.time_se_ms,
             &i.time_de_ms,
             &i.time_se_de_ms,
@@ -640,7 +652,11 @@ enum OutputType {
 }
 
 #[derive(clap::Parser)]
-#[command(name = "benchmarks", disable_help_flag = true, disable_help_subcommand = true)]
+#[command(
+    name = "benchmarks",
+    disable_help_flag = true,
+    disable_help_subcommand = true
+)]
 struct Args {
     #[command(subcommand)]
     command: Commands,
@@ -657,7 +673,7 @@ struct Args {
     #[arg(long, value_enum, default_value_t = OutputType::Ascii, global = true)]
     output: OutputType,
     #[arg(long, default_value = "result.md", global = true)]
-    file_name: String,    
+    file_name: String,
 }
 
 fn run_tests(args: Args) {
@@ -673,8 +689,8 @@ fn run_tests(args: Args) {
         };
     }
 
-    use TestKind::*;
     use std::io::{self, Write};
+    use TestKind::*;
     for i in 0..args.iterations {
         print!("Running iteration {}/{}", i + 1, args.iterations);
         io::stdout().flush().unwrap();
