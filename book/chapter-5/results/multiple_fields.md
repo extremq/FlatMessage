@@ -39,7 +39,7 @@ pub struct MultipleFields {
 
 * Iterations: `k = 10`
 * Serialization and deserialization repetitions / iteration: `n = 1000`
-* Data size: `xxx` bytes
+* Data size: `210` bytes
 
 
 ## Results

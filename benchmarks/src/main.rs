@@ -497,7 +497,7 @@ fn print_results(
     let dashes: [&dyn Display; 7] = [&"---", &"---", &"---", &"---", &"---", &"---", &"---"];
 
     let one_algo = if all_algos { false } else { algos.len() == 1 };
-
+    let min_size = results[0].min_size;
     for i in results.iter_mut() {
         let current = Some(&i.top_test_name);
         if !last.is_none() && last != current && !one_algo {
@@ -531,6 +531,7 @@ fn print_results(
     match output {
         OutputType::Ascii => {
             print_results_ascii_table(&r, &colums, file_name);
+            println!("Min size: {min_size}");
         }
         OutputType::Markdown => {
             print_results_markdown(&r, &colums, file_name);
@@ -762,11 +763,11 @@ fn run_tests(args: Args, test_name: &str) {
     print_results(results, &algos, all_algos, args.output, &args.file_name);
 }
 
-fn run_one_mdbook_test(test_name: &str, time: u32, iteratons: u32) {
+fn run_one_mdbook_test(test_name: &str, iteratons: u32) {
     let a = Args{
         tests: test_name.to_string(),
         algos: "all".to_string(),
-        times: time,
+        times: 10,
         iterations: iteratons,
         output: OutputType::Mdbook,
         names: false,
@@ -776,8 +777,8 @@ fn run_one_mdbook_test(test_name: &str, time: u32, iteratons: u32) {
     run_tests(a, test_name);
 }
 fn run_mdbook_tests() {
-    run_one_mdbook_test("multiple_fields", 1000, 10);
-    run_one_mdbook_test("point", 10000, 10);
+    run_one_mdbook_test("multiple_fields", 1000);
+    run_one_mdbook_test("point", 10000);
 }
 
 fn main() {

@@ -45,5 +45,10 @@ For each structure we also compute the `Data size` (the minimum size required to
 
 **Remarks**: It is important to highlight that some of the methods used are not schema-less (they will be marked with `schema` next to the name of the method). In these cases, it is possible that the actual size will be smaller than the data size (in particular if the serialization method compress some of the data)
 
+## OSes
+
+The tests were performed on the following OSes:
+1. **Windows** - Windows 11, 64 bit,11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz (2.80 GHz), RAM 32.0 GB 
+2. **MacOS** - 
 
 
