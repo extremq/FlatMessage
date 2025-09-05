@@ -19,6 +19,22 @@ use std::{
     time::{Duration, Instant},
 };
 
+fn s(mut x: String) -> String {
+    x.shrink_to_fit();
+    x
+}
+fn v<T>(mut x: Vec<T>) -> Vec<T> {
+    x.shrink_to_fit();
+    x
+}
+
+#[macro_export]
+macro_rules! t {
+    ($n:ident) => {
+        impl GetSize for $n {}
+    };
+}
+
 struct TestData {
     vec: Vec<u8>,
     storage: Storage,
@@ -355,7 +371,7 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
     b!(Postcard, x, se_test_postcard, de_test_postcard, true);
 }
 
-fn print_results_ascii_table(r: &[[&dyn Display; 7]], colums: &[(&str, Align)]) {
+fn print_results_ascii_table(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], file_name: &str) {
     let mut ascii_table: AsciiTable = AsciiTable::default();
     ascii_table.set_max_width(200);
 
@@ -366,7 +382,7 @@ fn print_results_ascii_table(r: &[[&dyn Display; 7]], colums: &[(&str, Align)]) 
     ascii_table.print(r);
 }
 
-fn print_results_markdown(r: &[[&dyn Display; 7]], colums: &[(&str, Align)]) {
+fn print_results_markdown(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], file_name: &str) {
     let output = &mut String::with_capacity(4096);
 
     for i in colums {
@@ -385,10 +401,59 @@ fn print_results_markdown(r: &[[&dyn Display; 7]], colums: &[(&str, Align)]) {
         writeln!(output, "|").unwrap();
     }
 
-    fs::write("bench_table.md", output).unwrap();
+    fs::write(file_name, output).unwrap();
 }
 
-fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos: bool, output: OutputType) {
+fn print_results_mdbook(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], file_name: &str) {
+    let mut output = String::with_capacity(4096);
+
+    writeln!(output, "| Method | Size (b) | Serialization Time (ms) | Deserialization Time (ms) | Total Time (ms) |").unwrap();
+    writeln!(output, "| ------ | -------: | ----------------------: | ------------------------: | --------------: |").unwrap();
+
+    for row in r {
+        // name
+        write!(output, "| {} ", row[2]).unwrap();
+        // size
+        write!(output, "| {} ", row[3]).unwrap();
+        // se time
+        write!(output, "| {} ", row[4]).unwrap();
+        // de time
+        write!(output, "| {} ", row[5]).unwrap();
+        // total time
+        write!(output, "| {} ", row[6]).unwrap();
+        writeln!(output, "|").unwrap();
+    }
+    output = output.replace("[",r#"<span style="font-family:monospace; opacity:0.5; font-size:0.75em">["#);
+    output = output.replace("]",r#"]</span>"#);
+    let mut mdbook_output = String::with_capacity(output.len());
+    let mut inside_sb = false;
+    for ch in output.chars() {
+        match ch {
+            '[' => {
+                inside_sb = true;
+                mdbook_output.push(ch);
+            }
+            ' ' => {
+                if !inside_sb {
+                    mdbook_output.push(ch);
+                } else {
+                    mdbook_output.push_str("&nbsp;");
+                }
+            }
+            ']' => {
+                inside_sb = false;
+                mdbook_output.push(ch);
+            }
+            _ => {
+                mdbook_output.push(ch);
+            }
+        }
+    }
+
+    fs::write(file_name, mdbook_output).unwrap();
+}
+
+fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos: bool, output: OutputType, file_name: &str) {
     // compute the times
     for result in results.iter_mut() {
         let a = compute_test_times(&mut result.times_se);
@@ -446,10 +511,13 @@ fn print_results(results: &mut Vec<Result>, algos: &HashSet<AlgoKind>, all_algos
 
     match output {
         OutputType::Ascii => {
-            print_results_ascii_table(&r, &colums);
+            print_results_ascii_table(&r, &colums, file_name);
         }
         OutputType::Markdown => {
-            print_results_markdown(&r, &colums);
+            print_results_markdown(&r, &colums, file_name);
+        }
+        OutputType::Mdbook => {
+            print_results_mdbook(&r, &colums, file_name);
         }
     }
 }
@@ -568,6 +636,7 @@ enum OutputType {
     #[default]
     Ascii,
     Markdown,
+    Mdbook,
 }
 
 #[derive(clap::Parser)]
@@ -586,7 +655,9 @@ struct Args {
     #[arg(long, default_value_t = 10, global = true)]
     iterations: u32,
     #[arg(long, value_enum, default_value_t = OutputType::Ascii, global = true)]
-    output: OutputType
+    output: OutputType,
+    #[arg(long, default_value = "result.md", global = true)]
+    file_name: String,    
 }
 
 fn run_tests(args: Args) {
@@ -663,7 +734,7 @@ fn run_tests(args: Args) {
         println!(" done in {:.2}ms", start.elapsed().as_secs_f64() * 1000.0);
     }
 
-    print_results(results, &algos, all_algos, args.output);
+    print_results(results, &algos, all_algos, args.output, &args.file_name);
 }
 fn main() {
     let args = Args::parse();
@@ -681,20 +752,4 @@ fn main() {
             println!("available tests: {}", TestKind::all().join(", "));
         }
     }
-}
-
-fn s(mut x: String) -> String {
-    x.shrink_to_fit();
-    x
-}
-fn v<T>(mut x: Vec<T>) -> Vec<T> {
-    x.shrink_to_fit();
-    x
-}
-
-#[macro_export]
-macro_rules! t {
-    ($n:ident) => {
-        impl GetSize for $n {}
-    };
 }
