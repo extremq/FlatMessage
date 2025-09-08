@@ -13,6 +13,10 @@ The following crates were tested:
 | ---------------------- | ------- | ----------- | ----------------------------------------------------------------------------------------------------------- |
 | flat_message           | 0.1.0   | Schema-less | For deserialization the deserialize(...) method is beng used                                                |
 | flat_message_unchecked | 0.1.0   | Schema-less | For deserialization the deserialize_unchecked(...) method is beng used (meaning that no validation is done) |
+| bincode                | 2.0.1   | with Schema | also use bincode_derive (2.0.1)                                                                             |
+| bson                   | 3.0.0   | Schema-less |                                                                                                             |
+| flexbuffers            | 25.2.10 | Schema-less |                                                                                                             |
+
 
 ## Methodology
 
