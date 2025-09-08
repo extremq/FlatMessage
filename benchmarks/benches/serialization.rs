@@ -4,6 +4,7 @@ use criterion::BenchmarkId;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use flat_message::{FlatMessage, Storage};
 use serde::Serialize;
+use bincode::Encode;
 
 #[derive(FlatMessage)]
 #[flat_message_options(version: 1)]
@@ -14,11 +15,11 @@ struct ProcessCreated {
     parent: String,
     user: String,
     command_line: String,
-    timestamp: flat_message::Timestamp,
-    unique_id: flat_message::UniqueID,
+    timestamp: u32,
+    unique_id: u32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Encode)]
 struct ProcessCreatedS {
     struct_name: &'static str,
     name: String,
@@ -27,8 +28,8 @@ struct ProcessCreatedS {
     parent: String,
     user: String,
     command_line: String,
-    timestamp: NonZeroU64,
-    unique_id: NonZeroU64,
+    timestamp: u32,
+    unique_id: u32,
     version: NonZeroU8,
 }
 
@@ -40,9 +41,10 @@ fn test_flat_message(process: &ProcessCreated, output: &mut Storage) -> usize {
     output.len()
 }
 
-fn test_bson(process: &ProcessCreatedS) -> usize {
-    let bson_data = bson::to_vec(&process).unwrap();
-    bson_data.len()
+fn test_bson(process: &ProcessCreatedS, output: &mut Vec<u8>) -> usize {
+    output.clear();
+    bson::serialize_to_buffer(process, output).unwrap();
+    output.len()
 }
 
 fn test_cbor(process: &ProcessCreatedS, output: &mut Vec<u8>) -> usize {
@@ -71,7 +73,8 @@ fn test_rmp_schemaless(process: &ProcessCreatedS, output: &mut Vec<u8>) -> usize
 
 fn test_bincode(process: &ProcessCreatedS, output: &mut Vec<u8>) -> usize {
     output.clear();
-    bincode::serialize_into(&mut *output, process).unwrap();
+    //bincode::serialize_into(&mut *output, process).unwrap();
+    bincode::encode_into_std_write(process, &mut *output, bincode::config::standard()).unwrap();
     output.len()
 }
 
@@ -89,8 +92,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         parent: String::from("C:\\Windows\\System32\\explorer.exe").repeat(repeat),
         user: String::from("Administrator").repeat(repeat),
         command_line: String::from("-help -verbose -debug -output C:\\output.txt").repeat(repeat),
-        unique_id: flat_message::UniqueID::with_value(0xABABABAB),
-        timestamp: flat_message::Timestamp::with_value(0xFEFEFEFE),
+        unique_id: 0xABABABAB as u32,  
+        timestamp: 0xFEFEFEFE as u32,
     };
     let process_s = ProcessCreatedS {
         struct_name: "ProcessCreated",
@@ -100,8 +103,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         parent: String::from("C:\\Windows\\System32\\explorer.exe").repeat(repeat),
         user: String::from("Administrator").repeat(repeat),
         command_line: String::from("-help -verbose -debug -output C:\\output.txt").repeat(repeat),
-        timestamp: NonZeroU64::new(0xFEFEFEFE).unwrap(),
-        unique_id: NonZeroU64::new(0xABABABAB).unwrap(),
+        timestamp: 0xFEFEFEFE as u32,
+        unique_id: 0xABABABAB as u32,
         version: NonZeroU8::new(1).unwrap(),
     };
     let mut output = Vec::new();
@@ -120,7 +123,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             b.iter(|| test_json(black_box(&process_s), black_box(&mut output)))
         });
         group.bench_with_input(BenchmarkId::new("bson", "_"), &(), |b, _| {
-            b.iter(|| test_bson(black_box(&process_s)))
+            b.iter(|| test_bson(black_box(&process_s), black_box(&mut output)))
         });
         group.bench_with_input(BenchmarkId::new("rmp_schema", "_"), &(), |b, _| {
             b.iter(|| test_rmp_schema(black_box(&process_s), black_box(&mut output)))

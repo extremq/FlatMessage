@@ -4,6 +4,8 @@ use criterion::BenchmarkId;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use flat_message::{FlatMessage, Storage};
 use serde::{Deserialize, Serialize};
+use bson::doc;
+use bincode::{Encode, Decode};
 
 #[derive(FlatMessage)]
 #[flat_message_options(version: 1)]
@@ -18,7 +20,7 @@ struct ProcessCreated {
     unique_id: flat_message::UniqueID,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Encode, Decode)]
 struct ProcessCreatedS {
     struct_name: String,
     name: String,
@@ -48,11 +50,11 @@ fn de_test_flat_message(input: &Storage) -> ProcessCreated {
 // ----------------------------------------------------------------------------
 
 fn se_test_bson(process: &ProcessCreatedS, output: &mut Vec<u8>) {
-    *output = bson::to_vec(&process).unwrap();
+    bson::serialize_to_buffer(process, output).unwrap();
 }
 
 fn de_test_bson(input: &[u8]) -> ProcessCreatedS {
-    bson::from_slice(input).unwrap()
+    bson::deserialize_from_slice(input).unwrap()
 }
 
 // ----------------------------------------------------------------------------
@@ -92,11 +94,12 @@ fn de_test_rmp(input: &[u8]) -> ProcessCreatedS {
 
 fn se_test_bincode(process: &ProcessCreatedS, output: &mut Vec<u8>) {
     output.clear();
-    bincode::serialize_into(&mut *output, process).unwrap();
+    //bincode::serialize_into(&mut *output, process).unwrap();
+    bincode::encode_into_std_write(process, &mut *output, bincode::config::standard()).unwrap();
 }
 
 fn de_test_bincode(input: &[u8]) -> ProcessCreatedS {
-    bincode::deserialize(input).unwrap()
+    bincode::decode_from_slice(input, bincode::config::standard()).unwrap().0
 }
 
 // ----------------------------------------------------------------------------

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::v;
 
-#[derive(FlatMessageEnum, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(FlatMessageEnum, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 #[repr(u8)]
 enum Color {
     Red = 1,
@@ -15,7 +15,7 @@ enum Color {
     Magenta = 102,
 }
 
-#[derive(FlatMessageEnum, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(FlatMessageEnum, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 #[repr(u32)]
 enum Math {
     A = 1,
@@ -24,7 +24,7 @@ enum Math {
     D = 1000000000,
 }
 
-#[derive(FlatMessageEnum, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(FlatMessageEnum, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 #[repr(i64)]
 enum Negative {
     A = 1,
@@ -39,7 +39,7 @@ crate::t!(Color);
 crate::t!(Math);
 crate::t!(Negative);
 
-#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize)]
+#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize, bincode::Encode, bincode::Decode)]
 #[flat_message_options(store_name = false)]
 pub struct EnumLists {
     #[flat_message_item(repr = u8, kind = enum)]

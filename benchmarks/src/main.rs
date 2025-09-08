@@ -56,11 +56,13 @@ fn de_test_flat_message<T: FlatMessageOwned>(data: &TestData) -> T {
 // ----------------------------------------------------------------------------
 
 fn se_test_bson<S: Serialize>(process: &S, data: &mut TestData) {
-    data.vec = bson::to_vec(&process).unwrap();
+    //data.vec = bson::to_vec(&process).unwrap();
+    bson::serialize_to_buffer(&process, &mut data.vec).unwrap();
 }
 
 fn de_test_bson<S: DeserializeOwned>(data: &TestData) -> S {
-    bson::from_slice(&data.vec).unwrap()
+    //bson::from_slice(&data.vec).unwrap()
+    bson::deserialize_from_slice(&data.vec).unwrap()
 }
 
 // ----------------------------------------------------------------------------
@@ -109,12 +111,14 @@ fn de_test_rmp<S: DeserializeOwned>(data: &TestData) -> S {
 
 // ----------------------------------------------------------------------------
 
-fn se_test_bincode<S: Serialize>(process: &S, data: &mut TestData) {
-    bincode::serialize_into(&mut data.vec, process).unwrap();
+fn se_test_bincode<S: Serialize + bincode::Encode>(process: &S, data: &mut TestData) {
+    bincode::encode_into_std_write(process, &mut data.vec, bincode::config::standard()).unwrap();
+   // bincode::serialize_into(&mut data.vec, process).unwrap();
 }
 
-fn de_test_bincode<S: DeserializeOwned>(data: &TestData) -> S {
-    bincode::deserialize(&data.vec).unwrap()
+fn de_test_bincode<S: DeserializeOwned + bincode::Decode<()>>(data: &TestData) -> S {
+    let res = bincode::decode_from_slice(&data.vec, bincode::config::standard()).unwrap();
+    res.0
 }
 
 // ----------------------------------------------------------------------------
@@ -310,7 +314,7 @@ impl<'a, T: FlatMessage<'a>> FlatMessage<'a> for Wrapper<T> {
     }
 }
 
-fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize>(
+fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()>>(
     top_test_name: TestKind,
     x: &T,
     results: &mut Vec<Result>,
@@ -542,7 +546,7 @@ fn print_results(
     }
 }
 
-fn do_one<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize>(
+fn do_one<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()>>(
     top_test_name: TestKind,
     x: &T,
     results: &mut Vec<Result>,
@@ -706,8 +710,8 @@ fn run_tests(args: Args, test_name: &str) {
         io::stdout().flush().unwrap();
         let start = Instant::now();
         {
-            let process_small = structures::process_create::generate_flat();
-            run!(ProcessCreate, &process_small);
+            let s = structures::process_create::generate();
+            run!(ProcessCreate, &s);
         }
         {
             let s = structures::long_strings::generate(100);
@@ -763,12 +767,12 @@ fn run_tests(args: Args, test_name: &str) {
     print_results(results, &algos, all_algos, args.output, &args.file_name);
 }
 
-fn run_one_mdbook_test(test_name: &str, iteratons: u32) {
+fn run_one_mdbook_test(test_name: &str, times: u32) {
     let a = Args{
         tests: test_name.to_string(),
         algos: "all".to_string(),
-        times: 10,
-        iterations: iteratons,
+        times,
+        iterations: 10,
         output: OutputType::Mdbook,
         names: false,
         command: Commands::Run,
@@ -777,8 +781,9 @@ fn run_one_mdbook_test(test_name: &str, iteratons: u32) {
     run_tests(a, test_name);
 }
 fn run_mdbook_tests() {
-    run_one_mdbook_test("multiple_fields", 1000);
-    run_one_mdbook_test("point", 10000);
+    //run_one_mdbook_test("multiple_fields", 1000);
+    //run_one_mdbook_test("point", 10000);
+    run_one_mdbook_test("long_strings", 1000);
 }
 
 fn main() {

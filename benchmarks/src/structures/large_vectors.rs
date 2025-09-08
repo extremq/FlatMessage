@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::v;
 
-#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize)]
+#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize, bincode::Encode, bincode::Decode)]
 #[flat_message_options(store_name = false)]
 pub struct LargeVectors {
     buffer: Vec<u8>,
