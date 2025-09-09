@@ -84,13 +84,24 @@ mod gencode {
             }            
         } else {
             // field is T
+            let from_buffer_call = quote! { flat_message::#serde_trait::from_buffer(data_buffer, offset) };
+            let init_code = if fail_to_deserialize.to_string() == "None" {
+                quote! {
+                    let #inner_var: #ty = #from_buffer_call?;
+                }
+            } else {
+                quote! {
+                    let Some(#inner_var): Option<#ty> = #from_buffer_call else {
+                        return #fail_to_deserialize;
+                    };
+                }
+            };
+
             quote! {
                 if offset<8 || offset >= hash_table_offset {
                     return #invalid_field_offset;
                 }
-                let Some(#inner_var): Option<#ty> = flat_message::#serde_trait::from_buffer(data_buffer, offset) else {
-                    return #fail_to_deserialize;
-                };
+                #init_code
             }
         }
     }

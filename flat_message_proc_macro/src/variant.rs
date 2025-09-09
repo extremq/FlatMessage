@@ -1,10 +1,10 @@
 use super::ConstAssertions;
 use crate::data_type::DataType;
+use crate::serde_definition::SerdeDefinition;
 use common::data_format::DataFormat;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Data, DeriveInput, Fields};
-use crate::serde_definition::SerdeDefinition;
 
 struct VariantItem {
     name: String,
@@ -257,7 +257,8 @@ impl Variant {
         let definition = serde_definition.definition;
         let size_code = self.generate_serde_size();
         let from_buffer_code = self.generate_serde_from_buffer(implicit_lifetime.clone());
-        let from_buffer_unchecked_code = self.generate_serde_from_buffer_unchecked(implicit_lifetime.clone());
+        let from_buffer_unchecked_code =
+            self.generate_serde_from_buffer_unchecked(implicit_lifetime.clone());
         let write_code = self.generate_serde_write();
         let const_assertions = self.generate_const_assertion_functions();
 
@@ -320,7 +321,8 @@ impl TryFrom<syn::DeriveInput> for Variant {
                 Fields::Unnamed(fields) => {
                     if fields.unnamed.len() != 1 {
                         return Err(format!(
-                            "Variant `{name}` must have exactly one Type associated !"
+                            "Variant `{}` must have exactly one Type associated !",
+                            name
                         ));
                     }
                     let ty = fields.unnamed[0].ty.clone();
@@ -338,7 +340,7 @@ impl TryFrom<syn::DeriveInput> for Variant {
                     };
                     // if the data format is unknown, we need to check if the field is a unique id or a timestamp
                     if dt.data_format == DataFormat::Unknwon {
-                        return Err(format!("Please provide aditional specifications via #[flat_message_item(...)] for the field '{name}' !"));
+                        return Err(format!("Please provide aditional specifications via #[flat_message_item(...)] for the field '{}' !", name));
                     }
                     if dt.unique_id {
                         return Err(format!("Unique IDs can not used inside a variant enum - for field {} in structure {} !", name, input.ident));
@@ -364,7 +366,8 @@ impl TryFrom<syn::DeriveInput> for Variant {
                 }
                 Fields::Named(_) => {
                     return Err(format!(
-                        "Variant `{name}` must be unit (e.g. Variant) or a single-field tuple variant (e.g. Variant(Type) )"
+                        "Variant `{}` must be unit (e.g. Variant) or a single-field tuple variant (e.g. Variant(Type) )",
+                        name
                     ));
                 }
             }
@@ -375,7 +378,7 @@ impl TryFrom<syn::DeriveInput> for Variant {
             4 => DataFormat::Variant32,
             8 => DataFormat::Variant64,
             16 => DataFormat::Variant128,
-            _ => return Err(format!("Invalid alignment: {align}")),
+            _ => return Err(format!("Invalid alignment: {}", align)),
         };
         Ok(Self {
             name: input.ident,

@@ -11,10 +11,7 @@ unsafe impl SerDe<'_> for bool {
     unsafe fn from_buffer_unchecked(buf: &[u8], pos: usize) -> Self {
         unsafe {
             let ptr = buf.as_ptr().add(pos);
-            match *ptr {
-                0 => false,
-                _ => true,
-            }
+            !matches!(*ptr, 0)
         }
     }
     fn from_buffer(buf: &[u8], pos: usize) -> Option<Self> {
@@ -57,9 +54,7 @@ unsafe impl<'a> SerDeSlice<'a> for bool {
         if end > buf.len() {
             None
         } else {
-            let slice = unsafe {
-                std::slice::from_raw_parts(buf.as_ptr().add(pos + buf_len) as *const u8, len)
-            };
+            let slice = unsafe { std::slice::from_raw_parts(buf.as_ptr().add(pos + buf_len), len) };
             for &b in slice {
                 if b > 1 {
                     return None;
