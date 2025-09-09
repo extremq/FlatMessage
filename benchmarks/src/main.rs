@@ -287,12 +287,12 @@ fn bench<T: GetSize, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T +
     deserialize: FD,
     needs_schema: bool,
     results: &mut Vec<Result>,
-    iterations: u32,
+    repetition_times: u32,
 ) {
     let mut data = TestData {
         vec: Vec::default(),
         storage: Storage::default(),
-        times: iterations,
+        times: repetition_times,
     };
     let time_se = se_bench(x, serialize.clone(), &mut data);
     let time_de = de_bench(deserialize.clone(), &data);
@@ -364,7 +364,9 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
     results: &mut Vec<Result>,
     algos: &HashSet<AlgoKind>,
     all_algos: bool,
-    iterations: u32,
+    repetition_times: u32,
+    iteration_id: u32,
+
 ) {
     let wrapper = Wrapper(x.clone());
 
@@ -379,7 +381,7 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
                     $de,
                     $needs_schema,
                     results,
-                    iterations,
+                    repetition_times,
                 );
             }
         };
@@ -416,8 +418,10 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
     b!(SimdJson, x, se_test_simd_json, de_test_simd_json, false);
     b!(Postcard, x, se_test_postcard, de_test_postcard, true);
     b!(Toml, x, se_test_toml, de_test_toml, false);
-    results.push(Result::not_available(AlgoKind::Protobuf, top_test_name));
-    //b!(Protobuf, x, se_test_protobuf, de_test_protobuf, true);
+    // check to see if protobuf is present
+    if iteration_id == 0 {
+        results.push(Result::not_available(AlgoKind::Protobuf, top_test_name));
+    }
 }
 
 fn add_benches_protobuf<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()> + prost::Message + Default>(
@@ -426,7 +430,7 @@ fn add_benches_protobuf<'a, T: FlatMessageOwned + Clone + Serialize + Deserializ
     results: &mut Vec<Result>,
     algos: &HashSet<AlgoKind>,
     all_algos: bool,
-    iterations: u32,
+    repetition_times: u32,
 ) {
     let wrapper = Wrapper(x.clone());
 
@@ -441,7 +445,7 @@ fn add_benches_protobuf<'a, T: FlatMessageOwned + Clone + Serialize + Deserializ
                     $de,
                     $needs_schema,
                     results,
-                    iterations,
+                    repetition_times,
                 );
             }
         };
@@ -531,9 +535,10 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], fil
         if name == "flat_message" {
             name = "FlatMessage".to_string();
         }
-        write!(output, "| {} ", name).unwrap();
         if row[1].to_string() == "*" {
-            write!(output, " [schema]").unwrap();
+            write!(output, "| *{}* <span style=\"font-family:monospace; opacity:0.5; font-size:0.5em\"><br>[schema]</span>", name).unwrap();
+        } else {
+            write!(output, "| {} ", name).unwrap();
         }
         // size
         write!(output, "| {} ", row[3]).unwrap();
@@ -680,9 +685,10 @@ fn do_one<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSi
     results: &mut Vec<Result>,
     algos: &HashSet<AlgoKind>,
     all_algos: bool,
-    iterations: u32,
+    repetition_times: u32,
+    iteration_id: u32,
 ) {
-    add_benches(top_test_name, x, results, algos, all_algos, iterations);
+    add_benches(top_test_name, x, results, algos, all_algos, repetition_times, iteration_id);
 }
 
 fn do_one_protobuf<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()> + prost::Message + Default>(
@@ -691,9 +697,9 @@ fn do_one_protobuf<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwne
     results: &mut Vec<Result>,
     algos: &HashSet<AlgoKind>,
     all_algos: bool,
-    iterations: u32,
+    repetition_times: u32,
 ) {
-    add_benches_protobuf(top_test_name, x, results, algos, all_algos, iterations);
+    add_benches_protobuf(top_test_name, x, results, algos, all_algos, repetition_times);
 }
 
 macro_rules! tests {
@@ -836,9 +842,9 @@ fn run_tests(args: Args, test_name: &str) {
 
     let results = &mut Vec::new();
     macro_rules! run {
-        ($name:expr, $x:expr) => {
+        ($name:expr, $x:expr, $iteration_id:expr) => {
             if all_tests || tests.contains(&$name) {
-                do_one($name, $x, results, &algos, all_algos, args.times);
+                do_one($name, $x, results, &algos, all_algos, args.times, $iteration_id);
             }
         };
     }
@@ -875,7 +881,7 @@ fn run_tests(args: Args, test_name: &str) {
         }
         {
             let s = structures::multiple_fields::generate();
-            run!(MultipleFields, &s);
+            run!(MultipleFields, &s, i);
         }
         {
             let s = structures::multiple_integers::generate();
@@ -883,7 +889,7 @@ fn run_tests(args: Args, test_name: &str) {
         }
         {
             let s = structures::vectors::generate();
-            run!(Vectors, &s);
+            run!(Vectors, &s, i);
         }
         {
             let s = structures::large_vectors::generate();
@@ -891,15 +897,15 @@ fn run_tests(args: Args, test_name: &str) {
         }
         {
             let s = structures::enum_fields::generate();
-            run!(EnumFields, &s);
+            run!(EnumFields, &s, i);
         }
         {
             let s = structures::enum_lists::generate();
-            run!(EnumLists, &s);
+            run!(EnumLists, &s, i);
         }
         {
             let s = structures::small_enum_lists::generate();
-            run!(SmallEnumLists, &s);
+            run!(SmallEnumLists, &s, i);
         }
         {
             let s = structures::multiple_bools::generate();
@@ -907,7 +913,7 @@ fn run_tests(args: Args, test_name: &str) {
         }
         {
             let s = structures::string_lists::generate();
-            run!(StringLists, &s);
+            run!(StringLists, &s, i);
         }
         println!(" done in {:.2}ms", start.elapsed().as_secs_f64() * 1000.0);
     }
