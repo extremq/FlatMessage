@@ -16,6 +16,11 @@ The following crates were tested:
 | bincode                | 2.0.1   | with Schema | also use bincode_derive (2.0.1)                                                                             |
 | bson                   | 3.0.0   | Schema-less |                                                                                                             |
 | flexbuffers            | 25.2.10 | Schema-less |                                                                                                             |
+| postcard               | 1.1.3   | with Schema |                                                                                                             |
+| serde_json             | 1.0.143 | Schema-less |                                                                                                             |
+| simd_json              | 0.15.1  | Schema-less |                                                                                                             |
+| ciborium               | 0.2.2   | Schema-less |                                                                                                             |
+| rmp                    | 0.8.14  | both        | also included rmp-serde for MessagePack (v1.3.0)                                                            |
 
 
 ## Methodology

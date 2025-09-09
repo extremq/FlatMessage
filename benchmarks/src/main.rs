@@ -373,7 +373,7 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
     b!(Postcard, x, se_test_postcard, de_test_postcard, true);
 }
 
-fn print_results_ascii_table(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], file_name: &str) {
+fn print_results_ascii_table(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], _file_name: &str) {
     let mut ascii_table: AsciiTable = AsciiTable::default();
     ascii_table.set_max_width(200);
 
@@ -414,7 +414,7 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], fil
 
     for row in r {
         // name
-        write!(output, "| {} ", row[2]).unwrap();
+        write!(output, "| {} ", row[2].to_string()).unwrap();
         if row[1].to_string() == "*" {
             write!(output, " [schema]").unwrap();
         }
@@ -622,8 +622,8 @@ tests! {
     AlgoKind,
     ("flat_message", FlatMessage),
     ("flat_message_unchecked", FlatMessageUnchecked),
-    ("rmp_schema", RmpSchema),
-    ("rmp_schemaless", RmpSchemaless),
+    ("rmp", RmpSchema),
+    ("rmp", RmpSchemaless),
     ("bincode", Bincode),
     ("flexbuffers" , FlexBuffers),
     ("cbor", Cbor),
