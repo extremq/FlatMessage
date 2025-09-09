@@ -197,6 +197,28 @@ struct Result {
     time_se_de_ms: String,
     //
     compare_key: u128,
+    not_available: bool,
+}
+
+impl Result {
+    fn not_available(name: AlgoKind, top_test_name: TestKind) -> Self {
+        Self {
+            name,
+            top_test_name,
+            size: 0,
+            needs_schema: false,
+            min_size: 0,
+            size_repr: String::new(),
+            times_se: Vec::new(),
+            times_de: Vec::new(),
+            times_se_de: Vec::new(),
+            time_se_ms: String::new(),
+            time_de_ms: String::new(),
+            time_se_de_ms: String::new(),
+            compare_key: 0,
+            not_available: true,
+        }
+    }
 }
 
 fn compute_test_times(times: &mut Vec<Duration>) -> TestTimes {
@@ -301,6 +323,7 @@ fn bench<T: GetSize, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T +
             time_se_de_ms: String::new(),
             size_repr: String::new(),
             compare_key: 0,
+            not_available: false,
         });
     }
 }
@@ -393,6 +416,7 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
     b!(SimdJson, x, se_test_simd_json, de_test_simd_json, false);
     b!(Postcard, x, se_test_postcard, de_test_postcard, true);
     b!(Toml, x, se_test_toml, de_test_toml, false);
+    results.push(Result::not_available(AlgoKind::Protobuf, top_test_name));
     //b!(Protobuf, x, se_test_protobuf, de_test_protobuf, true);
 }
 
@@ -494,12 +518,20 @@ fn print_results_markdown(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], fil
 fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], file_name: &str) {
     let mut output = String::with_capacity(4096);
 
-    writeln!(output, "| Method | Size (b) | Serialization Time (ms) | Deserialization Time (ms) | Total Time (ms) |").unwrap();
+    //writeln!(output, "| Algorithm | Size (b) | Serialization Time (ms) | Deserialization Time (ms) | Total Time (ms) |").unwrap();
+    writeln!(output, "| Algorithm | Size (b) | Ser Time (ms) | Deser Time (ms) | Total Time (ms) |").unwrap();
     writeln!(output, "| ------ | -------: | ----------------------: | ------------------------: | --------------: |").unwrap();
 
     for row in r {
         // name
-        write!(output, "| {} ", row[2].to_string()).unwrap();
+        let mut name = row[2].to_string();
+        if name == "flat_message_unchecked" {
+            name = "FlatMessage (&#9888;&#65039;)".to_string();
+        }
+        if name == "flat_message" {
+            name = "FlatMessage".to_string();
+        }
+        write!(output, "| {} ", name).unwrap();
         if row[1].to_string() == "*" {
             write!(output, " [schema]").unwrap();
         }
@@ -515,9 +547,10 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], fil
     }
     output = output.replace(
         "[",
-        r#"<span style="font-family:monospace; opacity:0.5; font-size:0.75em">["#,
+        r#"<span style="font-family:monospace; opacity:0.5; font-size:0.5em"><br>["#,
     );
     output = output.replace("]", r#"]</span>"#);
+    output = output.replace("N/A", "-");
     let mut mdbook_output = String::with_capacity(output.len());
     let mut inside_sb = false;
     for ch in output.chars() {
@@ -555,6 +588,10 @@ fn print_results(
 ) {
     // compute the times
     for result in results.iter_mut() {
+        if result.not_available {
+            result.compare_key = u128::MAX;
+            continue;
+        }
         let a = compute_test_times(&mut result.times_se);
         let b = compute_test_times(&mut result.times_de);
         let c = compute_test_times(&mut result.times_se_de);
@@ -606,6 +643,12 @@ fn print_results(
         };
 
         let ch = if i.needs_schema { &'*' } else { &' ' };
+        if i.not_available {
+            i.size_repr = "N/A".to_string();
+            i.time_se_ms = "N/A".to_string();
+            i.time_de_ms = "N/A".to_string();
+            i.time_se_de_ms = "N/A".to_string();
+        }
         r.push([
             i.top_test_name.display(),
             ch,

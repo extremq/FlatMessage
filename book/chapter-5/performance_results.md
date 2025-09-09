@@ -9,20 +9,20 @@ The following tests were conducted against ofther serializers and deserializers 
 
 The following crates were tested:
 
-| Crate / method         | Version | Schema Type | Observation                                                                                                                                                              |
-| ---------------------- | ------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| flat_message           | 0.1.0   | Schema-less | For deserialization the deserialize(...) method is beng used                                                                                                             |
-| flat_message_unchecked | 0.1.0   | Schema-less | For deserialization the deserialize_unchecked(...) method is beng used (meaning that no validation is done)                                                              |
-| bincode                | 2.0.1   | with Schema | also use bincode_derive (2.0.1)                                                                                                                                          |
-| bson                   | 3.0.0   | Schema-less |                                                                                                                                                                          |
-| flexbuffers            | 25.2.10 | Schema-less |                                                                                                                                                                          |
-| postcard               | 1.1.3   | with Schema |                                                                                                                                                                          |
-| serde_json             | 1.0.143 | Schema-less |                                                                                                                                                                          |
-| simd_json              | 0.15.1  | Schema-less |                                                                                                                                                                          |
-| ciborium               | 0.2.2   | Schema-less |                                                                                                                                                                          |
-| rmp                    | 0.8.14  | both        | also included rmp-serde for MessagePack (v1.3.0)                                                                                                                         |
-| toml                   | 0.9.5   | Schema-less | TOML does not have a direct method to write into a buffer, so we write into a string and then copy that string into a buffer. This ads aditional cost for the algorithm. |
-| protobuf (prost)       | 0.14.1  | with Schema | Protobuf via prost crate. Not all tests are supported by protobuf (e.g. test that use u8, i8 or other unsuported types will be marked as N/A for protobuf).              |
+| Crate / method   | Version | Schema Type | Observation                                                                                                                                                                                   |
+| ---------------- | ------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| flat_message      | 0.1.0   | Schema-less | For deserialization the deserialize(...) method is beng used                                                                                                                                  |
+| flat_message (⚠️) | 0.1.0   | Schema-less | `(Unchecked)` For deserialization the deserialize_unchecked(...) method is beng used (meaning that no validation is done)                                                                                   |
+| bincode           | 2.0.1   | with Schema | also use bincode_derive (2.0.1)                                                                                                                                                               |
+| bson              | 3.0.0   | Schema-less |                                                                                                                                                                                               |
+| flexbuffers       | 25.2.10 | Schema-less |                                                                                                                                                                                               |
+| postcard          | 1.1.3   | with Schema |                                                                                                                                                                                               |
+| serde_json        | 1.0.143 | Schema-less |                                                                                                                                                                                               |
+| simd_json         | 0.15.1  | Schema-less |                                                                                                                                                                                               |
+| ciborium          | 0.2.2   | Schema-less |                                                                                                                                                                                               |
+| rmp               | 0.8.14  | both        | also included rmp-serde for MessagePack (v1.3.0)                                                                                                                                              |
+| toml              | 0.9.5   | Schema-less | TOML does not have a direct method to write into a buffer, so we write into a string and then copy that string into a buffer. This ads aditional cost for the algorithm.                      |
+| protobuf (prost)  | 0.14.1  | with Schema | Protobuf via [prost](https://crates.io/crates/prost) crate. Not all tests are supported by protobuf (e.g. test that use u8, i8 or other unsuported types will be marked as N/A for protobuf). |
 
 
 ## Methodology
