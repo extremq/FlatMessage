@@ -113,7 +113,7 @@ fn de_test_rmp<S: DeserializeOwned>(data: &TestData) -> S {
 
 fn se_test_bincode<S: Serialize + bincode::Encode>(process: &S, data: &mut TestData) {
     bincode::encode_into_std_write(process, &mut data.vec, bincode::config::standard()).unwrap();
-   // bincode::serialize_into(&mut data.vec, process).unwrap();
+    // bincode::serialize_into(&mut data.vec, process).unwrap();
 }
 
 fn de_test_bincode<S: DeserializeOwned + bincode::Decode<()>>(data: &TestData) -> S {
@@ -150,7 +150,7 @@ fn se_test_toml<S: Serialize>(process: &S, data: &mut TestData) {
 
 fn de_test_toml<S: DeserializeOwned>(data: &TestData) -> S {
     toml::from_slice(&data.vec).unwrap()
-}   
+}
 
 // ----------------------------------------------------------------------------
 
@@ -358,7 +358,16 @@ impl<'a, T: FlatMessage<'a>> FlatMessage<'a> for Wrapper<T> {
     }
 }
 
-fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()>>(
+fn add_benches<
+    'a,
+    T: FlatMessageOwned
+        + Clone
+        + Serialize
+        + DeserializeOwned
+        + GetSize
+        + bincode::Encode
+        + bincode::Decode<()>,
+>(
     top_test_name: TestKind,
     x: &T,
     results: &mut Vec<Result>,
@@ -366,7 +375,6 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
     all_algos: bool,
     repetition_times: u32,
     iteration_id: u32,
-
 ) {
     let wrapper = Wrapper(x.clone());
 
@@ -424,7 +432,18 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
     }
 }
 
-fn add_benches_protobuf<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()> + prost::Message + Default>(
+fn add_benches_protobuf<
+    'a,
+    T: FlatMessageOwned
+        + Clone
+        + Serialize
+        + DeserializeOwned
+        + GetSize
+        + bincode::Encode
+        + bincode::Decode<()>
+        + prost::Message
+        + Default,
+>(
     top_test_name: TestKind,
     x: &T,
     results: &mut Vec<Result>,
@@ -485,7 +504,6 @@ fn add_benches_protobuf<'a, T: FlatMessageOwned + Clone + Serialize + Deserializ
     b!(Protobuf, x, se_test_protobuf, de_test_protobuf, true);
 }
 
-
 fn print_results_ascii_table(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], _file_name: &str) {
     let mut ascii_table: AsciiTable = AsciiTable::default();
     ascii_table.set_max_width(200);
@@ -523,7 +541,11 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], fil
     let mut output = String::with_capacity(4096);
 
     //writeln!(output, "| Algorithm | Size (b) | Serialization Time (ms) | Deserialization Time (ms) | Total Time (ms) |").unwrap();
-    writeln!(output, "| Algorithm | Size (b) | Ser. (ms) | Deser. (ms) | Ser+Deser.(ms) |").unwrap();
+    writeln!(
+        output,
+        "| Algorithm | Size (b) | Ser. (ms) | Deser. (ms) | Ser+Deser.(ms) |"
+    )
+    .unwrap();
     writeln!(output, "| ------ | -------: | ----------------------: | ------------------------: | --------------: |").unwrap();
 
     for row in r {
@@ -548,9 +570,13 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], fil
         write!(output, "| {} ", row[5]).unwrap();
         // total time
         let tmp = row[6].to_string();
-        let pos = tmp.chars().position(|c| c == '[').unwrap();
-        let total_time = format!("**{}** {}", &tmp[..pos].trim(), &tmp[pos..]);
-        write!(output, "| {} ", total_time).unwrap();
+        if tmp.contains("[") {
+            let pos = tmp.chars().position(|c| c == '[').unwrap();
+            let total_time = format!("**{}** {}", &tmp[..pos].trim(), &tmp[pos..]);
+            write!(output, "| {} ", total_time).unwrap();
+        } else {
+            write!(output, "| {} ", tmp).unwrap();
+        }
         writeln!(output, "|").unwrap();
     }
     output = output.replace(
@@ -682,7 +708,16 @@ fn print_results(
     }
 }
 
-fn do_one<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()>>(
+fn do_one<
+    'a,
+    T: FlatMessageOwned
+        + Clone
+        + Serialize
+        + DeserializeOwned
+        + GetSize
+        + bincode::Encode
+        + bincode::Decode<()>,
+>(
     top_test_name: TestKind,
     x: &T,
     results: &mut Vec<Result>,
@@ -691,10 +726,29 @@ fn do_one<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSi
     repetition_times: u32,
     iteration_id: u32,
 ) {
-    add_benches(top_test_name, x, results, algos, all_algos, repetition_times, iteration_id);
+    add_benches(
+        top_test_name,
+        x,
+        results,
+        algos,
+        all_algos,
+        repetition_times,
+        iteration_id,
+    );
 }
 
-fn do_one_protobuf<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()> + prost::Message + Default>(
+fn do_one_protobuf<
+    'a,
+    T: FlatMessageOwned
+        + Clone
+        + Serialize
+        + DeserializeOwned
+        + GetSize
+        + bincode::Encode
+        + bincode::Decode<()>
+        + prost::Message
+        + Default,
+>(
     top_test_name: TestKind,
     x: &T,
     results: &mut Vec<Result>,
@@ -702,7 +756,14 @@ fn do_one_protobuf<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwne
     all_algos: bool,
     repetition_times: u32,
 ) {
-    add_benches_protobuf(top_test_name, x, results, algos, all_algos, repetition_times);
+    add_benches_protobuf(
+        top_test_name,
+        x,
+        results,
+        algos,
+        all_algos,
+        repetition_times,
+    );
 }
 
 macro_rules! tests {
@@ -847,7 +908,15 @@ fn run_tests(args: Args, test_name: &str) {
     macro_rules! run {
         ($name:expr, $x:expr, $iteration_id:expr) => {
             if all_tests || tests.contains(&$name) {
-                do_one($name, $x, results, &algos, all_algos, args.times, $iteration_id);
+                do_one(
+                    $name,
+                    $x,
+                    results,
+                    &algos,
+                    all_algos,
+                    args.times,
+                    $iteration_id,
+                );
             }
         };
     }
@@ -925,7 +994,7 @@ fn run_tests(args: Args, test_name: &str) {
 }
 
 fn run_one_mdbook_test(test_name: &str, times: u32) {
-    let a = Args{
+    let a = Args {
         tests: test_name.to_string(),
         algos: "all".to_string(),
         times,
