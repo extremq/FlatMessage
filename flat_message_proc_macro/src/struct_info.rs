@@ -1155,8 +1155,7 @@ impl<'a> StructInfo<'a> {
                 } else if field.data_type.ignore_field {
                     //println!("Warning: field {} in structure {} is a zero-sized type (ZST) ! It will be ignored !", field.name, input.ident);
                     ignored_fields.push(field);
-                } else
-                {
+                } else {
                     data_members.push(field);
                 }
                 

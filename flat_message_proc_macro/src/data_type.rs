@@ -105,8 +105,8 @@ impl DataType {
         if attr.path().is_ident("flat_message_item") {
             let all_tokens = attr.meta.clone().into_token_stream();
             let mut tokens = TokenStream::default();
-            let mut iter = all_tokens.into_iter();
-            while let Some(token) = iter.next() {
+            let iter = all_tokens.into_iter();
+            for token in iter {
                 if let proc_macro2::TokenTree::Group(group) = token {
                     if group.delimiter() == proc_macro2::Delimiter::Parenthesis {
                         tokens = group.stream().into();
@@ -338,21 +338,16 @@ impl DataType {
         &self,
         for_struct_initialization: bool,
     ) -> proc_macro2::TokenStream {
-        let default_tokens = if let Some(default_value) = &self.default_value {
+        if let Some(default_value) = &self.default_value {
             let default_value_parsed: proc_macro2::TokenStream = parse_str(default_value).unwrap();
             quote! { #default_value_parsed }
+        } else if self.option {
+            quote! { None }
+        } else if for_struct_initialization {
+            quote! { ::std::default::Default::default() }
         } else {
-            if self.option {
-                quote! { None }
-            } else {
-                if for_struct_initialization {
-                    quote! { ::std::default::Default::default() }
-                } else {
-                    let ty = self.ty.clone();
-                    quote! { #ty::default() }
-                }
-            }
-        };
-        default_tokens
+            let ty = self.ty.clone();
+            quote! { #ty::default() }
+        }
     }
 }
