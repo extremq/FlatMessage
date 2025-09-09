@@ -31,10 +31,10 @@ impl Config {
         for (attr_name, attr_value) in attrs.iter() {
             //println!("--Evaluete: '{}' => '{}'",attr_name,attr_value);
             match attr_name.as_str() {
-                "store_name" => store_name = utils::to_bool(attr_value.as_str()).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value.as_str(), attr_name).as_str()),
-                "checksum" => add_checksum = utils::to_bool(attr_value.as_str()).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value.as_str(), attr_name).as_str()),
-                "version" => version = utils::to_version(attr_value.as_str()).expect(format!("Invalid version value ('{}') for attribute '{}'. Allowed values are between 1 and 255 !",attr_value.as_str(), attr_name).as_str()),
-                "validate_name" => validate_name = utils::to_bool(attr_value.as_str()).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value.as_str(), attr_name).as_str()),
+                "store_name" => store_name = utils::to_bool(attr_value.as_str()).unwrap_or_else(|| panic!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value.as_str(), attr_name)),
+                "checksum" => add_checksum = utils::to_bool(attr_value.as_str()).unwrap_or_else(|| panic!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value.as_str(), attr_name)),
+                "version" => version = utils::to_version(attr_value.as_str()).unwrap_or_else(|| panic!("Invalid version value ('{}') for attribute '{}'. Allowed values are between 1 and 255 !",attr_value.as_str(), attr_name)),
+                "validate_name" => validate_name = utils::to_bool(attr_value.as_str()).unwrap_or_else(|| panic!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value.as_str(), attr_name)),
                 "validate_checksum" => validate_checksum = validate_checksum::ValidateChecksum::from_str(attr_value.as_str()),
                 "compatible_versions" => {
                     match VersionValidatorParser::try_from(attr_value.as_str()) {
@@ -42,7 +42,7 @@ impl Config {
                         Err(def) => panic!("Fail to parse compatible_versions: {}", def),
                     }
                 }
-                "optimized_unchecked_code" => optimized_unchecked_code = utils::to_bool(attr_value.as_str()).expect(format!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value.as_str(), attr_name).as_str()),
+                "optimized_unchecked_code" => optimized_unchecked_code = utils::to_bool(attr_value.as_str()).unwrap_or_else(|| panic!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value.as_str(), attr_name)),
                 "validate" => {
                     match attr_value.as_str() {
                         "strict" => use_default_if_deserialize_fails = Some(false),
@@ -56,7 +56,7 @@ impl Config {
             }
         }
 
-        if (store_name == false) && (validate_name == true) {
+        if !store_name && validate_name {
             panic!("You can not use the attribute 'validate_name' with value 'true' unless the attribute 'store_name' is also set to 'true'.  If this was allowed, you will not be able to deserialize a structure of this type !");
         }
 

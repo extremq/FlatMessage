@@ -82,7 +82,7 @@ pub(crate) fn value_to_i128(value: &str) -> Result<(i128, EnumMemoryRepresentati
                 }
             }
         }
-        return Ok((value, repr_type));
+        Ok((value, repr_type))
     } else {
         Err(format!("Invalid numerical value: '{original_value}'"))
     }
@@ -112,7 +112,7 @@ pub(crate) fn to_version(value: &str) -> Option<u8> {
 fn find_lifetime(input: &str) -> Option<(usize, usize)> {
     let mut start = 0;
     let mut found = false;
-    for (i, c) in input.chars().enumerate() {
+    for (i, c) in input.char_indices() {
         match c {
             '\'' => {
                 start = i;
@@ -189,5 +189,3 @@ pub(crate) fn validate_one_string_parameter(input: TokenStream, name: &str) -> S
 
     string_param
 }
-
-

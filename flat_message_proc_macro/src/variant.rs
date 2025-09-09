@@ -1,10 +1,10 @@
 use super::ConstAssertions;
 use crate::data_type::DataType;
+use crate::serde_definition::SerdeDefinition;
 use common::data_format::DataFormat;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Data, DeriveInput, Fields};
-use crate::serde_definition::SerdeDefinition;
 
 struct VariantItem {
     name: String,
@@ -33,7 +33,7 @@ impl Variant {
             v.sort();
             for variant_name in v {
                 name.push_str(variant_name);
-                name.push_str(",");
+                name.push(',');
             }
             common::hashes::crc32(name.as_bytes())
         } else {
@@ -46,23 +46,23 @@ impl Variant {
         for variant in self.variants.iter() {
             if let Some(data_type) = &variant.data_type {
                 if data_type.data_format.is_enum() {
-                    v.push(ConstAssertions::for_enum_flags(self.name.clone(), &variant.name, &data_type,"Validate that the type describe in the #[repr(...)] attribute of the enum is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
+                    v.push(ConstAssertions::for_enum_flags(self.name.clone(), &variant.name, data_type,"Validate that the type describe in the #[repr(...)] attribute of the enum is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
                 }
                 if data_type.data_format.is_flags() {
-                    v.push(ConstAssertions::for_enum_flags(self.name.clone(), &variant.name, &data_type,"Validate that the underline type is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
+                    v.push(ConstAssertions::for_enum_flags(self.name.clone(), &variant.name, data_type,"Validate that the underline type is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
                 }
                 if data_type.data_format.is_struct() {
                     v.push(ConstAssertions::for_struct(
                         self.name.clone(),
                         &variant.name,
-                        &data_type,
+                        data_type,
                     ));
                 }
                 if data_type.data_format.is_variant() {
                     v.push(ConstAssertions::for_variant(
                         self.name.clone(),
                         &variant.name,
-                        &data_type,
+                        data_type,
                     ));
                 }
             }
@@ -257,7 +257,8 @@ impl Variant {
         let definition = serde_definition.definition;
         let size_code = self.generate_serde_size();
         let from_buffer_code = self.generate_serde_from_buffer(implicit_lifetime.clone());
-        let from_buffer_unchecked_code = self.generate_serde_from_buffer_unchecked(implicit_lifetime.clone());
+        let from_buffer_unchecked_code =
+            self.generate_serde_from_buffer_unchecked(implicit_lifetime.clone());
         let write_code = self.generate_serde_write();
         let const_assertions = self.generate_const_assertion_functions();
 

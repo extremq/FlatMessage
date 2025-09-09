@@ -14,14 +14,14 @@ impl VersionToken {
             CharType::Number => {
                 if let Ok(num) = value.parse::<u8>() {
                     if num == 0 {
-                        return Err(format!("A version can not be 0 "));
+                        return Err("A version can not be 0 ".to_string());
                     }
                     Ok(VersionToken::Number(num))
                 } else {
-                    return Err(format!(
+                    Err(format!(
                         "Invalid version number '{}' (should be a number between 1 and 255) !",
                         value
-                    ));
+                    ))
                 }
             }
             CharType::Operator => match value {
@@ -30,12 +30,10 @@ impl VersionToken {
                 "-" => Ok(VersionToken::Interval),
                 ":" => Ok(VersionToken::Interval),
                 ".." => Ok(VersionToken::Interval),
-                _ => {
-                    return Err(format!(
-                        "Invalid operator '{}' (accepted operators are '<', '..', '-', ':') !",
-                        value
-                    ));
-                }
+                _ => Err(format!(
+                    "Invalid operator '{}' (accepted operators are '<', '..', '-', ':') !",
+                    value
+                )),
             },
             CharType::Space => Ok(VersionToken::Skip),
             CharType::Separator => Ok(VersionToken::Separator),
@@ -169,7 +167,7 @@ impl VersionValidatorParser {
                 idx += 1;
             }
         }
-        if v.len() == 0 {
+        if v.is_empty() {
             quote! {}
         } else {
             quote! {
@@ -221,7 +219,7 @@ impl TryFrom<&str> for VersionValidatorParser {
             if (token != VersionToken::Skip) && (token != VersionToken::Separator) {
                 tokens.push(token);
             }
-            if tokens.len() > 0 {
+            if !tokens.is_empty() {
                 parser.add(tokens.as_slice(), &value[start_expr..])?;
             }
         }

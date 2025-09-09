@@ -1070,7 +1070,7 @@ impl<'a> StructInfo<'a> {
             .into();
         }
         let name_hash = hashes::fnv_32(self.name.to_string().as_str());
-        let serde_definition = SerdeDefinition::new_serde(&self.generics, &self.name);
+        let serde_definition = SerdeDefinition::new_serde(self.generics, self.name);
         let implicit_lifetime = serde_definition.implicit_lifetime;
         let definition = serde_definition.definition;
 
@@ -1155,8 +1155,7 @@ impl<'a> StructInfo<'a> {
                 } else if field.data_type.ignore_field {
                     //println!("Warning: field {} in structure {} is a zero-sized type (ZST) ! It will be ignored !", field.name, input.ident);
                     ignored_fields.push(field);
-                } else
-                {
+                } else {
                     data_members.push(field);
                 }
                 

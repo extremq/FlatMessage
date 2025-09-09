@@ -8,12 +8,12 @@ mod enum_memory_representation;
 mod field_info;
 mod flags;
 mod packed_struct;
+mod serde_definition;
 mod struct_info;
 mod utils;
 mod validate_checksum;
 mod variant;
 mod version_validator_parser;
-mod serde_definition;
 
 use config::Config;
 use const_assetions::ConstAssertions;
@@ -68,7 +68,7 @@ pub fn flat_message(input: TokenStream) -> TokenStream {
 
 fn extract_attribute_inner_tokens(attr: &Attribute) -> Option<TokenStream> {
     let tokens2 = attr.meta.require_list().ok()?.tokens.clone();
-    return Some(tokens2.into());
+    Some(tokens2.into())
 }
 
 #[proc_macro_derive(FlatMessageEnum, attributes(sealed))]

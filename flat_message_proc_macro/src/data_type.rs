@@ -105,8 +105,8 @@ impl DataType {
         if attr.path().is_ident("flat_message_item") {
             let all_tokens = attr.meta.clone().into_token_stream();
             let mut tokens = TokenStream::default();
-            let mut iter = all_tokens.into_iter();
-            while let Some(token) = iter.next() {
+            let iter = all_tokens.into_iter();
+            for token in iter {
                 if let proc_macro2::TokenTree::Group(group) = token {
                     if group.delimiter() == proc_macro2::Delimiter::Parenthesis {
                         tokens = group.stream().into();
@@ -135,11 +135,9 @@ impl DataType {
         } else {
             // apply some basic defaults for types that don't have them
             // if the type is option, don't set anything - for option None will always be the daultt value.
-            if !self.option {
-                if self.name == "&str" {
-                    self.default_value = Some("".to_string());
-                    should_process = true;
-                }
+            if !self.option && self.name == "&str" {
+                self.default_value = Some("".to_string());
+                should_process = true;
             }
         }
 
@@ -165,7 +163,7 @@ impl DataType {
                 let mut value = self.default_value.take().unwrap();
                 if (!value.starts_with("Some(")) && (value != "None") {
                     value.insert_str(0, "Some(");
-                    value.push_str(")");
+                    value.push(')');
                 }
                 self.default_value = Some(value);
             }
@@ -180,7 +178,7 @@ impl DataType {
         attr: &mut HashMap<String, AttributeValue>,
         field_nane: &str,
     ) -> Result<(), String> {
-        if attr.len() == 0 {
+        if attr.is_empty() {
             return Err(format!("No attributes provided for field: '{}'. You can only provide one of the following attributes: 'kind', 'repr' or 'align'.",field_nane));
         }
 
@@ -209,7 +207,7 @@ impl DataType {
         }
         if ignore_field {
             self.ignore_field = true;
-            return Ok(());
+            Ok(())
         } else {
             if has_kind {
                 let kind = attr.get("kind").unwrap().as_str();
@@ -220,7 +218,7 @@ impl DataType {
                     let repr = attr.get("repr").unwrap().as_str();
                     let new_name = format!("enum_{}", repr);
                     let new_data_format = DataFormat::from(new_name.as_str());
-                    if new_data_format.is_enum() == false {
+                    if !new_data_format.is_enum() {
                         return Err(format!("Invalid representation for an enum: '{}' in field: '{}'. The possible representations for an enum are: u8, u16, u32, u64, i8, i16, i32 and i64.",repr, field_nane));
                     }
                     self.data_format = new_data_format;
@@ -233,7 +231,7 @@ impl DataType {
                     let repr = attr.get("repr").unwrap().as_str();
                     let new_name = format!("flags_{}", repr);
                     let new_data_format = DataFormat::from(new_name.as_str());
-                    if new_data_format.is_flags() == false {
+                    if !new_data_format.is_flags() {
                         return Err(format!("Invalid representation for flags: '{}' in field: '{}'. The possible representations for flags are: u8, u16, u32, u64 and u128",repr, field_nane));
                     }
                     self.data_format = new_data_format;
@@ -299,7 +297,7 @@ impl DataType {
             }
             // check for other errors
             // possible parameters
-            static KEYS: &[&'static str] = &[
+            static KEYS: &[&str] = &[
                 "kind",
                 "repr",
                 "align",
@@ -318,10 +316,10 @@ impl DataType {
                     *key, field_nane
                 ));
             }
-            return Err(format!(
+            Err(format!(
                 "Invalid combination of attributes in field: '{}'. ",
                 field_nane
-            ));
+            ))
         }
     }
 
@@ -342,21 +340,16 @@ impl DataType {
         &self,
         for_struct_initialization: bool,
     ) -> proc_macro2::TokenStream {
-        let default_tokens = if let Some(default_value) = &self.default_value {
-            let default_value_parsed: proc_macro2::TokenStream = parse_str(&default_value).unwrap();
+        if let Some(default_value) = &self.default_value {
+            let default_value_parsed: proc_macro2::TokenStream = parse_str(default_value).unwrap();
             quote! { #default_value_parsed }
+        } else if self.option {
+            quote! { None }
+        } else if for_struct_initialization {
+            quote! { ::std::default::Default::default() }
         } else {
-            if self.option {
-                quote! { None }
-            } else {
-                if for_struct_initialization {
-                    quote! { ::std::default::Default::default() }
-                } else {
-                    let ty = self.ty.clone();
-                    quote! { #ty::default() }
-                }
-            }
-        };
-        default_tokens
+            let ty = self.ty.clone();
+            quote! { #ty::default() }
+        }
     }
 }
