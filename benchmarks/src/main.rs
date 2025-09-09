@@ -143,6 +143,19 @@ fn de_test_postcard<S: DeserializeOwned>(data: &TestData) -> S {
 
 // ----------------------------------------------------------------------------
 
+fn se_test_toml<S: Serialize>(process: &S, data: &mut TestData) {
+    let s = toml::to_string(process).unwrap();
+    data.vec.extend_from_slice(s.as_bytes());
+}
+
+fn de_test_toml<S: DeserializeOwned>(data: &TestData) -> S {
+    toml::from_slice(&data.vec).unwrap()
+}   
+
+// ----------------------------------------------------------------------------
+
+
+
 struct TestTimes {
     min: Duration,
     max: Duration,
@@ -371,6 +384,7 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
     b!(Json, x, se_test_json, de_test_json, false);
     b!(SimdJson, x, se_test_simd_json, de_test_simd_json, false);
     b!(Postcard, x, se_test_postcard, de_test_postcard, true);
+    b!(Toml, x, se_test_toml, de_test_toml, false);
 }
 
 fn print_results_ascii_table(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], _file_name: &str) {
@@ -630,7 +644,8 @@ tests! {
     ("bson", Bson),
     ("json", Json),
     ("simd_json", SimdJson),
-    ("postcard", Postcard)
+    ("postcard", Postcard),
+    ("toml", Toml)
 }
 
 fn split_tests<'x, T>(input: &'x str) -> (bool, HashSet<T>)

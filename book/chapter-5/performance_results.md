@@ -21,6 +21,7 @@ The following crates were tested:
 | simd_json              | 0.15.1  | Schema-less |                                                                                                             |
 | ciborium               | 0.2.2   | Schema-less |                                                                                                             |
 | rmp                    | 0.8.14  | both        | also included rmp-serde for MessagePack (v1.3.0)                                                            |
+| toml                   | 0.9.5   | Schema-less |                                                                                                             |
 
 
 ## Methodology
