@@ -22,6 +22,7 @@ The following crates were tested:
 | ciborium               | 0.2.2   | Schema-less |                                                                                                                                                                          |
 | rmp                    | 0.8.14  | both        | also included rmp-serde for MessagePack (v1.3.0)                                                                                                                         |
 | toml                   | 0.9.5   | Schema-less | TOML does not have a direct method to write into a buffer, so we write into a string and then copy that string into a buffer. This ads aditional cost for the algorithm. |
+| protobuf (prost)       | 0.14.1  | with Schema | Protobuf via prost crate. Not all tests are supported by protobuf (e.g. test that use u8, i8 or other unsuported types will be marked as N/A for protobuf).              |
 
 
 ## Methodology
