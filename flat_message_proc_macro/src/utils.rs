@@ -82,7 +82,7 @@ pub(crate) fn value_to_i128(value: &str) -> Result<(i128, EnumMemoryRepresentati
                 }
             }
         }
-        return Ok((value, repr_type));
+        Ok((value, repr_type))
     } else {
         Err(format!("Invalid numerical value: '{original_value}'"))
     }
@@ -163,8 +163,7 @@ pub(crate) fn validate_one_string_parameter(input: TokenStream, name: &str) -> S
     let mut string_param = match tokens.next() {
         Some(TokenTree::Literal(lit)) => lit.to_string(),
         _ => panic!(
-            "The parameter provided to the '{}!' macro must be a string literal.",
-            name
+            "The parameter provided to the '{name}!' macro must be a string literal."
         ),
     };
 
@@ -173,14 +172,12 @@ pub(crate) fn validate_one_string_parameter(input: TokenStream, name: &str) -> S
     }
     if (!string_param.starts_with('\"')) || (!string_param.ends_with('\"')) {
         panic!(
-            "The parameter provided to the '{}!' macro must be a string literal.",
-            name
+            "The parameter provided to the '{name}!' macro must be a string literal."
         );
     }
     if string_param.len() == 2 {
         panic!(
-            "You can not provide an empty string for '{}!' macro !",
-            name
+            "You can not provide an empty string for '{name}!' macro !"
         );
     }
 

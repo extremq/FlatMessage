@@ -1007,9 +1007,9 @@ fn run_one_mdbook_test(test_name: &str, times: u32) {
     run_tests(a, test_name);
 }
 fn run_mdbook_tests() {
-    run_one_mdbook_test("multiple_fields", 100000);
-    //run_one_mdbook_test("point", 10000);
-    //run_one_mdbook_test("long_strings", 1000);
+    run_one_mdbook_test("multiple_fields", 100_000);
+    run_one_mdbook_test("point", 500_000);
+    //run_one_mdbook_test("long_strings", 1000); 
 }
 
 fn main() {

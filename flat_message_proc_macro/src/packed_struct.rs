@@ -175,7 +175,7 @@ impl<'a> PackedStruct<'a> {
         }
     }    
     pub(crate) fn generate_code(&self) -> TokenStream {
-        let serde_definition = SerdeDefinition::new_serde(&self.generics, &self.name);
+        let serde_definition = SerdeDefinition::new_serde(&self.generics, self.name);
         let implicit_lifetime = serde_definition.implicit_lifetime;
         let definition = serde_definition.definition;
         let df = format_ident!("{}", self.data_format.to_string());
@@ -208,7 +208,7 @@ impl<'a> PackedStruct<'a> {
             let mut structure_hash = String::with_capacity(128);
             let mut alignament = 1;
             structure_hash.push_str(input.ident.to_string().as_str());
-            structure_hash.push_str(",");
+            structure_hash.push(',');
 
             for field in fields.named.iter() {
                 let field = FieldInfo::new(field, None)?;
@@ -226,7 +226,7 @@ impl<'a> PackedStruct<'a> {
                 if field.data_type.option {
                     return Err(format!("Option types (Option<T>)  are not supported for packed structures ! (for field {}) !", field.name));
                 }
-                if field.data_type.mandatory == false {
+                if !field.data_type.mandatory {
                     return Err(format!("In a packed structure, all fields must be mandatory ! (for field {}) ! Remove the `mandatory = false` attribute from #[flat_message_item(...)] description of this field !", field.name));
                 }
                 if field.data_type.use_default_if_deserialize_fails {
@@ -252,7 +252,7 @@ impl<'a> PackedStruct<'a> {
                         }
                     )
                     .unwrap();
-                    structure_hash.push_str(",");
+                    structure_hash.push(',');
                     data_members.push(field);
                 }
             }
@@ -269,7 +269,7 @@ impl<'a> PackedStruct<'a> {
                 4 => DataFormat::PackedStruct32,
                 8 => DataFormat::PackedStruct64,
                 16 => DataFormat::PackedStruct128,
-                _ => return Err(format!("Invalid alignment for packed structure: {} (only 1, 2, 4, 8 or 16 are allowed)", alignament)),
+                _ => return Err(format!("Invalid alignment for packed structure: {alignament} (only 1, 2, 4, 8 or 16 are allowed)")),
             };
             write!(structure_hash, "[{}]", data_format as u8).unwrap();
             //println!("Structure hash: {}", structure_hash);

@@ -68,7 +68,7 @@ pub fn flat_message(input: TokenStream) -> TokenStream {
 
 fn extract_attribute_inner_tokens(attr: &Attribute) -> Option<TokenStream> {
     let tokens2 = attr.meta.require_list().ok()?.tokens.clone();
-    return Some(tokens2.into());
+    Some(tokens2.into())
 }
 
 #[proc_macro_derive(FlatMessageEnum, attributes(sealed))]
@@ -158,7 +158,7 @@ pub fn flat_message_variant(input: TokenStream) -> TokenStream {
 pub fn name(input: TokenStream) -> TokenStream {
     let value = utils::validate_one_string_parameter(input, "name");
     let hash = common::hashes::fnv_32(&value);
-    TokenStream::from_str(format!("Name {{ value: {} }}", hash).as_str())
+    TokenStream::from_str(format!("Name {{ value: {hash} }}").as_str())
         .expect("Fail to convert name! to stream")
 }
 

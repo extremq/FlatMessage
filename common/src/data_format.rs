@@ -96,28 +96,22 @@ impl DataFormat {
         )
     }
     pub fn is_enum(&self) -> bool {
-        match self {
-            DataFormat::EnumI8
+        matches!(self, DataFormat::EnumI8
             | DataFormat::EnumI16
             | DataFormat::EnumI32
             | DataFormat::EnumI64
             | DataFormat::EnumU8
             | DataFormat::EnumU16
             | DataFormat::EnumU32
-            | DataFormat::EnumU64 => true,
-            _ => false,
-        }
+            | DataFormat::EnumU64)
     }
 
     pub fn is_flags(&self) -> bool {
-        match self {
-            DataFormat::Flags8
+        matches!(self, DataFormat::Flags8
             | DataFormat::Flags16
             | DataFormat::Flags32
             | DataFormat::Flags64
-            | DataFormat::Flags128 => true,
-            _ => false,
-        }
+            | DataFormat::Flags128)
     }
     pub const fn requires_padding(&self) -> bool {
         (self.alignament() > 1) && (self.is_object_container())
@@ -230,7 +224,7 @@ impl From<&str> for DataFormat {
         // check to see if value is in th form of [u8;<number>]
         if let Some(buf) = value.strip_prefix("[u8;") {
             if let Some(value) = buf.strip_suffix("]") {
-                if let Ok(_) = value.trim().parse::<usize>() {
+                if value.trim().parse::<usize>().is_ok() {
                     return DataFormat::FixArray;
                 }
             }

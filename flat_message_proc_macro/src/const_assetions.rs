@@ -12,7 +12,7 @@ impl ConstAssertions {
         let ty: syn::Path = syn::parse_str(&path_str).unwrap();
         let const_assert_name = format_ident!("_CONST_ASSERT_{}_{}",structure_name,field_name);        
         let df = format_ident!("{}",datatype.data_format.to_string());
-        let field_name = format!("{}::{}",structure_name, field_name);
+        let field_name = format!("{structure_name}::{field_name}");
         let serde_ty = format_ident!("{}",datatype.field_type.serde_trait());
         quote! {
             #[allow(non_upper_case_globals)]
@@ -26,7 +26,7 @@ impl ConstAssertions {
         let ty: syn::Path = syn::parse_str(&path_str).unwrap();
         let const_assert_name = format_ident!("_CONST_ASSERT_STRUCT_{}_{}",structure_name,field_name);        
         let df = format_ident!("{}",datatype.data_format.to_string());
-        let field_name = format!("{}::{}",structure_name, field_name);
+        let field_name = format!("{structure_name}::{field_name}");
         let serde_ty = format_ident!("{}",datatype.field_type.serde_trait());
         quote! {
             #[allow(non_upper_case_globals)]
@@ -49,7 +49,7 @@ impl ConstAssertions {
         let ty: syn::Path = syn::parse_str(&path_str).unwrap();
         let const_assert_name = format_ident!("_CONST_ASSERT_VARIANT_{}_{}",structure_name,field_name);        
         let df = format_ident!("{}",datatype.data_format.to_string());
-        let field_name = format!("{}::{}",structure_name, field_name);
+        let field_name = format!("{structure_name}::{field_name}");
         let serde_ty = format_ident!("{}",datatype.field_type.serde_trait());
         quote! {
             #[allow(non_upper_case_globals)]
@@ -77,7 +77,7 @@ impl ConstAssertions {
         let ty: syn::Path = syn::parse_str(&path_str).unwrap();
         let const_assert_name = format_ident!("_CONST_ASSERT_PACKED_STRUCT_{}_{}",structure_name,field_name);        
         let df = format_ident!("{}",datatype.data_format.to_string());
-        let field_name = format!("{}::{}",structure_name, field_name);
+        let field_name = format!("{structure_name}::{field_name}");
         let serde_ty = format_ident!("{}",datatype.field_type.serde_trait());
         quote! {
             #[allow(non_upper_case_globals)]

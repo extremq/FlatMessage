@@ -294,7 +294,7 @@ impl TryFrom<syn::DeriveInput> for EnumInfo {
                 _ => {
                     return Err(format!(
                         "Varians with types are not supported (see variant: {})",
-                        variant.ident.to_string()
+                        variant.ident
                     ))
                 }
             }
@@ -305,14 +305,14 @@ impl TryFrom<syn::DeriveInput> for EnumInfo {
                 if (repr_type != enum_repr) && (repr_type != EnumMemoryRepresentation::NotDefined) {
                     return Err(format!(
                         "The enum representation type is different from the variant representation type (see variant: {})",
-                        variant.ident.to_string()
+                        variant.ident
                     ));
                 }
                 variants.push((variant.ident.to_string(), value_i128));
             } else {
                 return Err(format!(
                     "You need to provide a value for the following variant: {}",
-                    variant.ident.to_string()
+                    variant.ident
                 ));
             }
         }

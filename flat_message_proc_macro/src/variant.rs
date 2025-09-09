@@ -33,7 +33,7 @@ impl Variant {
             v.sort();
             for variant_name in v {
                 name.push_str(variant_name);
-                name.push_str(",");
+                name.push(',');
             }
             common::hashes::crc32(name.as_bytes())
         } else {
@@ -46,23 +46,23 @@ impl Variant {
         for variant in self.variants.iter() {
             if let Some(data_type) = &variant.data_type {
                 if data_type.data_format.is_enum() {
-                    v.push(ConstAssertions::for_enum_flags(self.name.clone(), &variant.name, &data_type,"Validate that the type describe in the #[repr(...)] attribute of the enum is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
+                    v.push(ConstAssertions::for_enum_flags(self.name.clone(), &variant.name, data_type,"Validate that the type describe in the #[repr(...)] attribute of the enum is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
                 }
                 if data_type.data_format.is_flags() {
-                    v.push(ConstAssertions::for_enum_flags(self.name.clone(), &variant.name, &data_type,"Validate that the underline type is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
+                    v.push(ConstAssertions::for_enum_flags(self.name.clone(), &variant.name, data_type,"Validate that the underline type is the same as the one described by the `repr` attribute from #[flag_message_items(...)]"));
                 }
                 if data_type.data_format.is_struct() {
                     v.push(ConstAssertions::for_struct(
                         self.name.clone(),
                         &variant.name,
-                        &data_type,
+                        data_type,
                     ));
                 }
                 if data_type.data_format.is_variant() {
                     v.push(ConstAssertions::for_variant(
                         self.name.clone(),
                         &variant.name,
-                        &data_type,
+                        data_type,
                     ));
                 }
             }
@@ -320,8 +320,7 @@ impl TryFrom<syn::DeriveInput> for Variant {
                 Fields::Unnamed(fields) => {
                     if fields.unnamed.len() != 1 {
                         return Err(format!(
-                            "Variant `{}` must have exactly one Type associated !",
-                            name
+                            "Variant `{name}` must have exactly one Type associated !"
                         ));
                     }
                     let ty = fields.unnamed[0].ty.clone();
@@ -339,7 +338,7 @@ impl TryFrom<syn::DeriveInput> for Variant {
                     };
                     // if the data format is unknown, we need to check if the field is a unique id or a timestamp
                     if dt.data_format == DataFormat::Unknwon {
-                        return Err(format!("Please provide aditional specifications via #[flat_message_item(...)] for the field '{}' !", name));
+                        return Err(format!("Please provide aditional specifications via #[flat_message_item(...)] for the field '{name}' !"));
                     }
                     if dt.unique_id {
                         return Err(format!("Unique IDs can not used inside a variant enum - for field {} in structure {} !", name, input.ident));
@@ -365,8 +364,7 @@ impl TryFrom<syn::DeriveInput> for Variant {
                 }
                 Fields::Named(_) => {
                     return Err(format!(
-                        "Variant `{}` must be unit (e.g. Variant) or a single-field tuple variant (e.g. Variant(Type) )",
-                        name
+                        "Variant `{name}` must be unit (e.g. Variant) or a single-field tuple variant (e.g. Variant(Type) )"
                     ));
                 }
             }
@@ -377,7 +375,7 @@ impl TryFrom<syn::DeriveInput> for Variant {
             4 => DataFormat::Variant32,
             8 => DataFormat::Variant64,
             16 => DataFormat::Variant128,
-            _ => return Err(format!("Invalid alignment: {}", align)),
+            _ => return Err(format!("Invalid alignment: {align}")),
         };
         Ok(Self {
             name: input.ident,

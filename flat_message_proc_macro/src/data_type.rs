@@ -135,11 +135,9 @@ impl DataType {
         } else {
             // apply some basic defaults for types that don't have them
             // if the type is option, don't set anything - for option None will always be the daultt value.
-            if !self.option {
-                if self.name == "&str" {
-                    self.default_value = Some("".to_string());
-                    should_process = true;
-                }
+            if !self.option && self.name == "&str" {
+                self.default_value = Some("".to_string());
+                should_process = true;
             }
         }
 
@@ -165,7 +163,7 @@ impl DataType {
                 let mut value = self.default_value.take().unwrap();
                 if (!value.starts_with("Some(")) && (value != "None") {
                     value.insert_str(0, "Some(");
-                    value.push_str(")");
+                    value.push(')');
                 }
                 self.default_value = Some(value);
             }
@@ -180,8 +178,8 @@ impl DataType {
         attr: &mut HashMap<String, AttributeValue>,
         field_nane: &str,
     ) -> Result<(), String> {
-        if attr.len() == 0 {
-            return Err(format!("No attributes provided for field: '{}'. You can only provide one of the following attributes: 'kind', 'repr' or 'align'.",field_nane));
+        if attr.is_empty() {
+            return Err(format!("No attributes provided for field: '{field_nane}'. You can only provide one of the following attributes: 'kind', 'repr' or 'align'."));
         }
 
         let has_repr = attr.contains_key("repr");
@@ -209,52 +207,52 @@ impl DataType {
         }
         if ignore_field {
             self.ignore_field = true;
-            return Ok(());
+            Ok(())
         } else {
             if has_kind {
                 let kind = attr.get("kind").unwrap().as_str();
                 if kind == "enum" {
                     if !has_repr {
-                        return Err(format!("If we provided the 'kind' attribute with the value 'enum' you need to also provide the attribute 'repr' (for field: '{}')",field_nane));
+                        return Err(format!("If we provided the 'kind' attribute with the value 'enum' you need to also provide the attribute 'repr' (for field: '{field_nane}')"));
                     }
                     let repr = attr.get("repr").unwrap().as_str();
-                    let new_name = format!("enum_{}", repr);
+                    let new_name = format!("enum_{repr}");
                     let new_data_format = DataFormat::from(new_name.as_str());
-                    if new_data_format.is_enum() == false {
-                        return Err(format!("Invalid representation for an enum: '{}' in field: '{}'. The possible representations for an enum are: u8, u16, u32, u64, i8, i16, i32 and i64.",repr, field_nane));
+                    if !new_data_format.is_enum() {
+                        return Err(format!("Invalid representation for an enum: '{repr}' in field: '{field_nane}'. The possible representations for an enum are: u8, u16, u32, u64, i8, i16, i32 and i64."));
                     }
                     self.data_format = new_data_format;
                     return Ok(());
                 }
                 if kind == "flags" {
                     if !has_repr {
-                        return Err(format!("If we provided the 'kind' attribute with the value 'flags' you need to also provide the attribute 'repr' (for field: '{}')",field_nane));
+                        return Err(format!("If we provided the 'kind' attribute with the value 'flags' you need to also provide the attribute 'repr' (for field: '{field_nane}')"));
                     }
                     let repr = attr.get("repr").unwrap().as_str();
-                    let new_name = format!("flags_{}", repr);
+                    let new_name = format!("flags_{repr}");
                     let new_data_format = DataFormat::from(new_name.as_str());
-                    if new_data_format.is_flags() == false {
-                        return Err(format!("Invalid representation for flags: '{}' in field: '{}'. The possible representations for flags are: u8, u16, u32, u64 and u128",repr, field_nane));
+                    if !new_data_format.is_flags() {
+                        return Err(format!("Invalid representation for flags: '{repr}' in field: '{field_nane}'. The possible representations for flags are: u8, u16, u32, u64 and u128"));
                     }
                     self.data_format = new_data_format;
                     return Ok(());
                 }
                 if kind == "struct" {
                     if !has_align {
-                        return Err(format!("If we provided the 'kind' attribute with the value 'struct' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
+                        return Err(format!("If we provided the 'kind' attribute with the value 'struct' you need to also provide the attribute 'align' (for field: '{field_nane}')"));
                     }
                     let align = attr.get("align").unwrap().as_str();
                     match align {
                         "4" => self.data_format = DataFormat::Struct4,
                         "8" => self.data_format = DataFormat::Struct8,
                         "16" => self.data_format = DataFormat::Struct16,
-                        _ => return Err(format!("Invalid alignment for a struct: '{}' in field: '{}'. The possible alignments for a struct are: 4, 8 and 16.",align, field_nane)),
+                        _ => return Err(format!("Invalid alignment for a struct: '{align}' in field: '{field_nane}'. The possible alignments for a struct are: 4, 8 and 16.")),
                     };
                     return Ok(());
                 }
                 if kind == "variant" {
                     if !has_align {
-                        return Err(format!("If we provided the 'kind' attribute with the value 'variant' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
+                        return Err(format!("If we provided the 'kind' attribute with the value 'variant' you need to also provide the attribute 'align' (for field: '{field_nane}')"));
                     }
                     let align = attr.get("align").unwrap().as_str();
                     match align {
@@ -263,13 +261,13 @@ impl DataType {
                         "4" => self.data_format = DataFormat::Variant32,
                         "8" => self.data_format = DataFormat::Variant64,
                         "16" => self.data_format = DataFormat::Variant128,
-                        _ => return Err(format!("Invalid alignment for a variant: '{}' in field: '{}'. The possible alignments for a variant are: 1,2,4,8 and 16.",align, field_nane)),
+                        _ => return Err(format!("Invalid alignment for a variant: '{align}' in field: '{field_nane}'. The possible alignments for a variant are: 1,2,4,8 and 16.")),
                     };
                     return Ok(());
                 }
                 if kind == "packed" {
                     if !has_align {
-                        return Err(format!("If we provided the 'kind' attribute with the value 'packed' you need to also provide the attribute 'align' (for field: '{}')",field_nane));
+                        return Err(format!("If we provided the 'kind' attribute with the value 'packed' you need to also provide the attribute 'align' (for field: '{field_nane}')"));
                     }
                     let align = attr.get("align").unwrap().as_str();
                     self.data_format = match align {
@@ -278,28 +276,27 @@ impl DataType {
                         "4" => DataFormat::PackedStruct32,
                         "8" => DataFormat::PackedStruct64,
                         "16" => DataFormat::PackedStruct128,
-                        _ => return Err(format!("Invalid alignment for a packed struct: '{}' in field: '{}'. The possible alignments for a packed struct are: 1, 2, 4, 8 and 16.",align, field_nane)),
+                        _ => return Err(format!("Invalid alignment for a packed struct: '{align}' in field: '{field_nane}'. The possible alignments for a packed struct are: 1, 2, 4, 8 and 16.")),
                     };
                     return Ok(());
                 }
                 return Err(format!(
-                    "Invalid kind: '{}' in field: '{}'. The possible kinds are: 'enum', 'flags', 'struct', 'variant' or 'packed'.",
-                    kind, field_nane
+                    "Invalid kind: '{kind}' in field: '{field_nane}'. The possible kinds are: 'enum', 'flags', 'struct', 'variant' or 'packed'."
                 ));
             }
             // kind not present
             if has_repr {
-                return Err(format!("If we provided the 'repr' attribute you need to also provide the attribute 'kind' (for field: '{}')",field_nane));
+                return Err(format!("If we provided the 'repr' attribute you need to also provide the attribute 'kind' (for field: '{field_nane}')"));
             }
             if has_align {
-                return Err(format!("If we provided the 'align' attribute you need to also provide the attribute 'kind' (for field: '{}')",field_nane));
+                return Err(format!("If we provided the 'align' attribute you need to also provide the attribute 'kind' (for field: '{field_nane}')"));
             }
             if has_mandatory || has_validate {
                 return Ok(());
             }
             // check for other errors
             // possible parameters
-            static KEYS: &[&'static str] = &[
+            static KEYS: &[&str] = &[
                 "kind",
                 "repr",
                 "align",
@@ -318,10 +315,9 @@ impl DataType {
                     *key, field_nane
                 ));
             }
-            return Err(format!(
-                "Invalid combination of attributes in field: '{}'. ",
-                field_nane
-            ));
+            Err(format!(
+                "Invalid combination of attributes in field: '{field_nane}'. "
+            ))
         }
     }
 
@@ -343,7 +339,7 @@ impl DataType {
         for_struct_initialization: bool,
     ) -> proc_macro2::TokenStream {
         let default_tokens = if let Some(default_value) = &self.default_value {
-            let default_value_parsed: proc_macro2::TokenStream = parse_str(&default_value).unwrap();
+            let default_value_parsed: proc_macro2::TokenStream = parse_str(default_value).unwrap();
             quote! { #default_value_parsed }
         } else {
             if self.option {
