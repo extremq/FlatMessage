@@ -154,7 +154,15 @@ fn de_test_toml<S: DeserializeOwned>(data: &TestData) -> S {
 
 // ----------------------------------------------------------------------------
 
+fn se_test_protobuf<S: Serialize + prost::Message>(process: &S, data: &mut TestData) {
+    process.encode(&mut data.vec).unwrap();
+}
 
+fn de_test_protobuf<S: DeserializeOwned + prost::Message + Default>(data: &TestData) -> S {
+    S::decode(data.vec.as_slice()).unwrap()
+}
+
+// ----------------------------------------------------------------------------
 
 struct TestTimes {
     min: Duration,
@@ -385,7 +393,70 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
     b!(SimdJson, x, se_test_simd_json, de_test_simd_json, false);
     b!(Postcard, x, se_test_postcard, de_test_postcard, true);
     b!(Toml, x, se_test_toml, de_test_toml, false);
+    //b!(Protobuf, x, se_test_protobuf, de_test_protobuf, true);
 }
+
+fn add_benches_protobuf<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()> + prost::Message + Default>(
+    top_test_name: TestKind,
+    x: &T,
+    results: &mut Vec<Result>,
+    algos: &HashSet<AlgoKind>,
+    all_algos: bool,
+    iterations: u32,
+) {
+    let wrapper = Wrapper(x.clone());
+
+    macro_rules! b {
+        ($name:expr, $x:expr, $se:expr, $de:expr, $needs_schema:expr) => {
+            if all_algos || algos.contains(&$name) {
+                bench(
+                    top_test_name,
+                    $name,
+                    $x,
+                    $se,
+                    $de,
+                    $needs_schema,
+                    results,
+                    iterations,
+                );
+            }
+        };
+    }
+
+    use AlgoKind::*;
+    b!(
+        FlatMessage,
+        x,
+        se_test_flat_message,
+        de_test_flat_message,
+        false
+    );
+    b!(
+        FlatMessageUnchecked,
+        &wrapper,
+        se_test_flat_message,
+        de_test_flat_message,
+        false
+    );
+    b!(RmpSchema, x, se_test_rmp_schema, de_test_rmp, true);
+    b!(RmpSchemaless, x, se_test_rmp_schemaless, de_test_rmp, false);
+    b!(Bincode, x, se_test_bincode, de_test_bincode, true);
+    b!(
+        FlexBuffers,
+        x,
+        se_test_flexbuffers,
+        de_test_flexbuffers,
+        false
+    );
+    b!(Cbor, x, se_test_cbor, de_test_cbor, false);
+    b!(Bson, x, se_test_bson, de_test_bson, false);
+    b!(Json, x, se_test_json, de_test_json, false);
+    b!(SimdJson, x, se_test_simd_json, de_test_simd_json, false);
+    b!(Postcard, x, se_test_postcard, de_test_postcard, true);
+    b!(Toml, x, se_test_toml, de_test_toml, false);
+    b!(Protobuf, x, se_test_protobuf, de_test_protobuf, true);
+}
+
 
 fn print_results_ascii_table(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], _file_name: &str) {
     let mut ascii_table: AsciiTable = AsciiTable::default();
@@ -571,6 +642,17 @@ fn do_one<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSi
     add_benches(top_test_name, x, results, algos, all_algos, iterations);
 }
 
+fn do_one_protobuf<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()> + prost::Message + Default>(
+    top_test_name: TestKind,
+    x: &T,
+    results: &mut Vec<Result>,
+    algos: &HashSet<AlgoKind>,
+    all_algos: bool,
+    iterations: u32,
+) {
+    add_benches_protobuf(top_test_name, x, results, algos, all_algos, iterations);
+}
+
 macro_rules! tests {
     ($enum_name:ident, $(($name:literal, $v:ident)),+) => {
         #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
@@ -645,7 +727,8 @@ tests! {
     ("json", Json),
     ("simd_json", SimdJson),
     ("postcard", Postcard),
-    ("toml", Toml)
+    ("toml", Toml),
+    ("protobuf", Protobuf)
 }
 
 fn split_tests<'x, T>(input: &'x str) -> (bool, HashSet<T>)
@@ -716,6 +799,13 @@ fn run_tests(args: Args, test_name: &str) {
             }
         };
     }
+    macro_rules! run_protobuf {
+        ($name:expr, $x:expr) => {
+            if all_tests || tests.contains(&$name) {
+                do_one_protobuf($name, $x, results, &algos, all_algos, args.times);
+            }
+        };
+    }
 
     println!("Starting execution of test: {}", test_name);
     use std::io::{self, Write};
@@ -726,19 +816,19 @@ fn run_tests(args: Args, test_name: &str) {
         let start = Instant::now();
         {
             let s = structures::process_create::generate();
-            run!(ProcessCreate, &s);
+            run_protobuf!(ProcessCreate, &s);
         }
         {
             let s = structures::long_strings::generate(100);
-            run!(LongStrings, &s);
+            run_protobuf!(LongStrings, &s);
         }
         {
             let s = structures::point::generate();
-            run!(Point, &s);
+            run_protobuf!(Point, &s);
         }
         {
             let s = structures::one_bool::generate();
-            run!(OneBool, &s);
+            run_protobuf!(OneBool, &s);
         }
         {
             let s = structures::multiple_fields::generate();
@@ -746,7 +836,7 @@ fn run_tests(args: Args, test_name: &str) {
         }
         {
             let s = structures::multiple_integers::generate();
-            run!(MultipleIntegers, &s);
+            run_protobuf!(MultipleIntegers, &s);
         }
         {
             let s = structures::vectors::generate();

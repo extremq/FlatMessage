@@ -24,7 +24,7 @@ pub struct MultipleFields {
     second_field_of_type_u64: u64,
     second_field_of_type_i32: i32,
     second_field_of_type_i64: i64,
-    third_field_of_type_string: String,
+    third_field_of_type_string: String, 
     third_field_of_type_u32: u32,
     third_field_of_type_u64: u64,
     third_field_of_type_i32: i32,

@@ -4,14 +4,20 @@ use serde::{Deserialize, Serialize};
 
 use crate::s;
 
-#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize, bincode::Encode, bincode::Decode)]
+#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize, bincode::Encode, bincode::Decode, prost::Message)]
 #[flat_message_options(store_name = false)]
 pub struct LongStringStructure {
+    #[prost(string, tag = "1")]
     string_one: String,
+    #[prost(string, tag = "2")]
     string_two: String,
+    #[prost(string, tag = "3")]
     string_three: String,
+    #[prost(string, tag = "4")]
     string_four: String,
+    #[prost(uint32, tag = "5")]
     value_one: u32,
+    #[prost(uint64, tag = "6")]
     value_two: u64,
 }
 
