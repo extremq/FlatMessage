@@ -4,14 +4,20 @@ use serde::{Deserialize, Serialize};
 
 use crate::v;
 
-#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize, bincode::Encode, bincode::Decode)]
+#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize, bincode::Encode, bincode::Decode, prost::Message)]
 #[flat_message_options(store_name = false)]
 pub struct MultipleBools {
+    #[prost(bool, tag = "1")]
     b: bool,
+    #[prost(bool, repeated, tag = "2")]
     b_vec: Vec<bool>,
+    #[prost(bool, repeated, tag = "3")]
     b_vec_2: Vec<bool>,
+    #[prost(bool, repeated, tag = "4")]
     b_vec_3: Vec<bool>,
+    #[prost(bool, repeated, tag = "5")]
     b_vec_4: Vec<bool>,
+    #[prost(bool, repeated, tag = "6")]
     b_vec_5: Vec<bool>,
 }
 

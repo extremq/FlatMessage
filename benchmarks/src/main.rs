@@ -844,7 +844,7 @@ fn run_tests(args: Args, test_name: &str) {
         }
         {
             let s = structures::large_vectors::generate();
-            run!(LargeVectors, &s);
+            run_protobuf!(LargeVectors, &s);
         }
         {
             let s = structures::enum_fields::generate();
@@ -860,7 +860,7 @@ fn run_tests(args: Args, test_name: &str) {
         }
         {
             let s = structures::multiple_bools::generate();
-            run!(MultipleBools, &s);
+            run_protobuf!(MultipleBools, &s);
         }
         {
             let s = structures::string_lists::generate();

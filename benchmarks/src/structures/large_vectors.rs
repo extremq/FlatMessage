@@ -6,15 +6,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::v;
 
-#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize, bincode::Encode, bincode::Decode)]
+#[derive(Clone, Serialize, Deserialize, FlatMessage, get_size_derive::GetSize, bincode::Encode, bincode::Decode, prost::Message)]
 #[flat_message_options(store_name = false)]
 pub struct LargeVectors {
-    buffer: Vec<u8>,
+    #[prost(int32, repeated, tag = "1")]
     ints: Vec<i32>,
+    #[prost(float, repeated, tag = "2")]
     floats: Vec<f32>,
-    shorts: Vec<u16>,
+    #[prost(uint32, repeated, tag = "3")]
     uints: Vec<u32>,
-    small_ints: Vec<u8>,
+    #[prost(double, repeated, tag = "4")]
+    doubles: Vec<f64>,
 }
 
 fn create_vector<T>(size: usize, start: T, end: T, step: T) -> Vec<T>
@@ -35,11 +37,9 @@ where
 
 pub fn generate() -> LargeVectors {
     LargeVectors {
-        buffer: create_vector(2000, 200, 220, 1),
-        ints: create_vector(10000, -1_000_000, 1_000_000, 10000),
-        floats: create_vector(15000, 30_000.0, 1_000_000.0, 5000.0),
-        shorts: create_vector(20000, 0, 30000, 123),
+        ints: create_vector(2000, 200, 220, 1),
+        floats: create_vector(10000, -1_000_000.0, 1_000_000.0, 10000.0),
         uints: create_vector(25000, 0, 1_000_000, 10000),
-        small_ints: create_vector(30000, 0, 255, 1),
+        doubles: create_vector(30000, 0.0, 1_000_000.0, 10000.0),
     }
 }
