@@ -9,21 +9,28 @@ The following tests were conducted against ofther serializers and deserializers 
 
 The following crates were tested:
 
-| Crate / method         | Version | Schema Type | Observation                                                                                                 |
-| ---------------------- | ------- | ----------- | ----------------------------------------------------------------------------------------------------------- |
-| flat_message           | 0.1.0   | Schema-less | For deserialization the deserialize(...) method is beng used                                                |
-| flat_message_unchecked | 0.1.0   | Schema-less | For deserialization the deserialize_unchecked(...) method is beng used (meaning that no validation is done) |
-| bincode                | 2.0.1   | with Schema | also use bincode_derive (2.0.1)                                                                             |
-| bson                   | 3.0.0   | Schema-less |                                                                                                             |
-| flexbuffers            | 25.2.10 | Schema-less |                                                                                                             |
+| Crate / method   | Version | Schema Type | Observation                                                                                                                                                                                   |
+| ---------------- | ------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| flat_message      | 0.1.0   | Schema-less | For deserialization the deserialize(...) method is beng used                                                                                                                                  |
+| flat_message (⚠️) | 0.1.0   | Schema-less | `(Unchecked)` For deserialization the deserialize_unchecked(...) method is beng used (meaning that no validation is done)                                                                                   |
+| bincode           | 2.0.1   | with Schema | also use bincode_derive (2.0.1)                                                                                                                                                               |
+| bson              | 3.0.0   | Schema-less |                                                                                                                                                                                               |
+| flexbuffers       | 25.2.10 | Schema-less |                                                                                                                                                                                               |
+| postcard          | 1.1.3   | with Schema |                                                                                                                                                                                               |
+| serde_json        | 1.0.143 | Schema-less |                                                                                                                                                                                               |
+| simd_json         | 0.15.1  | Schema-less |                                                                                                                                                                                               |
+| ciborium          | 0.2.2   | Schema-less |                                                                                                                                                                                               |
+| rmp               | 0.8.14  | both        | also included rmp-serde for MessagePack (v1.3.0)                                                                                                                                              |
+| toml              | 0.9.5   | Schema-less | TOML does not have a direct method to write into a buffer, so we write into a string and then copy that string into a buffer. This ads aditional cost for the algorithm.                      |
+| protobuf (prost)  | 0.14.1  | with Schema | Protobuf via [prost](https://crates.io/crates/prost) crate. Not all tests are supported by protobuf (e.g. test that use u8, i8 or other unsuported types will be marked as N/A for protobuf). |
 
 
 ## Methodology
 
 Each test consists doing the following for a chosen structure:
-* Serialize the structure for `n` times (repetitions) and measure the time needed to perform this operations
-* Deserialize a buffer containing the serialized data for `n` times (repetitions) and measure the time needed to perform this operations
-* Serialize and then deserialize the structure for `n` times (repetitions) and measure the time needed to perform this operations
+* `Ser Time` - Serialize the structure for `n` times (repetitions) and measure the time needed to perform this operations
+* `Deser Time` - Deserialize a buffer containing the serialized data for `n` times (repetitions) and measure the time needed to perform this operations
+* `Ser+Deser Time` - Serialize and then deserialize the structure for `n` times (repetitions) and measure the time needed to perform this operations
 
 The `n` parameter is usually a larger one (**>1000**) as usually de serialization/deserialization process is really fast and measuring it for a smaller number of times would not be representative.
 
@@ -43,7 +50,7 @@ for iteration in 0..k {
     end = GetCurrentTime()
     times.push(end - start)
 }
-return (menian(times), min(times), max(times))
+return (median(times), min(times), max(times))
 ```
 For each structure we also compute the `Data size` (the minimum size required to store the data from that structure). That value is compared to the actual size of the serialized buffer. In most cases (since the serialized buffer is usually bigger than the data size) the percentage of increase is reported. The size value presented for each serialization method is presented as follows: `size [+/- percentage]`. For example: `355 [+69%]` means that the size of the serialized buffer is **355 bytes** and the data size is **209 bytes** (so the percentage of increase is **69%** for that method).
 
@@ -53,6 +60,6 @@ For each structure we also compute the `Data size` (the minimum size required to
 
 The tests were performed on the following OSes:
 1. **Windows** - Windows 11, 64 bit,11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz (2.80 GHz), RAM 32.0 GB 
-2. **MacOS** - 
+2. **MacOS** - MacOS 15.6.1 24G90 arm64, Apple M1 Pro, RAM 32.0 GB
 
 

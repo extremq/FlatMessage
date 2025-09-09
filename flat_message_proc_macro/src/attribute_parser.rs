@@ -13,8 +13,7 @@ pub(crate) fn parse(attr: TokenStream) -> HashMap<String, AttributeValue> {
                 let attr_name = ident.to_string();
                 if expecting_separator {
                     panic!(
-                        "Expecting an attribute separator (',') but got: '{}'",
-                        attr_name
+                        "Expecting an attribute separator (',') but got: '{attr_name}'"
                     );
                 }
                 if let Some(TokenTree::Punct(punct)) = it.next() {
@@ -22,20 +21,18 @@ pub(crate) fn parse(attr: TokenStream) -> HashMap<String, AttributeValue> {
                         let attr_value = match it.next() {
                             Some(TokenTree::Ident(ident)) => ident.to_string(),
                             Some(TokenTree::Literal(lit)) => lit.to_string(),
-                            _ => panic!("Expecting a value for attribute: '{}'", attr_name),
+                            _ => panic!("Expecting a value for attribute: '{attr_name}'"),
                         };
                         m.insert(attr_name, AttributeValue::from(attr_value));
                         expecting_separator = true;
                     } else {
                         panic!(
-                            "Expecting '=' or ':' after attribute '{}', followed by attribute value",
-                            attr_name
+                            "Expecting '=' or ':' after attribute '{attr_name}', followed by attribute value"
                         );
                     }
                 } else {
                     panic!(
-                        "Expecting '=' or ':' after attribute '{}', followed by attribute value",
-                        attr_name
+                        "Expecting '=' or ':' after attribute '{attr_name}', followed by attribute value"
                     );
                 }
             }
@@ -53,8 +50,7 @@ pub(crate) fn parse(attr: TokenStream) -> HashMap<String, AttributeValue> {
             }
             _ => {
                 panic!(
-                    "Expecting an attribute name, or no attribute at all, but found '{}' !",
-                    token
+                    "Expecting an attribute name, or no attribute at all, but found '{token}' !"
                 )
             }
         }

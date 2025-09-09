@@ -52,7 +52,7 @@ impl TryFrom<&str> for EnumMemoryRepresentation {
             "i16" => Ok(EnumMemoryRepresentation::I16),
             "i32" => Ok(EnumMemoryRepresentation::I32),
             "i64" => Ok(EnumMemoryRepresentation::I64),
-            _ => Err(format!("Invalid enum representation: '{}' (allowed representations are i8, i16, i32, i64, u8, u16, u32 and u64)", value)),
+            _ => Err(format!("Invalid enum representation: '{value}' (allowed representations are i8, i16, i32, i64, u8, u16, u32 and u64)")),
         }
     }
 }

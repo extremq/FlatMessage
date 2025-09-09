@@ -113,7 +113,7 @@ fn de_test_rmp<S: DeserializeOwned>(data: &TestData) -> S {
 
 fn se_test_bincode<S: Serialize + bincode::Encode>(process: &S, data: &mut TestData) {
     bincode::encode_into_std_write(process, &mut data.vec, bincode::config::standard()).unwrap();
-   // bincode::serialize_into(&mut data.vec, process).unwrap();
+    // bincode::serialize_into(&mut data.vec, process).unwrap();
 }
 
 fn de_test_bincode<S: DeserializeOwned + bincode::Decode<()>>(data: &TestData) -> S {
@@ -139,6 +139,27 @@ fn se_test_postcard<S: Serialize>(process: &S, data: &mut TestData) {
 
 fn de_test_postcard<S: DeserializeOwned>(data: &TestData) -> S {
     postcard::from_bytes(&data.vec).unwrap()
+}
+
+// ----------------------------------------------------------------------------
+
+fn se_test_toml<S: Serialize>(process: &S, data: &mut TestData) {
+    let s = toml::to_string(process).unwrap();
+    data.vec.extend_from_slice(s.as_bytes());
+}
+
+fn de_test_toml<S: DeserializeOwned>(data: &TestData) -> S {
+    toml::from_slice(&data.vec).unwrap()
+}
+
+// ----------------------------------------------------------------------------
+
+fn se_test_protobuf<S: Serialize + prost::Message>(process: &S, data: &mut TestData) {
+    process.encode(&mut data.vec).unwrap();
+}
+
+fn de_test_protobuf<S: DeserializeOwned + prost::Message + Default>(data: &TestData) -> S {
+    S::decode(data.vec.as_slice()).unwrap()
 }
 
 // ----------------------------------------------------------------------------
@@ -176,6 +197,28 @@ struct Result {
     time_se_de_ms: String,
     //
     compare_key: u128,
+    not_available: bool,
+}
+
+impl Result {
+    fn not_available(name: AlgoKind, top_test_name: TestKind) -> Self {
+        Self {
+            name,
+            top_test_name,
+            size: 0,
+            needs_schema: false,
+            min_size: 0,
+            size_repr: String::new(),
+            times_se: Vec::new(),
+            times_de: Vec::new(),
+            times_se_de: Vec::new(),
+            time_se_ms: String::new(),
+            time_de_ms: String::new(),
+            time_se_de_ms: String::new(),
+            compare_key: 0,
+            not_available: true,
+        }
+    }
 }
 
 fn compute_test_times(times: &mut Vec<Duration>) -> TestTimes {
@@ -244,12 +287,12 @@ fn bench<T: GetSize, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T +
     deserialize: FD,
     needs_schema: bool,
     results: &mut Vec<Result>,
-    iterations: u32,
+    repetition_times: u32,
 ) {
     let mut data = TestData {
         vec: Vec::default(),
         storage: Storage::default(),
-        times: iterations,
+        times: repetition_times,
     };
     let time_se = se_bench(x, serialize.clone(), &mut data);
     let time_de = de_bench(deserialize.clone(), &data);
@@ -280,6 +323,7 @@ fn bench<T: GetSize, FS: Fn(&T, &mut TestData) + Clone, FD: Fn(&TestData) -> T +
             time_se_de_ms: String::new(),
             size_repr: String::new(),
             compare_key: 0,
+            not_available: false,
         });
     }
 }
@@ -314,13 +358,23 @@ impl<'a, T: FlatMessage<'a>> FlatMessage<'a> for Wrapper<T> {
     }
 }
 
-fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()>>(
+fn add_benches<
+    'a,
+    T: FlatMessageOwned
+        + Clone
+        + Serialize
+        + DeserializeOwned
+        + GetSize
+        + bincode::Encode
+        + bincode::Decode<()>,
+>(
     top_test_name: TestKind,
     x: &T,
     results: &mut Vec<Result>,
     algos: &HashSet<AlgoKind>,
     all_algos: bool,
-    iterations: u32,
+    repetition_times: u32,
+    iteration_id: u32,
 ) {
     let wrapper = Wrapper(x.clone());
 
@@ -335,7 +389,7 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
                     $de,
                     $needs_schema,
                     results,
-                    iterations,
+                    repetition_times,
                 );
             }
         };
@@ -371,9 +425,86 @@ fn add_benches<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + 
     b!(Json, x, se_test_json, de_test_json, false);
     b!(SimdJson, x, se_test_simd_json, de_test_simd_json, false);
     b!(Postcard, x, se_test_postcard, de_test_postcard, true);
+    b!(Toml, x, se_test_toml, de_test_toml, false);
+    // check to see if protobuf is present
+    if iteration_id == 0 {
+        results.push(Result::not_available(AlgoKind::Protobuf, top_test_name));
+    }
 }
 
-fn print_results_ascii_table(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], file_name: &str) {
+fn add_benches_protobuf<
+    'a,
+    T: FlatMessageOwned
+        + Clone
+        + Serialize
+        + DeserializeOwned
+        + GetSize
+        + bincode::Encode
+        + bincode::Decode<()>
+        + prost::Message
+        + Default,
+>(
+    top_test_name: TestKind,
+    x: &T,
+    results: &mut Vec<Result>,
+    algos: &HashSet<AlgoKind>,
+    all_algos: bool,
+    repetition_times: u32,
+) {
+    let wrapper = Wrapper(x.clone());
+
+    macro_rules! b {
+        ($name:expr, $x:expr, $se:expr, $de:expr, $needs_schema:expr) => {
+            if all_algos || algos.contains(&$name) {
+                bench(
+                    top_test_name,
+                    $name,
+                    $x,
+                    $se,
+                    $de,
+                    $needs_schema,
+                    results,
+                    repetition_times,
+                );
+            }
+        };
+    }
+
+    use AlgoKind::*;
+    b!(
+        FlatMessage,
+        x,
+        se_test_flat_message,
+        de_test_flat_message,
+        false
+    );
+    b!(
+        FlatMessageUnchecked,
+        &wrapper,
+        se_test_flat_message,
+        de_test_flat_message,
+        false
+    );
+    b!(RmpSchema, x, se_test_rmp_schema, de_test_rmp, true);
+    b!(RmpSchemaless, x, se_test_rmp_schemaless, de_test_rmp, false);
+    b!(Bincode, x, se_test_bincode, de_test_bincode, true);
+    b!(
+        FlexBuffers,
+        x,
+        se_test_flexbuffers,
+        de_test_flexbuffers,
+        false
+    );
+    b!(Cbor, x, se_test_cbor, de_test_cbor, false);
+    b!(Bson, x, se_test_bson, de_test_bson, false);
+    b!(Json, x, se_test_json, de_test_json, false);
+    b!(SimdJson, x, se_test_simd_json, de_test_simd_json, false);
+    b!(Postcard, x, se_test_postcard, de_test_postcard, true);
+    b!(Toml, x, se_test_toml, de_test_toml, false);
+    b!(Protobuf, x, se_test_protobuf, de_test_protobuf, true);
+}
+
+fn print_results_ascii_table(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], _file_name: &str) {
     let mut ascii_table: AsciiTable = AsciiTable::default();
     ascii_table.set_max_width(200);
 
@@ -409,14 +540,27 @@ fn print_results_markdown(r: &[[&dyn Display; 7]], colums: &[(&str, Align)], fil
 fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], file_name: &str) {
     let mut output = String::with_capacity(4096);
 
-    writeln!(output, "| Method | Size (b) | Serialization Time (ms) | Deserialization Time (ms) | Total Time (ms) |").unwrap();
+    //writeln!(output, "| Algorithm | Size (b) | Serialization Time (ms) | Deserialization Time (ms) | Total Time (ms) |").unwrap();
+    writeln!(
+        output,
+        "| Algorithm | Size (b) | Ser. (ms) | Deser. (ms) | Ser+Deser.(ms) |"
+    )
+    .unwrap();
     writeln!(output, "| ------ | -------: | ----------------------: | ------------------------: | --------------: |").unwrap();
 
     for row in r {
         // name
-        write!(output, "| {} ", row[2]).unwrap();
+        let mut name = row[2].to_string();
+        if name == "flat_message_unchecked" {
+            name = "FlatMessage (&#9888;&#65039;)".to_string();
+        }
+        if name == "flat_message" {
+            name = "FlatMessage".to_string();
+        }
         if row[1].to_string() == "*" {
-            write!(output, " [schema]").unwrap();
+            write!(output, "| *{}* <span style=\"font-family:monospace; opacity:0.5; font-size:0.75em\">(schema)</span>", name).unwrap();
+        } else {
+            write!(output, "| {} ", name).unwrap();
         }
         // size
         write!(output, "| {} ", row[3]).unwrap();
@@ -425,40 +569,48 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], fil
         // de time
         write!(output, "| {} ", row[5]).unwrap();
         // total time
-        write!(output, "| {} ", row[6]).unwrap();
+        let tmp = row[6].to_string();
+        if tmp.contains("[") {
+            let pos = tmp.chars().position(|c| c == '[').unwrap();
+            let total_time = format!("**{}** {}", &tmp[..pos].trim(), &tmp[pos..]);
+            write!(output, "| {} ", total_time).unwrap();
+        } else {
+            write!(output, "| {} ", tmp).unwrap();
+        }
         writeln!(output, "|").unwrap();
     }
     output = output.replace(
         "[",
-        r#"<span style="font-family:monospace; opacity:0.5; font-size:0.75em">["#,
+        r#"<span style="font-family:monospace; opacity:0.5; font-size:0.5em"><br>["#,
     );
     output = output.replace("]", r#"]</span>"#);
-    let mut mdbook_output = String::with_capacity(output.len());
-    let mut inside_sb = false;
-    for ch in output.chars() {
-        match ch {
-            '[' => {
-                inside_sb = true;
-                mdbook_output.push(ch);
-            }
-            ' ' => {
-                if !inside_sb {
-                    mdbook_output.push(ch);
-                } else {
-                    mdbook_output.push_str("&nbsp;");
-                }
-            }
-            ']' => {
-                inside_sb = false;
-                mdbook_output.push(ch);
-            }
-            _ => {
-                mdbook_output.push(ch);
-            }
-        }
-    }
+    output = output.replace("N/A", "-");
+    // let mut mdbook_output = String::with_capacity(output.len());
+    // let mut inside_sb = false;
+    // for ch in output.chars() {
+    //     match ch {
+    //         '[' => {
+    //             inside_sb = true;
+    //             mdbook_output.push(ch);
+    //         }
+    //         ' ' => {
+    //             if !inside_sb {
+    //                 mdbook_output.push(ch);
+    //             } else {
+    //                 mdbook_output.push_str("&nbsp;");
+    //             }
+    //         }
+    //         ']' => {
+    //             inside_sb = false;
+    //             mdbook_output.push(ch);
+    //         }
+    //         _ => {
+    //             mdbook_output.push(ch);
+    //         }
+    //     }
+    // }
 
-    fs::write(file_name, mdbook_output).unwrap();
+    fs::write(file_name, output).unwrap();
 }
 
 fn print_results(
@@ -470,6 +622,10 @@ fn print_results(
 ) {
     // compute the times
     for result in results.iter_mut() {
+        if result.not_available {
+            result.compare_key = u128::MAX;
+            continue;
+        }
         let a = compute_test_times(&mut result.times_se);
         let b = compute_test_times(&mut result.times_de);
         let c = compute_test_times(&mut result.times_se_de);
@@ -521,6 +677,12 @@ fn print_results(
         };
 
         let ch = if i.needs_schema { &'*' } else { &' ' };
+        if i.not_available {
+            i.size_repr = "N/A".to_string();
+            i.time_se_ms = "N/A".to_string();
+            i.time_de_ms = "N/A".to_string();
+            i.time_se_de_ms = "N/A".to_string();
+        }
         r.push([
             i.top_test_name.display(),
             ch,
@@ -546,15 +708,62 @@ fn print_results(
     }
 }
 
-fn do_one<'a, T: FlatMessageOwned + Clone + Serialize + DeserializeOwned + GetSize + bincode::Encode + bincode::Decode<()>>(
+fn do_one<
+    'a,
+    T: FlatMessageOwned
+        + Clone
+        + Serialize
+        + DeserializeOwned
+        + GetSize
+        + bincode::Encode
+        + bincode::Decode<()>,
+>(
     top_test_name: TestKind,
     x: &T,
     results: &mut Vec<Result>,
     algos: &HashSet<AlgoKind>,
     all_algos: bool,
-    iterations: u32,
+    repetition_times: u32,
+    iteration_id: u32,
 ) {
-    add_benches(top_test_name, x, results, algos, all_algos, iterations);
+    add_benches(
+        top_test_name,
+        x,
+        results,
+        algos,
+        all_algos,
+        repetition_times,
+        iteration_id,
+    );
+}
+
+fn do_one_protobuf<
+    'a,
+    T: FlatMessageOwned
+        + Clone
+        + Serialize
+        + DeserializeOwned
+        + GetSize
+        + bincode::Encode
+        + bincode::Decode<()>
+        + prost::Message
+        + Default,
+>(
+    top_test_name: TestKind,
+    x: &T,
+    results: &mut Vec<Result>,
+    algos: &HashSet<AlgoKind>,
+    all_algos: bool,
+    repetition_times: u32,
+) {
+    add_benches_protobuf(
+        top_test_name,
+        x,
+        results,
+        algos,
+        all_algos,
+        repetition_times,
+    );
 }
 
 macro_rules! tests {
@@ -622,15 +831,17 @@ tests! {
     AlgoKind,
     ("flat_message", FlatMessage),
     ("flat_message_unchecked", FlatMessageUnchecked),
-    ("rmp_schema", RmpSchema),
-    ("rmp_schemaless", RmpSchemaless),
+    ("rmp", RmpSchema),
+    ("rmp", RmpSchemaless),
     ("bincode", Bincode),
     ("flexbuffers" , FlexBuffers),
     ("cbor", Cbor),
     ("bson", Bson),
     ("json", Json),
     ("simd_json", SimdJson),
-    ("postcard", Postcard)
+    ("postcard", Postcard),
+    ("toml", Toml),
+    ("protobuf", Protobuf)
 }
 
 fn split_tests<'x, T>(input: &'x str) -> (bool, HashSet<T>)
@@ -695,9 +906,24 @@ fn run_tests(args: Args, test_name: &str) {
 
     let results = &mut Vec::new();
     macro_rules! run {
+        ($name:expr, $x:expr, $iteration_id:expr) => {
+            if all_tests || tests.contains(&$name) {
+                do_one(
+                    $name,
+                    $x,
+                    results,
+                    &algos,
+                    all_algos,
+                    args.times,
+                    $iteration_id,
+                );
+            }
+        };
+    }
+    macro_rules! run_protobuf {
         ($name:expr, $x:expr) => {
             if all_tests || tests.contains(&$name) {
-                do_one($name, $x, results, &algos, all_algos, args.times);
+                do_one_protobuf($name, $x, results, &algos, all_algos, args.times);
             }
         };
     }
@@ -711,55 +937,55 @@ fn run_tests(args: Args, test_name: &str) {
         let start = Instant::now();
         {
             let s = structures::process_create::generate();
-            run!(ProcessCreate, &s);
+            run_protobuf!(ProcessCreate, &s);
         }
         {
             let s = structures::long_strings::generate(100);
-            run!(LongStrings, &s);
+            run_protobuf!(LongStrings, &s);
         }
         {
             let s = structures::point::generate();
-            run!(Point, &s);
+            run_protobuf!(Point, &s);
         }
         {
             let s = structures::one_bool::generate();
-            run!(OneBool, &s);
+            run_protobuf!(OneBool, &s);
         }
         {
             let s = structures::multiple_fields::generate();
-            run!(MultipleFields, &s);
+            run!(MultipleFields, &s, i);
         }
         {
             let s = structures::multiple_integers::generate();
-            run!(MultipleIntegers, &s);
+            run_protobuf!(MultipleIntegers, &s);
         }
         {
             let s = structures::vectors::generate();
-            run!(Vectors, &s);
+            run!(Vectors, &s, i);
         }
         {
             let s = structures::large_vectors::generate();
-            run!(LargeVectors, &s);
+            run_protobuf!(LargeVectors, &s);
         }
         {
             let s = structures::enum_fields::generate();
-            run!(EnumFields, &s);
+            run!(EnumFields, &s, i);
         }
         {
             let s = structures::enum_lists::generate();
-            run!(EnumLists, &s);
+            run!(EnumLists, &s, i);
         }
         {
             let s = structures::small_enum_lists::generate();
-            run!(SmallEnumLists, &s);
+            run!(SmallEnumLists, &s, i);
         }
         {
             let s = structures::multiple_bools::generate();
-            run!(MultipleBools, &s);
+            run_protobuf!(MultipleBools, &s);
         }
         {
             let s = structures::string_lists::generate();
-            run!(StringLists, &s);
+            run!(StringLists, &s, i);
         }
         println!(" done in {:.2}ms", start.elapsed().as_secs_f64() * 1000.0);
     }
@@ -768,7 +994,7 @@ fn run_tests(args: Args, test_name: &str) {
 }
 
 fn run_one_mdbook_test(test_name: &str, times: u32) {
-    let a = Args{
+    let a = Args {
         tests: test_name.to_string(),
         algos: "all".to_string(),
         times,
@@ -781,9 +1007,9 @@ fn run_one_mdbook_test(test_name: &str, times: u32) {
     run_tests(a, test_name);
 }
 fn run_mdbook_tests() {
-    //run_one_mdbook_test("multiple_fields", 1000);
-    //run_one_mdbook_test("point", 10000);
-    run_one_mdbook_test("long_strings", 1000);
+    run_one_mdbook_test("multiple_fields", 100_000);
+    run_one_mdbook_test("point", 500_000);
+    //run_one_mdbook_test("long_strings", 1000); 
 }
 
 fn main() {

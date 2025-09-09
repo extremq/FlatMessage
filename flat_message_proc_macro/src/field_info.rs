@@ -31,7 +31,7 @@ impl FieldInfo {
             && !data_type.timestamp
             && !data_type.ignore_field
         {
-            return Err(format!("Please provide aditional specifications via #[flat_message_item(...)] for the field '{}' !", name));
+            return Err(format!("Please provide aditional specifications via #[flat_message_item(...)] for the field '{name}' !"));
         }
         // compute the data format
         let hash = (hashes::fnv_32(&name) & 0xFFFFFF00) | data_type.type_hash();

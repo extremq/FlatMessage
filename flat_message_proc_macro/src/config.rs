@@ -39,7 +39,7 @@ impl Config {
                 "compatible_versions" => {
                     match VersionValidatorParser::try_from(attr_value.as_str()) {
                         Ok(cv) => compatible_versions = Some(cv),
-                        Err(def) => panic!("Fail to parse compatible_versions: {}", def),
+                        Err(def) => panic!("Fail to parse compatible_versions: {def}"),
                     }
                 }
                 "optimized_unchecked_code" => optimized_unchecked_code = utils::to_bool(attr_value.as_str()).unwrap_or_else(|| panic!("Invalid boolean value ('{}') for attribute '{}'. Allowed values are 'true' or 'false' !",attr_value.as_str(), attr_name)),
@@ -51,7 +51,7 @@ impl Config {
                     }
                 }
                 _ => {
-                    panic!("Unknown attribute: {}. Supported attributes are: 'store_name', 'metadata', 'checksum', validate_name', 'optimized_unchecked_code', 'validate', 'compatible_versions' and 'version' !", attr_name);
+                    panic!("Unknown attribute: {attr_name}. Supported attributes are: 'store_name', 'metadata', 'checksum', validate_name', 'optimized_unchecked_code', 'validate', 'compatible_versions' and 'version' !");
                 }
             }
         }

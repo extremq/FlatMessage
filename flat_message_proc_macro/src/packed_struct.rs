@@ -268,7 +268,7 @@ impl<'a> PackedStruct<'a> {
                 4 => DataFormat::PackedStruct32,
                 8 => DataFormat::PackedStruct64,
                 16 => DataFormat::PackedStruct128,
-                _ => return Err(format!("Invalid alignment for packed structure: {} (only 1, 2, 4, 8 or 16 are allowed)", alignament)),
+                _ => return Err(format!("Invalid alignment for packed structure: {alignament} (only 1, 2, 4, 8 or 16 are allowed)")),
             };
             write!(structure_hash, "[{}]", data_format as u8).unwrap();
             //println!("Structure hash: {}", structure_hash);

@@ -19,8 +19,7 @@ impl VersionToken {
                     Ok(VersionToken::Number(num))
                 } else {
                     Err(format!(
-                        "Invalid version number '{}' (should be a number between 1 and 255) !",
-                        value
+                        "Invalid version number '{value}' (should be a number between 1 and 255) !"
                     ))
                 }
             }
@@ -30,14 +29,15 @@ impl VersionToken {
                 "-" => Ok(VersionToken::Interval),
                 ":" => Ok(VersionToken::Interval),
                 ".." => Ok(VersionToken::Interval),
-                _ => Err(format!(
-                    "Invalid operator '{}' (accepted operators are '<', '..', '-', ':') !",
-                    value
-                )),
+                _ => {
+                    Err(format!(
+                        "Invalid operator '{value}' (accepted operators are '<', '..', '-', ':') !"
+                    ))
+                }
             },
             CharType::Space => Ok(VersionToken::Skip),
             CharType::Separator => Ok(VersionToken::Separator),
-            CharType::Invalid => Err(format!("Invalid character '{}' !", value)),
+            CharType::Invalid => Err(format!("Invalid character '{value}' !")),
         }
     }
 }
@@ -77,15 +77,14 @@ impl Default for VersionValidatorParser {
 impl VersionValidatorParser {
     fn add(&mut self, expr: &[VersionToken], expr_name: &str) -> Result<(), String> {
         match expr.len() {
-            0 => Err(format!("Empty version expression '{}'", expr_name)),
+            0 => Err(format!("Empty version expression '{expr_name}'")),
             1 => {
                 if let VersionToken::Number(value) = expr[0] {
                     self.list[value as usize] = true;
                     Ok(())
                 } else {
                     Err(format!(
-                        "Invalid version expression '{}', expected a version number !",
-                        expr_name
+                        "Invalid version expression '{expr_name}', expected a version number !"
                     ))
                 }
             }
@@ -98,14 +97,12 @@ impl VersionValidatorParser {
                         Ok(())
                     } else {
                         Err(format!(
-                            "Invalid version expression '{}', expected a version number after the lower sign (ex: <10) !",
-                            expr_name
+                            "Invalid version expression '{expr_name}', expected a version number after the lower sign (ex: <10) !"
                         ))
                     }
                 } else {
                     Err(format!(
-                        "Invalid version expression '{}', expected a lower operator followed by a number !",
-                        expr_name
+                        "Invalid version expression '{expr_name}', expected a lower operator followed by a number !"
                     ))
                 }
             }
@@ -115,8 +112,7 @@ impl VersionValidatorParser {
                         if let VersionToken::Number(end) = expr[2] {
                             if start > end {
                                 return Err(format!(
-                                    "Invalid version expression '{}', the start value '{}' should be lower than the end value '{}' !",
-                                    expr_name, start, end
+                                    "Invalid version expression '{expr_name}', the start value '{start}' should be lower than the end value '{end}' !"
                                 ));
                             }
                             for i in start..=end {
@@ -125,24 +121,21 @@ impl VersionValidatorParser {
                             Ok(())
                         } else {
                             Err(format!(
-                                "Invalid version expression '{}', expected a version number after the interval operator (ex: 1-255) !",
-                                expr_name
+                                "Invalid version expression '{expr_name}', expected a version number after the interval operator (ex: 1-255) !"
                             ))
                         }
                     } else {
                         Err(format!(
-                            "Invalid version expression '{}', expected an interval operator between the two numbers. An interval operator can be ':', '-' or '..' !",
-                            expr_name
+                            "Invalid version expression '{expr_name}', expected an interval operator between the two numbers. An interval operator can be ':', '-' or '..' !"
                         ))
                     }
                 } else {
                     Err(format!(
-                        "Invalid version expression '{}', expected an interval (ex: '1-10' or '5:8' or '11..100')",
-                        expr_name
+                        "Invalid version expression '{expr_name}', expected an interval (ex: '1-10' or '5:8' or '11..100')"
                     ))
                 }
             }
-            _ => Err(format!("Unkown version format express: '{}'", expr_name)),
+            _ => Err(format!("Unkown version format express: '{expr_name}'")),
         }
     }
     pub fn generate_code(&self) -> proc_macro2::TokenStream {
@@ -191,8 +184,7 @@ impl TryFrom<&str> for VersionValidatorParser {
             let c_type = CharType::from(c);
             if c_type == CharType::Invalid {
                 return Err(format!(
-                    "Invalid character '{}' at position '{}' from '{}' !",
-                    c, pos, value
+                    "Invalid character '{c}' at position '{pos}' from '{value}' !"
                 ));
             }
             if pos == 0 {
