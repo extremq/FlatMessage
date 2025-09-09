@@ -523,7 +523,7 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], fil
     let mut output = String::with_capacity(4096);
 
     //writeln!(output, "| Algorithm | Size (b) | Serialization Time (ms) | Deserialization Time (ms) | Total Time (ms) |").unwrap();
-    writeln!(output, "| Algorithm | Size (b) | Ser Time (ms) | Deser Time (ms) | Total Time (ms) |").unwrap();
+    writeln!(output, "| Algorithm | Size (b) | Ser. (ms) | Deser. (ms) | Ser+Deser.(ms) |").unwrap();
     writeln!(output, "| ------ | -------: | ----------------------: | ------------------------: | --------------: |").unwrap();
 
     for row in r {
@@ -536,7 +536,7 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], fil
             name = "FlatMessage".to_string();
         }
         if row[1].to_string() == "*" {
-            write!(output, "| *{}* <span style=\"font-family:monospace; opacity:0.5; font-size:0.5em\"><br>[schema]</span>", name).unwrap();
+            write!(output, "| *{}* <span style=\"font-family:monospace; opacity:0.5; font-size:0.75em\">(schema)</span>", name).unwrap();
         } else {
             write!(output, "| {} ", name).unwrap();
         }
@@ -547,7 +547,10 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], fil
         // de time
         write!(output, "| {} ", row[5]).unwrap();
         // total time
-        write!(output, "| {} ", row[6]).unwrap();
+        let tmp = row[6].to_string();
+        let pos = tmp.chars().position(|c| c == '[').unwrap();
+        let total_time = format!("**{}** {}", &tmp[..pos].trim(), &tmp[pos..]);
+        write!(output, "| {} ", total_time).unwrap();
         writeln!(output, "|").unwrap();
     }
     output = output.replace(
@@ -556,32 +559,32 @@ fn print_results_mdbook(r: &[[&dyn Display; 7]], _columns: &[(&str, Align)], fil
     );
     output = output.replace("]", r#"]</span>"#);
     output = output.replace("N/A", "-");
-    let mut mdbook_output = String::with_capacity(output.len());
-    let mut inside_sb = false;
-    for ch in output.chars() {
-        match ch {
-            '[' => {
-                inside_sb = true;
-                mdbook_output.push(ch);
-            }
-            ' ' => {
-                if !inside_sb {
-                    mdbook_output.push(ch);
-                } else {
-                    mdbook_output.push_str("&nbsp;");
-                }
-            }
-            ']' => {
-                inside_sb = false;
-                mdbook_output.push(ch);
-            }
-            _ => {
-                mdbook_output.push(ch);
-            }
-        }
-    }
+    // let mut mdbook_output = String::with_capacity(output.len());
+    // let mut inside_sb = false;
+    // for ch in output.chars() {
+    //     match ch {
+    //         '[' => {
+    //             inside_sb = true;
+    //             mdbook_output.push(ch);
+    //         }
+    //         ' ' => {
+    //             if !inside_sb {
+    //                 mdbook_output.push(ch);
+    //             } else {
+    //                 mdbook_output.push_str("&nbsp;");
+    //             }
+    //         }
+    //         ']' => {
+    //             inside_sb = false;
+    //             mdbook_output.push(ch);
+    //         }
+    //         _ => {
+    //             mdbook_output.push(ch);
+    //         }
+    //     }
+    // }
 
-    fs::write(file_name, mdbook_output).unwrap();
+    fs::write(file_name, output).unwrap();
 }
 
 fn print_results(
@@ -935,9 +938,9 @@ fn run_one_mdbook_test(test_name: &str, times: u32) {
     run_tests(a, test_name);
 }
 fn run_mdbook_tests() {
-    //run_one_mdbook_test("multiple_fields", 1000);
+    run_one_mdbook_test("multiple_fields", 100000);
     //run_one_mdbook_test("point", 10000);
-    run_one_mdbook_test("long_strings", 1000);
+    //run_one_mdbook_test("long_strings", 1000);
 }
 
 fn main() {
